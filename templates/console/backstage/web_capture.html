@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+{% extends 'console\\backstage\base_backstage.html' %}
+
+{% block page_content %}
+<div class="panel panel-default">
+    <!--这里加标题 //-->
+    <div class="panel-heading">
+		<p class="panel-title">
+			<i class="glyphicon glyphicon-stats"></i> 从网页抓取数据导入数据库
+		</p>
+    </div>
+    <!--将表格放在这个<div class="panel-body">的标签中 //-->
+    <div class="panel-body">
+		<div class="col-md-12 col-md-offset-0">
+			<ul id="importTab" class="nav nav-tabs">
+				<li class="active"><a href="#dividend_history" data-toggle="tab">分红历史</a></li>
+				<li><a href="#value" data-toggle="tab">账户价值</a></li>
+			</ul>
+			<div id="importTabContent" class="tab-content">
+				<div class="tab-pane fade in active" id="dividend_history">
+					<div class="h jumbotron">
+						<form action="" method="post" class="form-horizontal">
+							{% csrf_token %}
+							<div class="form-group">
+								<input type="hidden" style="visibility: hidden;" name="tab_name" value="分红历史" />
+								<label for="stock_code" class="col-md-3 control-label">分红历史数据抓取：</label>
+								<div class="col-md-6">
+									<select class="form-control" name="stock_code" id="stock_code">
+										<option disabled selected value="">请选择股票...</option>
+											<option value="全部">全部</option>
+                                            <option value="持仓股票">持仓股票</option>
+										{% for stock in stock_list %}
+											<option value="{{ stock.stock_code }}">{{ stock.stock_name }}({{ stock.stock_code }})</option>
+										{% endfor %}
+									</select>
+								</div>
+								<input type="submit" class="btn btn-default col-md-1" value="导入">
+							</div>
+						</form>
+						<!-- {{ stock_dividend_dict }} -->
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+							<thead>
+								<tr>
+									<th>报告期</th>
+									<th>分红方案</th>
+									<th>公告日</th>
+									<th>股权登记日</th>
+									<th>除权除息日</th>
+									<th>派息日</th>
+								</tr>
+							</thead>
+							<tbody>
+								<!--#dividend_history_list即为视图函数list_dividend_history中render传入参数//-->
+								{% for i in stock_dividend_dict %}
+									<tr>
+										<td>{{ i.reporting_period }}</td>
+										<td>{{ i.dividend_plan }}</td>
+										<td>{{ i.announcement_date }}</td>
+										<td>{{ i.registration_date }}</td>
+										<td>{{ i.ex_right_date }}</td>
+										<td>{{ i.dividend_date }}</td>
+									</tr>
+								{% empty %}
+									<tr>
+										<td colspan="6">无相关记录！</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="value">
+					<div class="h jumbotron">
+						<h5>请选择将哪些账户的交易记录批量导入!</h5>
+						<table class="table table-bordered table-condensed table-striped table-hover">
+							<thead>
+								<tr>
+									<th>账号</th>
+									<th>券商</th>
+									<th>简称</th>
+									<th>操作</th>
+								</tr>
+							</thead>
+							<tbody>
+								<!--#account_list即为视图函数list_account中render传入参数//-->
+								{% for account in account_list %}
+									<tr>
+										<td style="vertical-align: middle;">{{ account.account_number }}</td>
+										<td style="vertical-align: middle;">{{ account.broker.broker_name }}</td>
+										<td style="vertical-align: middle;">{{ account.account_abbreviation }}</td>
+										<td>
+											<a href="" class="btn btn-info btn-sm">
+												<i class="fa fa-pencil-square-o" aria-hidden="true"></i>&nbsp;导入
+											</a>
+										</td>
+									</tr>
+								{% empty %}
+									<tr>
+										<td colspan="6">无相关记录！</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+						<p>共用{{ account_count }}个账户</p>
+						<p><a class="btn btn-primary btn-lg" href="#" role="button">确定</a></p>
+					</div>
+				</div>
+			</div>
+			{% if messages %}
+				<script>
+					{% for msg in messages %}
+						alert('{{ msg.message }}');
+					{% endfor %}
+				</script>
+			{% endif %}
+		</div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- 以下block块给样式类赋值，class="active"//-->
+{% block web_capture_cls %}
+active
+{% endblock %}

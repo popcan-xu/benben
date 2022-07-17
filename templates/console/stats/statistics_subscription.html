@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+{% extends 'console\\stats\base_stats.html' %}
+
+{% block page_content %}
+<div class="panel panel-default">
+    <div class="panel-heading">
+		<p class="panel-title">
+			<i class="glyphicon glyphicon-stats"></i>&nbsp;打新统计
+		</p>
+    </div>
+    <div class="panel-body">
+		<div class="col-md-12 col-md-offset-0">
+			<ul id="statisticsTab" class="nav nav-tabs">
+				<li class="dropdown active">
+					<a href="#" id="yearTabDrop" class="dropdown-toggle" data-toggle="dropdown">年份
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu" role="menu" aria-labelledby="yearTbDrop">
+						<li><a href="#year_STOCK" tabindex="-1" data-toggle="tab">新股</a></li>
+						<li><a href="#year_BOND" tabindex="-1" data-toggle="tab">新债</a></li>
+					</ul>
+				</li>
+				<li class="dropdown">
+					<a href="#" id="accountTabDrop" class="dropdown-toggle" data-toggle="dropdown">账户
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu" role="menu" aria-labelledby="accountTbDrop">
+						<li><a href="#account_STOCK" tabindex="-1" data-toggle="tab">新股</a></li>
+						<li><a href="#account_BOND" tabindex="-1" data-toggle="tab">新债</a></li>
+					</ul>
+				</li>
+				<li class="dropdown">
+					<a href="#" id="nameTabDrop" class="dropdown-toggle" data-toggle="dropdown">名称
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu" role="menu" aria-labelledby="nameTbDrop">
+						<li><a href="#name_STOCK" tabindex="-1" data-toggle="tab">新股</a></li>
+						<li><a href="#name_BOND" tabindex="-1" data-toggle="tab">新债</a></li>
+					</ul>
+				</li>
+			</ul>
+			<div id="statisticsTabContent" class="tab-content">
+				<div class="tab-pane fade in active" id="year_STOCK">
+					<div class="h jumbotron">
+						<ul id="yearTabSTOCK" class="breadcrumb">
+							<li class="active"><a href="#table_11" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
+							<li><a href="#bar_11" data-toggle="tab" id="bar_link_11" style="text-decoration:none;">柱状图</a></li>
+							<li><a href="#pie_11" data-toggle="tab" id="pie_link_11" style="text-decoration:none;">饼状图</a></li>
+						</ul>
+						<div id="yearTabContentSTOCK" class="tab-content">
+							<div class="tab-pane fade in active" id="table_11">
+                                <div style="height:25px">
+									<div style="display:inline;float:left;">
+										<i class="glyphicon glyphicon-stats"></i>&nbsp;股票打新总额：{{ amount_sum_STOCK|floatformat:0 }}元
+									</div>
+								</div>
+								<div class="table-responsive">
+									<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+										<thead>
+											<tr>
+												<th>年份</th>
+												<th>金额（元）</th>
+												<th>百分比</th>
+											</tr>
+										</thead>
+										<tbody>
+											{% for i in year_content_STOCK %}
+											<tr>
+												<td>{{ i.0|stringformat:"s" }}</td> <!--模板变量数字转字符 -->
+												<td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+												<td style="text-align: right">{{ i.2 }}</td>
+											</tr>
+											{% endfor %}
+											<tr>
+												<td><b>合计</b></td>
+												<td style="text-align: right"><b>{{ amount_sum_STOCK|floatformat:0 }}</b></td>
+												<td style="text-align: right"><b>100.00%</b></td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+							<div class="tab-pane fade" id="bar_11">
+								<div id="bar_area_11" style="width:800px; height:600px;"></div><!--数据展现的容器1-->
+							</div>
+							<div class="tab-pane fade" id="pie_11">
+								<div id="pie_area_11" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="year_BOND">
+					<div class="h jumbotron">
+						<ul id="yearTabBOND" class="breadcrumb">
+							<li class="active"><a href="#table_12" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
+							<li><a href="#bar_12" data-toggle="tab" id="bar_link_12" style="text-decoration:none;">柱状图</a></li>
+							<li><a href="#pie_12" data-toggle="tab" id="pie_link_12" style="text-decoration:none;">饼状图</a></li>
+						</ul>
+						<div id="yearTabContentBOND" class="tab-content">
+							<div class="tab-pane fade in active" id="table_12">
+                                <div style="height:25px">
+                                    <div style="display:inline;float:left;">
+                                        <i class="glyphicon glyphicon-stats"></i>&nbsp;可转债打新总额：{{ amount_sum_BOND|floatformat:0 }}元
+                                    </div>
+                                </div>
+								<div class="table-responsive">
+                                    <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                        <thead>
+                                            <tr>
+                                                <th>年份</th>
+                                                <th>金额（元）</th>
+                                                <th>百分比</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for i in year_content_BOND %}
+                                            <tr>
+                                                <td>{{ i.0|stringformat:"s" }}</td> <!--模板变量数字转字符 -->
+                                                <td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.2 }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                            <tr>
+                                                <td><b>合计</b></td>
+                                                <td style="text-align: right"><b>{{ amount_sum_BOND|floatformat:0 }}</b></td>
+                                                <td style="text-align: right"><b>100.00%</b></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+							</div>
+							<div class="tab-pane fade" id="bar_12">
+								<div id="bar_area_12" style="width:800px; height:600px;"></div><!--数据展现的容器1-->
+							</div>
+							<div class="tab-pane fade" id="pie_12">
+								<div id="pie_area_12" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="account_STOCK">
+					<div class="h jumbotron">
+						<ul id="accountTabSTOCK" class="breadcrumb">
+							<li class="active"><a href="#table_21" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
+							<li><a href="#bar_21" data-toggle="tab" id="bar_link_21" style="text-decoration:none;">柱状图</a></li>
+							<li><a href="#pie_21" data-toggle="tab" id="pie_link_21" style="text-decoration:none;">饼状图</a></li>
+						</ul>
+						<div id="accountTabContentSTOCK" class="tab-content">
+							<div class="tab-pane fade in active" id="table_21">
+        						<div style="height:25px">
+                                    <div style="display:inline;float:left;">
+                                        <i class="glyphicon glyphicon-stats"></i>&nbsp;股票打新总额：{{ amount_sum_STOCK|floatformat:0 }}元
+                                    </div>
+                                </div>
+								<div class="table-responsive">
+            						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                        <thead>
+                                            <tr>
+                                                <th>账户名称</th>
+                                                <th>金额（元）</th>
+                                                <th>百分比</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for i in account_content_STOCK %}
+                                            <tr>
+                                                <td>{{ i.0 }}</td>
+                                                <td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.2 }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                            <tr>
+                                                <td><b>合计</b></td>
+                                                <td style="text-align: right"><b>{{ amount_sum_STOCK|floatformat:0 }}</b></td>
+                                                <td style="text-align: right"><b>100.00%</b></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+							</div>
+							<div class="tab-pane fade" id="bar_21">
+								<div id="bar_area_21" style="width:800px; height:600px;"></div><!--数据展现的容器1-->
+							</div>
+							<div class="tab-pane fade" id="pie_21">
+								<div id="pie_area_21" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="account_BOND">
+					<div class="h jumbotron">
+						<ul id="accountTabBOND" class="breadcrumb">
+							<li class="active"><a href="#table_22" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
+							<li><a href="#bar_22" data-toggle="tab" id="bar_link_22" style="text-decoration:none;">柱状图</a></li>
+							<li><a href="#pie_22" data-toggle="tab" id="pie_link_22" style="text-decoration:none;">饼状图</a></li>
+						</ul>
+						<div id="accountTabContentBOND" class="tab-content">
+							<div class="tab-pane fade in active" id="table_22">
+                                <div style="height:25px">
+                                    <div style="display:inline;float:left;">
+                                        <i class="glyphicon glyphicon-stats"></i>&nbsp;可转债打新总额：{{ amount_sum_BOND|floatformat:0 }}港元
+                                    </div>
+                                </div>
+								<div class="table-responsive">
+                                    <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                        <thead>
+                                            <tr>
+                                                <th>账户名称</th>
+                                                <th>金额（元）</th>
+                                                <th>百分比</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for i in account_content_BOND %}
+                                            <tr>
+                                                <td>{{ i.0 }}</td>
+                                                <td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.2 }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                            <tr>
+                                                <td><b>合计</b></td>
+                                                <td style="text-align: right"><b>{{ amount_sum_BOND|floatformat:0 }}</b></td>
+                                                <td style="text-align: right"><b>100.00%</b></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+							</div>
+							<div class="tab-pane fade" id="bar_22">
+								<div id="bar_area_22" style="width:800px; height:600px;"></div><!--数据展现的容器1-->
+							</div>
+							<div class="tab-pane fade" id="pie_22">
+								<div id="pie_area_22" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="name_STOCK">
+					<div class="h jumbotron">
+						<ul id="nameTabSTOCK" class="breadcrumb">
+							<li class="active"><a href="#table_31" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
+							<li><a href="#bar_31" data-toggle="tab" id="bar_link_31" style="text-decoration:none;">柱状图</a></li>
+							<li><a href="#pie_31" data-toggle="tab" id="pie_link_31" style="text-decoration:none;">饼状图</a></li>
+						</ul>
+						<div id="nameTabContentSTOCK" class="tab-content">
+							<div class="tab-pane fade in active" id="table_31">
+        						<div style="height:25px">
+                                    <div style="display:inline;float:left;">
+                                        <i class="glyphicon glyphicon-stats"></i>&nbsp;股票打新总额：{{ amount_sum_STOCK|floatformat:0 }}元
+                                    </div>
+                                </div>
+								<div class="table-responsive">
+            						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                        <thead>
+                                            <tr>
+                                                <th>账户名称</th>
+                                                <th>金额（元）</th>
+                                                <th>百分比</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for i in name_content_STOCK %}
+                                            <tr>
+                                                <td>{{ i.0 }}</td>
+                                                <td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.2 }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                            <tr>
+                                                <td><b>合计</b></td>
+                                                <td style="text-align: right"><b>{{ amount_sum_STOCK|floatformat:0 }}</b></td>
+                                                <td style="text-align: right"><b>100.00%</b></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+							</div>
+							<div class="tab-pane fade" id="bar_31">
+								<div id="bar_area_31" style="width:800px; height:600px;"></div><!--数据展现的容器1-->
+							</div>
+							<div class="tab-pane fade" id="pie_31">
+								<div id="pie_area_31" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="name_BOND">
+					<div class="h jumbotron">
+						<ul id="nameTabBOND" class="breadcrumb">
+							<li class="active"><a href="#table_32" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
+							<li><a href="#bar_32" data-toggle="tab" id="bar_link_32" style="text-decoration:none;">柱状图</a></li>
+							<li><a href="#pie_32" data-toggle="tab" id="pie_link_32" style="text-decoration:none;">饼状图</a></li>
+						</ul>
+						<div id="nameTabContentBOND" class="tab-content">
+							<div class="tab-pane fade in active" id="table_32">
+                                <div style="height:25px">
+                                    <div style="display:inline;float:left;">
+                                        <i class="glyphicon glyphicon-stats"></i>&nbsp;可转债打新总额：{{ amount_sum_BOND|floatformat:0 }}港元
+                                    </div>
+                                </div>
+								<div class="table-responsive">
+                                    <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                        <thead>
+                                            <tr>
+                                                <th>账户名称</th>
+                                                <th>金额（元）</th>
+                                                <th>百分比</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for i in name_content_BOND %}
+                                            <tr>
+                                                <td>{{ i.0 }}</td>
+                                                <td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.2 }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                            <tr>
+                                                <td><b>合计</b></td>
+                                                <td style="text-align: right"><b>{{ amount_sum_BOND|floatformat:0 }}</b></td>
+                                                <td style="text-align: right"><b>100.00%</b></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+							</div>
+							<div class="tab-pane fade" id="bar_32">
+								<div id="bar_area_32" style="width:800px; height:600px;"></div><!--数据展现的容器1-->
+							</div>
+							<div class="tab-pane fade" id="pie_32">
+								<div id="pie_area_32" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+    </div>
+</div>
+<script>
+	bar_11 = echarts.init(document.getElementById('bar_area_11'), 'white', {renderer: 'canvas'});
+	pie_11 = echarts.init(document.getElementById('pie_area_11'), 'white', {renderer: 'canvas'});
+	bar_name_11 = JSON.parse('{{ name_array_11|safe }}');
+	bar_value_11 = {{ value_array_11|safe }};
+	pie_data_11 = get_pie_data(bar_name_11, bar_value_11);
+	document.getElementById('bar_link_11').onclick = function () { draw_bar(bar_11, bar_name_11, bar_value_11); }
+	document.getElementById('pie_link_11').onclick = function () { draw_pie(pie_11, pie_data_11); }
+
+	bar_12 = echarts.init(document.getElementById('bar_area_12'), 'white', {renderer: 'canvas'});
+	pie_12 = echarts.init(document.getElementById('pie_area_12'), 'white', {renderer: 'canvas'});
+	bar_name_12 = JSON.parse('{{ name_array_12|safe }}');
+	bar_value_12 = {{ value_array_12|safe }};
+	pie_data_12 = get_pie_data(bar_name_12, bar_value_12);
+	document.getElementById('bar_link_12').onclick = function () { draw_bar(bar_12, bar_name_12, bar_value_12); }
+	document.getElementById('pie_link_12').onclick = function () { draw_pie(pie_12, pie_data_12); }
+
+	bar_21 = echarts.init(document.getElementById('bar_area_21'), 'white', {renderer: 'canvas'});
+	pie_21 = echarts.init(document.getElementById('pie_area_21'), 'white', {renderer: 'canvas'});
+	bar_name_21 = JSON.parse('{{ name_array_21|safe }}');
+	bar_value_21 = {{ value_array_21|safe }};
+	pie_data_21 = get_pie_data(bar_name_21, bar_value_21);
+	document.getElementById('bar_link_21').onclick = function () { draw_bar(bar_21, bar_name_21, bar_value_21); }
+	document.getElementById('pie_link_21').onclick = function () { draw_pie(pie_21, pie_data_21); }
+
+	bar_22 = echarts.init(document.getElementById('bar_area_22'), 'white', {renderer: 'canvas'});
+	pie_22 = echarts.init(document.getElementById('pie_area_22'), 'white', {renderer: 'canvas'});
+	bar_name_22 = JSON.parse('{{ name_array_22|safe }}');
+	bar_value_22 = {{ value_array_22|safe }};
+	pie_data_22 = get_pie_data(bar_name_22, bar_value_22);
+	document.getElementById('bar_link_22').onclick = function () { draw_bar(bar_22, bar_name_22, bar_value_22); }
+	document.getElementById('pie_link_22').onclick = function () { draw_pie(pie_22, pie_data_22); }
+
+	bar_31 = echarts.init(document.getElementById('bar_area_31'), 'white', {renderer: 'canvas'});
+	pie_31 = echarts.init(document.getElementById('pie_area_31'), 'white', {renderer: 'canvas'});
+	bar_name_31 = JSON.parse('{{ name_array_31|safe }}');
+	bar_value_31 = {{ value_array_31|safe }};
+	pie_data_31 = get_pie_data(bar_name_31, bar_value_31);
+	document.getElementById('bar_link_31').onclick = function () { draw_bar(bar_31, bar_name_31, bar_value_31); }
+	document.getElementById('pie_link_31').onclick = function () { draw_pie(pie_31, pie_data_31); }
+
+	bar_32 = echarts.init(document.getElementById('bar_area_32'), 'white', {renderer: 'canvas'});
+	pie_32 = echarts.init(document.getElementById('pie_area_32'), 'white', {renderer: 'canvas'});
+	bar_name_32 = JSON.parse('{{ name_array_32|safe }}');
+	bar_value_32 = {{ value_array_32|safe }};
+	pie_data_32 = get_pie_data(bar_name_32, bar_value_32);
+	document.getElementById('bar_link_32').onclick = function () { draw_bar(bar_32, bar_name_32, bar_value_32); }
+	document.getElementById('pie_link_32').onclick = function () { draw_pie(pie_32, pie_data_32); }
+
+	function draw_bar(chart_bar, bar_name, bar_value) {
+		// 指定图表的配置项和数据
+		var option = {
+			title: {
+				text: ''
+			},
+			tooltip: {
+				trigger: "item",
+				formatter: "{a} <br/>{b} : {c}"
+			},
+			legend: {
+				data:['打新收益']
+			},
+			xAxis: {
+				data: bar_name,
+				axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+					show: true,
+					interval: 'auto',
+					rotate: -35,
+					margin: 8,
+					// formatter: null,
+					textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+						color: '#333'
+					}
+				}
+			},
+			yAxis: {},
+			series: [{
+				name: '打新收益',
+				type: 'bar',
+				data: bar_value
+			}]
+		};
+		// 使用刚指定的配置项和数据显示图表。
+		chart_bar.setOption(option);
+	}
+
+	function draw_pie(chart_pie, pie_data) {
+		var option = {
+			//backgroundColor: "#2c343c",
+			// 标题的一些配置参数
+			title: {
+				text: "",
+				left: "center",
+				top: 10,
+				/*
+				textStyle: {
+					color: "pink"
+				}
+				*/
+			},
+			//鼠标点击出现的文字
+			tooltip: {
+				trigger: "item",
+				formatter: "{a} <br/>{b} : {c} ({d}%)"
+			},
+			//视觉映射器
+			/*
+			visualMap: {
+				show: false,
+				min: 20,
+				max: 600,
+				inRange: {
+					colorLightness: [0, 1]
+				}
+			},
+			*/
+			legend: {
+				right: "2%",
+				top: "5%",
+				orient: "vertical",    // 图例列表水平布局
+				/*
+				show: true,              // 显示图例
+				left: "75%",             // 图例组件离容器左侧的距离
+				top: 10,                 // 图例组件离容器上侧的距离
+				right: "15%",            // 图例组件离容器右侧的距离
+				bottom: 30,              // 图例组件离容器下侧的距离
+				width: "50%",            // 图例组件的宽度
+				height: 10,              // 图例组件的高度
+				itemGap: 15,             // 图例每项之间的间隔
+				itemWidth: 10,           // 图例标记的图形宽度
+				itemHeight: 15,          // 图例标记的图形高度
+				textStyle: {             // 图例文本样式
+				  color: "rgba(239, 15, 15, 1)",
+				  fontStyle: "italic",
+				  fontWeight: "bold",
+				  fontFamily: "serif",
+				  fontSize: 15
+				},
+				icon: "circle"     // 图例项的 icon
+				*/
+			},
+			//表格数据
+			series: [{
+				name: "打新收益",
+				type: "pie",
+				//radius: "55%", //饼图弧度大小
+				radius: ["30%", "75%"],
+				center: ["40%", "50%"], //饼图位置
+				data: pie_data,
+					/*
+					[
+						{ value: 335, name: "直接访问" },
+						{ value: 310, name: "邮件营销" },
+						{ value: 274, name: "联盟广告" },
+						{ value: 235, name: "视频广告" },
+						{ value: 400, name: "搜索引擎" }
+					].sort(function(a, b) {
+						return a.value - b.value;
+					}),
+					*/
+				//roseType: "radius",
+				//roseType: "area",
+				// 标注字的的颜色
+				/*
+				label: {
+					normal: {
+						textStyle: {
+							color: "rgba(255, 255, 255, 0.3)"
+						}
+					}
+				},
+				*/
+				// 指示线的颜色
+				/*
+				labelLine: {
+					normal: {
+						lineStyle: {
+							color: "rgba(255, 255, 255, 0.3)"
+						},
+						smooth: 0.2,
+						length: 10,
+						length2: 20
+					}
+				},
+				itemStyle: {
+					normal: {
+						color: "#c23531",
+						shadowBlur: 200,
+						shadowColor: "rgba(0, 0, 0, 0.5)"
+					}
+				},
+				*/
+				animationType: "scale",
+				animationEasing: "elasticOut",
+				animationDelay: function(idx) {
+					return Math.random() * 200;
+				}
+			}]
+		}
+		chart_pie.setOption(option);
+	}
+
+	function get_pie_data(name_array, value_array) {
+		var pie_data = [];
+		for(i = 0; i < name_array.length; i++){
+			pie_data.push(
+				{
+				   value: value_array[i],
+				   name: name_array[i]
+				}
+			);
+		};
+		return pie_data;
+	}
+</script>
+{% endblock %}
+
+<!-- 以下block块给样式类赋值，class="active"//-->
+{% block subscriptioncls %}
+active
+{% endblock %}

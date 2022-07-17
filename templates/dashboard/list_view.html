@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+{% load static %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">交易列表</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="dataTable" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                    <thead class="bg-gradient-secondary text-gray-100">
+                        <tr>
+                            <th>日期</th>
+                            <th>股票/代码</th>
+                            <th>类型</th>
+                            <th>价格</th>
+                            <th>数量</th>
+                            <th>金额</th>
+                            <th>结算货币</th>
+                            <th>证券账户</th>
+                            <th>修改时间</th>
+                            <th>操作</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!--#trade_list即为视图函数list_trade中render传入参数//-->
+                        {% for trade in trade_list %}
+                            <tr>
+                                <td>{{ trade.trade_date|date:'Y-m-d' }}</td>
+                                <td>{{ trade.stock.stock_name }}({{ trade.stock.stock_code }})</td>
+                                <td>{{ trade.get_trade_type_display }}</td>
+                                <td>{{ trade.trade_price }}</td>
+                                <td>{{ trade.trade_quantity }}</td>
+                                <!-- 模板变量的乘法需要使用widthratio // -->
+                                <td>{% widthratio trade.trade_price 1 trade.trade_quantity %}</td>
+                                <td>{{ trade.get_settlement_currency_display }}</td>
+                                <td>{{ trade.account.account_abbreviation }}</td>
+                                <!--<td style="vertical-align: middle;">{{ trade.created_time }}</td>-->
+                                <td>{{ trade.modified_time|date:'Y-m-d H:i' }}</td>
+                                <td>
+                                    <a href="/benben/del_trade/{{ trade.id }}/" class="btn btn-default btn-sm">
+                                        删除
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="/benben/edit_trade/{{ trade.id }}/" class="btn btn-default btn-sm">
+                                        修改
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4">无相关记录！</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+{% extends 'console\\stats\base_stats.html' %}
+
+{% block page_content %}
+<div class="panel panel-default">
+    <div class="panel-heading">
+		<p class="panel-title">
+			<i class="glyphicon glyphicon-stats"></i>&nbsp;市值统计
+		</p>
+    </div>
+    <div class="panel-body">
+		<div class="col-md-12 col-md-offset-0">
+			<ul id="statisticsTab" class="nav nav-tabs">
+				<li class="dropdown active">
+					<a href="#" id="stockTabDrop" class="dropdown-toggle" data-toggle="dropdown">股票
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu" role="menu" aria-labelledby="stockTbDrop">
+						<li><a href="#stock_CNY" tabindex="-1" data-toggle="tab">人民币</a></li>
+						<li><a href="#stock_HKD" tabindex="-1" data-toggle="tab">港元</a></li>
+						<li><a href="#stock_USD" tabindex="-1" data-toggle="tab">美元</a></li>
+					</ul>
+				</li>
+				<li class="dropdown">
+					<a href="#" id="industryTabDrop" class="dropdown-toggle" data-toggle="dropdown">行业
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu" role="menu" aria-labelledby="industryTbDrop">
+						<li><a href="#industry_CNY" tabindex="-1" data-toggle="tab">人民币</a></li>
+						<li><a href="#industry_HKD" tabindex="-1" data-toggle="tab">港元</a></li>
+						<li><a href="#industry_USD" tabindex="-1" data-toggle="tab">美元</a></li>
+					</ul>
+				</li>
+				<li class="dropdown">
+					<a href="#" id="marketTabDrop" class="dropdown-toggle" data-toggle="dropdown">市场
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu" role="menu" aria-labelledby="marketTbDrop">
+						<li><a href="#market_CNY" tabindex="-1" data-toggle="tab">人民币</a></li>
+						<li><a href="#market_HKD" tabindex="-1" data-toggle="tab">港元</a></li>
+						<li><a href="#market_USD" tabindex="-1" data-toggle="tab">美元</a></li>
+					</ul>
+				</li>
+				<li class="dropdown">
+					<a href="#" id="accountTabDrop" class="dropdown-toggle" data-toggle="dropdown">账户
+						<b class="caret"></b>
+					</a>
+					<ul class="dropdown-menu" role="menu" aria-labelledby="accountTbDrop">
+						<li><a href="#account_CNY" tabindex="-1" data-toggle="tab">人民币</a></li>
+						<li><a href="#account_HKD" tabindex="-1" data-toggle="tab">港元</a></li>
+						<li><a href="#account_USD" tabindex="-1" data-toggle="tab">美元</a></li>
+					</ul>
+				</li>
+			</ul>
+			<div id="statisticsTabContent" class="tab-content">
+				<div class="tab-pane fade in active" id="stock_CNY">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;人民币市值：{{ amount_sum_CNY|floatformat:0 }}元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<div class="table-responsive">
+							<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+								<thead>
+									<tr>
+										<th>股票/代码</th>
+										<th>价格（元）</th>
+										<th>涨跌幅</th>
+										<th>持仓数量（股）</th>
+										<th>金额（元）</th>
+										<th>百分比</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for i in stock_content_CNY %}
+									<tr>
+										<td>{{ i.0 }}</td>
+										<td style="text-align: right">{{ i.1|floatformat:3 }}</td>
+										<td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+										<td style="text-align: right">{{ i.4|floatformat:0 }}</td>
+										<td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+										<td style="text-align: right">{{ i.6 }}</td>
+									</tr>
+									{% endfor %}
+									<tr>
+										<td><b>合计</b></td>
+										<td></td>
+										<td></td>
+										<td></td>
+										<td style="text-align: right"><b>{{ amount_sum_CNY|floatformat:0 }}</b></td>
+										<td style="text-align: right"><b>100.00%</b></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="stock_HKD">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;港元市值：{{ amount_sum_HKD|floatformat:0 }}元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<div class="table-responsive">
+							<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+								<thead>
+									<tr>
+										<th>股票/代码</th>
+										<th>价格（元）</th>
+										<th>涨跌幅</th>
+										<th>持仓数量（股）</th>
+										<th>金额（港元）</th>
+										<th>百分比</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for i in stock_content_HKD %}
+									<tr>
+										<td>{{ i.0 }}</td>
+										<td style="text-align: right">{{ i.1|floatformat:3 }}</td>
+										<td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+										<td style="text-align: right">{{ i.4|floatformat:0 }}</td>
+										<td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+										<td style="text-align: right">{{ i.6 }}</td>
+									</tr>
+									{% endfor %}
+									<tr>
+										<td><b>合计</b></td>
+										<td></td>
+										<td></td>
+										<td></td>
+										<td style="text-align: right"><b>{{ amount_sum_HKD|floatformat:0 }}</b></td>
+										<td style="text-align: right"><b>100.00%</b></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="stock_USD">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;美元市值：{{ amount_sum_USD|floatformat:0 }}元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<div class="table-responsive">
+							<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+								<thead>
+									<tr>
+										<th>股票/代码</th>
+										<th>价格（元）</th>
+										<th>涨跌幅</th>
+										<th>持仓数量（股）</th>
+										<th>金额（美元）</th>
+										<th>百分比</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for i in stock_content_USD %}
+									<tr>
+										<td>{{ i.0 }}</td>
+										<td style="text-align: right">{{ i.1|floatformat:3 }}</td>
+										<td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+										<td style="text-align: right">{{ i.4|floatformat:0 }}</td>
+										<td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+										<td style="text-align: right">{{ i.6 }}</td>
+									</tr>
+									{% endfor %}
+									<tr>
+										<td><b>合计</b></td>
+										<td></td>
+										<td></td>
+										<td></td>
+										<td style="text-align: right"><b>{{ amount_sum_USD|floatformat:0 }}</b></td>
+										<td style="text-align: right"><b>100.00%</b></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="industry_CNY">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;人民币市值：{{ amount_sum_CNY|floatformat:0 }}元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+							<thead>
+								<tr>
+									<th>行业名称</th>
+									<th>金额（元）</th>
+									<th>百分比</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for i in industry_content_CNY %}
+								<tr>
+									<td>{{ i.0 }}</td>
+									<td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+									<td style="text-align: right">{{ i.2 }}</td>
+								</tr>
+								{% endfor %}
+								<tr>
+									<td><b>合计</b></td>
+									<td style="text-align: right"><b>{{ amount_sum_CNY|floatformat:0 }}</b></td>
+									<td style="text-align: right"><b>100.00%</b></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="industry_HKD">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;港元市值：{{ amount_sum_HKD|floatformat:0 }}元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+							<thead>
+								<tr>
+									<th>行业名称</th>
+									<th>金额（港元）</th>
+									<th>百分比</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for i in industry_content_HKD %}
+								<tr>
+									<td>{{ i.0 }}</td>
+									<td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+									<td style="text-align: right">{{ i.2 }}</td>
+								</tr>
+								{% endfor %}
+								<tr>
+									<td><b>合计</b></td>
+									<td style="text-align: right"><b>{{ amount_sum_HKD|floatformat:0 }}</b></td>
+									<td style="text-align: right"><b>100.00%</b></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="industry_USD">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;美元市值：{{ amount_sum_USD|floatformat:0 }}元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+							<thead>
+								<tr>
+									<th>行业名称</th>
+									<th>金额（美元）</th>
+									<th>百分比</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for i in industry_content_USD %}
+								<tr>
+									<td>{{ i.0 }}</td>
+									<td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+									<td style="text-align: right">{{ i.2 }}</td>
+								</tr>
+								{% endfor %}
+								<tr>
+									<td><b>合计</b></td>
+									<td style="text-align: right"><b>{{ amount_sum_USD|floatformat:0 }}</b></td>
+									<td style="text-align: right"><b>100.00%</b></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="market_CNY">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;人民币市值：{{ amount_sum_CNY|floatformat:0 }}元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+							<thead>
+								<tr>
+									<th>市场名称</th>
+									<th>金额（元）</th>
+									<th>百分比</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for i in market_content_CNY %}
+								<tr>
+									<td>{{ i.0 }}</td>
+									<td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+									<td style="text-align: right">{{ i.2 }}</td>
+								</tr>
+								{% endfor %}
+								<tr>
+									<td><b>合计</b></td>
+									<td style="text-align: right"><b>{{ amount_sum_CNY|floatformat:0 }}</b></td>
+									<td style="text-align: right"><b>100.00%</b></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="market_HKD">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;港元市值：{{ amount_sum_HKD|floatformat:0 }}元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+							<thead>
+								<tr>
+									<th>市场名称</th>
+									<th>金额（港元）</th>
+									<th>百分比</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for i in market_content_HKD %}
+								<tr>
+									<td>{{ i.0 }}</td>
+									<td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+									<td style="text-align: right">{{ i.2 }}</td>
+								</tr>
+								{% endfor %}
+								<tr>
+									<td><b>合计</b></td>
+									<td style="text-align: right"><b>{{ amount_sum_HKD|floatformat:0 }}</b></td>
+									<td style="text-align: right"><b>100.00%</b></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="market_USD">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;美元市值：{{ amount_sum_USD|floatformat:0 }}元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+							<thead>
+								<tr>
+									<th>市场名称</th>
+									<th>金额（美元）</th>
+									<th>百分比</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for i in market_content_USD %}
+								<tr>
+									<td>{{ i.0 }}</td>
+									<td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+									<td style="text-align: right">{{ i.2 }}</td>
+								</tr>
+								{% endfor %}
+								<tr>
+									<td><b>合计</b></td>
+									<td style="text-align: right"><b>{{ amount_sum_USD|floatformat:0 }}</b></td>
+									<td style="text-align: right"><b>100.00%</b></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="account_CNY">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;人民币市值：{{ amount_sum_CNY|floatformat:0 }}元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+							<thead>
+								<tr>
+									<th>证券账号</th>
+									<th>金额（元）</th>
+									<th>百分比</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for i in account_content_CNY %}
+								<tr>
+									<td>{{ i.0 }}</td>
+									<td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+									<td style="text-align: right">{{ i.2 }}</td>
+								</tr>
+								{% endfor %}
+								<tr>
+									<td><b>合计</b></td>
+									<td style="text-align: right"><b>{{ amount_sum_CNY|floatformat:0 }}</b></td>
+									<td style="text-align: right"><b>100.00%</b></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="account_HKD">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;港元市值：{{ amount_sum_HKD|floatformat:0 }}港元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+							<thead>
+								<tr>
+									<th>证券账号</th>
+									<th>金额（港元）</th>
+									<th>百分比</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for i in account_content_HKD %}
+								<tr>
+									<td>{{ i.0 }}</td>
+									<td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+									<td style="text-align: right">{{ i.2 }}</td>
+								</tr>
+								{% endfor %}
+								<tr>
+									<td><b>合计</b></td>
+									<td style="text-align: right"><b>{{ amount_sum_HKD|floatformat:0 }}</b></td>
+									<td style="text-align: right"><b>100.00%</b></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="account_USD">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;美元市值：{{ amount_sum_USD|floatformat:0 }}美元
+							</div>
+							<div style="display:inline;float:right;">
+								港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+							</div>
+						</div>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+							<thead>
+								<tr>
+									<th>证券账号</th>
+									<th>金额（美元）</th>
+									<th>百分比</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for i in account_content_USD %}
+								<tr>
+									<td>{{ i.0 }}</td>
+									<td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+									<td style="text-align: right">{{ i.2 }}</td>
+								</tr>
+								{% endfor %}
+								<tr>
+									<td><b>合计</b></td>
+									<td style="text-align: right"><b>{{ amount_sum_USD|floatformat:0 }}</b></td>
+									<td style="text-align: right"><b>100.00%</b></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- 以下block块给样式类赋值，class="active"//-->
+{% block valuecls %}
+active
+{% endblock %}
+

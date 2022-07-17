@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+{% load static %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <div class="d-sm-flex align-items-center justify-content-between mb-0">
+                <h1 class="h4 mb-0 text-gray-800">市场列表</h1>
+                <a href="/benben/add_market/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                    <i class="fa fa-plus fa-sm text-white-50"></i> 增加
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="dataTable" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                    <thead class="bg-gradient-secondary text-gray-100">
+                        <tr>
+                            <th>市场名称</th>
+                            <th>简称</th>
+                            <th>交易货币</th>
+                            <th>货币汇率</th>
+                            <th>汇率获取时间</th>
+                            <th>操作</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!--#trade_list即为视图函数list_trade中render传入参数//-->
+                        {% for market in market_list %}
+                            <tr>
+                                <td>{{ market.market_name }}</td>
+                                <td>{{ market.market_abbreviation }}</td>
+                                <!-- 用get_属性_display来显示包含choice参数的字段值 // -->
+                                <td>{{ market.get_transaction_currency_display }}</td>
+                                <td>{{ market.exchange_rate }}</td>
+                                <td>{{ market.modified_time|date:'Y-m-d H:i' }}</td>
+                                <td>
+                                    <a href="/benben/del_market/{{ market.id }}/" class="btn btn-default btn-sm">
+                                        删除
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="/benben/edit_market/{{ market.id }}/" class="btn btn-default btn-sm">
+                                        修改
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4">无相关记录！</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

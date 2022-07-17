@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+{% extends 'console\\stats\base_stats.html' %}
+
+{% block page_content %}
+交易统计页面
+
+<div class="h jumbotron">
+    <div style="height:25px">
+        <div style="display:inline;float:left;">
+            <i class="glyphicon glyphicon-stats"></i>&nbsp;银河1
+        </div>
+        <div style="display:inline;float:right;">
+            港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+            <thead>
+                <tr>
+                    <th>交易日期</th>
+                    <th>账户</th>
+                    <th>股票/代码</th>
+                    <th>价格（元）</th>
+                    <th>数量</th>
+                    <th>交易金额</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trade in trade_array %}
+                <tr>
+                    <td>{{ trade.0|date:'Y-m-d' }}</td>
+                    <td>{{ trade.1 }}</td>
+                    <td>{{ trade.2 }}（{{ trade.3 }}）</td>
+                    <td style="text-align: right">{{ trade.4|floatformat:3 }}</td>
+                    <td style="text-align: right">{{ trade.5|floatformat:0 }}</td>
+                    <td style="text-align: right">{{ trade.6|floatformat:0 }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td><b>合计</b></td>
+                    <td></td>
+                    <td></td>
+                    <td style="text-align: right"><b>{{ price_avg|floatformat:3 }}</b></td>
+                    <td style="text-align: right"><b>{{ quantity_sum|floatformat:0 }}</b></td>
+                    <td style="text-align: right"><b>{{ amount_sum|floatformat:0 }}</b></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+总成本：{{ amount_sum|floatformat:0 }}<br>
+总股数：{{ quantity_sum|floatformat:0 }}<br>
+持仓成本：{{ price_avg|floatformat:3 }}<br>
+当前价格：{{ price|floatformat:3 }}<br>
+账面利润：{{ profit|floatformat:0 }}<br>
+账面利润率：{{ profit_margin|floatformat:2 }}%<br>
+{% endblock %}
+
+<!-- 以下block块给样式类赋值，class="active"//-->
+{% block tradecls %}
+active
+{% endblock %}
+

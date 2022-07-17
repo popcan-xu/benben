@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+{% extends 'console\\stats\base_stats.html' %}
+
+{% block page_content %}
+<div class="panel panel-default">
+    <div class="panel-heading">
+		<p class="panel-title">
+			<i class="glyphicon glyphicon-stats"></i>&nbsp;仓位统计
+		</p>
+    </div>
+    <div class="panel-body">
+		<div class="col-md-12 col-md-offset-0">
+			<ul id="statisticsTab" class="nav nav-tabs">
+				<li class="active"><a href="#CNY" data-toggle="tab">人民币</a></li>
+				<li><a href="#HKD" data-toggle="tab">港元</a></li>
+				<li><a href="#USD" data-toggle="tab">美元</a></li>
+			</ul>
+			<div id="statisticsTabContent" class="tab-content">
+				<div class="tab-pane fade in active" id="CNY">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;证券账户：{{ account_num_CNY }}个，持有股票：{{ stock_num_CNY }}支
+							</div>
+						</div>
+						<div class="table-responsive">
+							<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+								<thead>
+									<tr>
+										<th>股票/代码</th>
+										{% for abbreviation in abbreviation_array_CNY %}
+										<th>{{ abbreviation }}</th>
+										{% endfor %}
+										<th>小计</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for content in position_content_CNY %}
+									<tr>
+										<td>{{ content.0 }}</td>
+										{% for i in cols_CNY %}
+										<!-- #调用views.py中注册的get_index函数定位模板中的列表，通过"list|get_index:i|get_index:j"来访问list[i][j]的值 -->
+										<td style="text-align: right">{{ content|get_index:i }}</td>
+										{% endfor %}
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="HKD">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;证券账户：{{ account_num_HKD }}个，持有股票：{{ stock_num_HKD }}支
+							</div>
+						</div>
+						<div class="table-responsive">
+							<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+								<thead>
+									<tr>
+										<th>股票/代码</th>
+										{% for abbreviation in abbreviation_array_HKD %}
+										<th>{{ abbreviation }}</th>
+										{% endfor %}
+										<th>小计</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for content in position_content_HKD %}
+									<tr>
+										<td>{{ content.0 }}</td>
+										{% for i in cols_HKD %}
+										<!-- #调用views.py中注册的get_index函数定位模板中的列表，通过"list|get_index:i|get_index:j"来访问list[i][j]的值 -->
+										<td style="text-align: right">{{ content|get_index:i }}</td>
+										{% endfor %}
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="USD">
+					<div class="h jumbotron">
+						<div style="height:25px">
+							<div style="display:inline;float:left;">
+								<i class="glyphicon glyphicon-stats"></i>&nbsp;证券账户：{{ account_num_USD }}个，持有股票：{{ stock_num_USD }}支
+							</div>
+						</div>
+						<div class="table-responsive">
+							<table class="table table-bordered table-condensed table-striped table-hover list_tab">
+								<thead>
+									<tr>
+										<th>股票/代码</th>
+										{% for abbreviation in abbreviation_array_USD %}
+										<th>{{ abbreviation }}</th>
+										{% endfor %}
+										<th>小计</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for content in position_content_USD %}
+									<tr>
+										<td>{{ content.0 }}</td>
+										{% for i in cols_USD %}
+										<!-- #调用views.py中注册的get_index函数定位模板中的列表，通过"list|get_index:i|get_index:j"来访问list[i][j]的值 -->
+										<td style="text-align: right">{{ content|get_index:i }}</td>
+										{% endfor %}
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- 以下block块给样式类赋值，class="active"//-->
+{% block positioncls %}
+active
+{% endblock %}
+

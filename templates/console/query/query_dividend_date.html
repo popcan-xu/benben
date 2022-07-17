@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+{% extends 'console\\query\base_query.html' %}
+
+{% block page_content %}
+<!--
+{{ stock_dividend_dict }}
+{% now "U" %}
+-->
+<div class="panel panel-default">
+    <!--这里加标题 //-->
+    <div class="panel-heading">
+		<p class="panel-title">
+			<i class="glyphicon glyphicon-stats"></i> 分红数据查询
+		</p>
+    </div>
+    <!--将表格放在这个<div class="panel-body">的标签中 //-->
+    <div class="panel-body">
+		<div class="col-md-12 col-md-offset-0">
+			<ul id="importTab" class="nav nav-tabs">
+				<li class="active"><a href="#dividend_date" data-toggle="tab">分红日期</a></li>
+				<li><a href="#position_dividend_date" data-toggle="tab">持仓股票分红日期</a></li>
+				<li><a href="#current_year_dividend" data-toggle="tab">当年已分红股票</a></li>
+				<li><a href="#current_year_no_dividend" data-toggle="tab">当年未分红股票</a></li>
+			</ul>
+			<div id="importTabContent" class="tab-content">
+				<div class="tab-pane fade in active" id="dividend_date">
+					<div class="h jumbotron">
+						<h5>分红日期</h5>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+							<thead>
+								<tr>
+									<th>股票/代码</th>
+									<th>上次分红日期</th>
+									<th>下次分红日期</th>
+								</tr>
+							</thead>
+							<tbody>
+								<!--#account_list即为视图函数list_account中render传入参数//-->
+								{% for stock in stock_list %}
+									<tr>
+										<td style="vertical-align: middle;">{{ stock.stock_name }}({{ stock.stock_code }})</td>
+										<td style="vertical-align: middle;">{{ stock.last_dividend_date|date:'Y-m-d' }}</td>
+										<td style="vertical-align: middle;">{{ stock.next_dividend_date|date:'Y-m-d' }}</td>
+									</tr>
+								{% empty %}
+									<tr>
+										<td colspan="3">无相关记录！</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+						<p>共用{{ account_count }}个账户</p>
+						<p><a class="btn btn-primary btn-lg" href="#" role="button">确定</a></p>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="position_dividend_date">
+					<div class="h jumbotron">
+						<h5>持仓股票分红日期</h5>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+							<thead>
+								<tr>
+									<th>股票/代码</th>
+									<th>上次分红日期</th>
+									<th>下次分红日期</th>
+								</tr>
+							</thead>
+							<tbody>
+								<!--#account_list即为视图函数list_account中render传入参数//-->
+								{% for i in position_stock_list %}
+									<tr>
+										<td style="vertical-align: middle;">{{ i.stock_name }}({{ i.stock_code }})</td>
+										<td style="vertical-align: middle;">{{ i.last_dividend_date|date:'Y-m-d' }}</td>
+										<td style="vertical-align: middle;">{{ i.next_dividend_date|date:'Y-m-d' }}</td>
+									</tr>
+								{% empty %}
+									<tr>
+										<td colspan="3">无相关记录！</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+						<p>共用{{ account_count }}个账户</p>
+						<p><a class="btn btn-primary btn-lg" href="#" role="button">确定</a></p>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="current_year_dividend">
+					<div class="h jumbotron">
+						<h5>当年已分红股票</h5>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+							<thead>
+								<tr>
+									<th>股票/代码</th>
+									<th>上次分红日期</th>
+									<th>下次分红日期</th>
+								</tr>
+							</thead>
+							<tbody>
+								<!--#account_list即为视图函数list_account中render传入参数//-->
+								{% for i in current_year_dividend_list %}
+									<tr>
+										<td style="vertical-align: middle;">{{ i.stock_name }}({{ i.stock_code }})</td>
+										<td style="vertical-align: middle;">{{ i.last_dividend_date|date:'Y-m-d' }}</td>
+										<td style="vertical-align: middle;">{{ i.next_dividend_date|date:'Y-m-d' }}</td>
+									</tr>
+								{% empty %}
+									<tr>
+										<td colspan="3">无相关记录！</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+						<p>共用{{ account_count }}个账户</p>
+						<p><a class="btn btn-primary btn-lg" href="#" role="button">确定</a></p>
+					</div>
+				</div>
+				<div class="tab-pane fade" id="current_year_no_dividend">
+					<div class="h jumbotron">
+						<h5>当年已分红股票</h5>
+						<table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+							<thead>
+								<tr>
+									<th>股票/代码</th>
+									<th>上次分红日期</th>
+									<th>下次分红日期</th>
+								</tr>
+							</thead>
+							<tbody>
+								<!--#account_list即为视图函数list_account中render传入参数//-->
+								{% for i in current_year_no_dividend_list %}
+									<tr>
+										<td style="vertical-align: middle;">{{ i.stock_name }}({{ i.stock_code }})</td>
+										<td style="vertical-align: middle;">{{ i.last_dividend_date|date:'Y-m-d' }}</td>
+										<td style="vertical-align: middle;">{{ i.next_dividend_date|date:'Y-m-d' }}</td>
+									</tr>
+								{% empty %}
+									<tr>
+										<td colspan="3">无相关记录！</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+						<p>共用{{ account_count }}个账户</p>
+						<p><a class="btn btn-primary btn-lg" href="#" role="button">确定</a></p>
+					</div>
+				</div>
+			</div>
+			{% if messages %}
+				<script>
+					{% for msg in messages %}
+						alert('{{ msg.message }}');
+					{% endfor %}
+				</script>
+			{% endif %}
+		</div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- 以下block块给样式类赋值，class="active"//-->
+{% block dividend_date_cls %}
+active
+{% endblock %}

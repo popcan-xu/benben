@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="zh-CN">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+        <meta name="description" content="">
+        <meta name="author" content="">
+        <title>模板样例</title>
+        <style type="text/css">
+            #main-nav {
+            margin-left: 1px;
+            }
+            #main-nav.nav-tabs.nav-stacked > li > a {
+            padding: 10px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #4A515B;
+            background: #E9E9E9;
+            background: -moz-linear-gradient(top, #FAFAFA 0%, #E9E9E9 100%);
+            background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#FAFAFA), color-stop(100%,#E9E9E9));
+            background: -webkit-linear-gradient(top, #FAFAFA 0%,#E9E9E9 100%);
+            background: -o-linear-gradient(top, #FAFAFA 0%,#E9E9E9 100%);
+            background: -ms-linear-gradient(top, #FAFAFA 0%,#E9E9E9 100%);
+            background: linear-gradient(top, #FAFAFA 0%,#E9E9E9 100%);
+            filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#FAFAFA', endColorstr='#E9E9E9');
+            -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#FAFAFA', endColorstr='#E9E9E9')";
+            border: 1px solid #D5D5D5;
+            border-radius: 4px;
+            }
+            #main-nav.nav-tabs.nav-stacked > li > a > span {
+            color: #4A515B;
+            }
+            #main-nav.nav-tabs.nav-stacked > li.active > a, #main-nav.nav-tabs.nav-stacked > li > a:hover {
+            color: #FFF;
+            background: #3C4049;
+            background: -moz-linear-gradient(top, #4A515B 0%, #3C4049 100%);
+            background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#4A515B), color-stop(100%,#3C4049));
+            background: -webkit-linear-gradient(top, #4A515B 0%,#3C4049 100%);
+            background: -o-linear-gradient(top, #4A515B 0%,#3C4049 100%);
+            background: -ms-linear-gradient(top, #4A515B 0%,#3C4049 100%);
+            background: linear-gradient(top, #4A515B 0%,#3C4049 100%);
+            filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#4A515B', endColorstr='#3C4049');
+            -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#4A515B', endColorstr='#3C4049')";
+            border-color: #2B2E33;
+            }
+            #main-nav.nav-tabs.nav-stacked > li.active > a, #main-nav.nav-tabs.nav-stacked > li > a:hover > span {
+            color: #FFF;
+            }
+            #main-nav.nav-tabs.nav-stacked > li {
+            margin-bottom: 4px;
+            }
+            /*定义二级菜单样式*/
+            .secondmenu a {
+            font-size: 12px;
+            color: #4A515B;
+            text-align: center;
+            }
+            .secondmenu li.active {
+            background-color: #eee;
+            border-color: #428bca;
+            }
+            .navbar-static-top {
+            background-color: #212121;
+            margin-bottom: 5px;
+            }
+            .navbar-brand {
+            background: url('') no-repeat 10px 8px;
+            display: inline-block;
+            vertical-align: middle;
+            padding-left: 50px;
+            color: #fff;
+            }
+
+            /*控制菜单箭头*/
+            .nav-header.collapsed > span.glyphicon-chevron-toggle:before {
+            content: "\e114";
+            }
+            .nav-header > span.glyphicon-chevron-toggle:before {
+            content: "\e113";
+            }
+        </style>
+        <!--<link rel="stylesheet" type="text/css" href="base.css">-->
+        <!-- Bootstrap core CSS -->
+        <link href="{% static 'favicon.ico'　%}" rel="icon"　>
+        <link href="https://cdn.jsdelivr.net/npm/@bootcss/v3.bootcss.com@1.0.4/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/@bootcss/v3.bootcss.com@1.0.4/examples/dashboard/dashboard.css" rel="stylesheet">
+        <link href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet">
+
+
+        <!-- Custom styles for this template
+        <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'fontawesome/css/font-awesome.min.css' %}" rel="stylesheet">
+        -->
+        <!-- 调用本地dashbord.css文件，就显示错位？？
+        <link href="{% static 'dashboard.css' %}" rel="stylesheet">
+        <link href="/static/dashboard.css" rel="stylesheet">
+        -->
+        <!-- layUI core CSS
+        <link rel="stylesheet" href="{% static 'layui/css/layui.css' %}">
+        <link rel="stylesheet" href="//unpkg.com/layui@2.6.6/dist/css/layui.css">
+        -->
+    </head>
+    <body>
+        {% include 'header.html' %}
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-3 col-md-2 sidebar">
+                    <ul id="main-nav" class="nav nav-tabs nav-stacked" style="">
+                        <li><a href="/benben/index/"><i class="glyphicon glyphicon-th-large"></i> 首页</a></li>
+                        <li>
+                            <a href="#systemSetting" class="nav-header collapsed" data-toggle="collapse">
+                                <i class="glyphicon glyphicon-cog"></i>
+                                后台管理
+                                <span class="pull-right glyphicon glyphicon-chevron-toggle"></span>
+                            </a>
+                            <ul id="systemSetting" class="nav nav-list collapse secondmenu" style="height: 0px;">
+                                <li><a href="/benben/list_broker/"><i class="glyphicon glyphicon-user"></i>&nbsp;券商</a></li>
+                                <li><a href="/benben/list_market/"><i class="glyphicon glyphicon-th-list"></i>&nbsp;市场</a></li>
+                                <li><a href="/benben/list_account/"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;账户</a></li>
+                                <li><a href="/benben/list_industry/"><i class="glyphicon glyphicon-edit"></i>&nbsp;行业</a></li>
+                                <li><a href="/benben/list_stock/"><i class="glyphicon glyphicon-edit"></i>&nbsp;股票</a></li>
+                                <li><a href="/benben/list_position/"><i class="glyphicon glyphicon-edit"></i>&nbsp;仓位</a></li>
+                                <li><a href="/benben/list_trade/"><i class="glyphicon glyphicon-edit"></i>&nbsp;交易</a></li>
+                                <!--<li class="{% block brokercls %}{% endblock %}"><a href="/benben/list_broker/">券商</a></li>-->
+                            </ul>
+                        </li>
+                        <li><a href="/benben/batch_import/"><i class="glyphicon glyphicon-credit-card"></i> 批量导入</a></li>
+                        <li><a href="/benben/list_position/"><i class="glyphicon glyphicon-globe"></i> 仓位统计<span class="label label-warning pull-right">5</span></a></li>
+                        <li><a href="/benben/list_trade/"><i class="glyphicon glyphicon-calendar"></i> 交易统计</a></li>
+                        <li><a href="#"><i class="glyphicon glyphicon-fire"></i> 关于系统</a></li>
+                    </ul>
+                </div>
+                <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                {# 这个block块写继承页面个性的内容，即不同于母板的内容 #}
+                {% block page_content %}
+                {% endblock %}
+                </div>
+            </div>
+        </div>
+        <!--
+        <script type="text/javascript">
+            $(document).ready(function(){
+                var location = window.location.href;
+                var id = location.substring(location.lastIndexOf('/')+1);
+                $("#"+id).addClass("active");
+            });
+        </script>
+        -->
+        <script src="//cdn.bootcss.com/jquery/1.12.3/jquery.min.js"></script>
+        <script src="//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <!--
+        <script src="{% static 'jquery-3.4.1.min.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap.min.js'%}"></script>
+        -->
+        <!-- 引入 layui.js -->
+        <!--
+        <script src="//unpkg.com/layui@2.6.6/dist/layui.js">
+        -->
+
+    </body>
+</html>

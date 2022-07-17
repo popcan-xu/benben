@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+{% extends 'console\\input\base_input.html' %}
+
+{% block page_content %}
+<div class="panel panel-primary">
+    <!--这里加标题 //-->
+    <div class="panel-heading">
+        <h3 class="panel-title">增加交易（同步更新仓位）</h3>
+    </div>
+    <!--将表格放在这个<div class="panel-body">的标签中 //-->
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+                <!--通过class="form-horizontal"设置form为bootstrap form样式-->
+                <form action="" method="post" class="form-horizontal">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="account_name" class="col-md-4 control-label">证券账户：</label>
+                        <div class="col-md-8">
+                            <select class="form-control" name="account_id" id="account_id">
+                            {% for account in account_list %}
+                                {% if account.account_number == trade.account.account_number %}
+                                <option value="{{ account.id }}" selected>{{ account.broker.broker_name }}({{ account.account_number }})</option>
+                                {% else %}
+                                <option value="{{ account.id }}">{{ account.broker.broker_name }}({{ account.account_number }})</option>
+                                {% endif %}
+                            {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="stock_name" class="col-md-4 control-label">股票：</label>
+                        <div class="col-md-8">
+                            <select class="form-control" name="stock_id" id="stock_id">
+                            {% for stock in stock_list %}
+                                {% if stock.stock_code == trade.stock.stock_code %}
+                                <option value="{{ stock.id }}" selected>{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                {% else %}
+                                <option value="{{ stock.id }}">{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                {% endif %}
+                            {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="trade_date" class="col-md-4 control-label">交易日期：</label>
+                        <div class="col-md-8">
+                            <input type="date" class="form-control date-picker"  name="trade_date" id="trade_date" placeholder="请录入交易日期">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="trade_type" class="col-md-4 control-label">交易类型：</label>
+                        <div class="col-md-8">
+                            {% for key,v in trade_type_items %}
+                            <label class="radio-inline">
+                                {% if key == 1 %}
+                                <input type="radio" name="trade_type" id="trade_type" value="{{ key }}" checked>{{ v }}
+                                {% else %}
+                                <input type="radio" name="trade_type" id="trade_type" value="{{ key }}">{{ v }}
+                                {% endif %}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="trade_price" class="col-md-4 control-label">交易价格：</label>
+                        <div class="col-md-8">
+                            <input type="number" step="0.001" class="form-control"  name="trade_price" id="trade_price" placeholder="请录入交易价格">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="trade_quantity" class="col-md-4 control-label">交易数量：</label>
+                        <div class="col-md-8">
+                            <input type="number" class="form-control"  name="trade_quantity" id="trade_quantity" placeholder="请录入交易数量">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="settlement_currency" class="col-md-4 control-label">结算货币：</label>
+                        <div class="col-md-8">
+                            {% for key,v in settlement_currency_items %}
+                            <label class="radio-inline">
+                                {% if key == 1 %}
+                                <input type="radio" name="settlement_currency" id="settlement_currency" value="{{ key }}" checked>{{ v }}
+                                {% else %}
+                                <input type="radio" name="settlement_currency" id="settlement_currency" value="{{ key }}">{{ v }}
+                                {% endif %}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-offset-4 col-md-8">
+                            <input type="submit" class="btn btn-primary" value="增加">
+                        </div>
+                    </div>
+                </form>
+                {{ error_info }}
+                {{ e }}
+                {{ error_info }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 将当前日期作为默认值赋给<input type="date">控件 // -->
+<script>
+var defaultDate = document.querySelectorAll('.date-picker');
+for (var i = 0; i<defaultDate.length; i++) {
+    defaultDate[i].valueAsDate = new Date();
+}
+</script>
+
+
+{% endblock %}
+
+<!-- 以下block块给样式类赋值，class="active"//-->
+{% block tradecls %}
+active
+{% endblock %}
