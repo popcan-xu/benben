@@ -83,6 +83,7 @@ urlpatterns = [
 
     path('query_dividend_history/', query_dividend_history),
     path('query_dividend_date/', query_dividend_date),
+    path('query_dividend_value/', query_dividend_value),
 
     # url(r'^pie/$', views.ChartView.as_view(), name='stock'),
     # url(r'^bar/$', views.ChartView.as_view(), name='stock'),

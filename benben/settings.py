@@ -159,4 +159,4 @@ CACHES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 #DEBUG = False
-ALLOWED_HOSTS = ['127.0.0.1','192.168.50.43']
+ALLOWED_HOSTS = ['127.0.0.1','192.168.50.49','192.168.50.43']

@@ -1345,6 +1345,7 @@ def query_dividend_history(request):
     return render(request, templates_path + 'query\query_dividend_history.html', locals())
 
 
+# 分红日期查询
 def query_dividend_date(request):
     global templates_path
     current_year = datetime.datetime.today().year
@@ -1378,6 +1379,62 @@ def query_dividend_date(request):
     # dividend_date_array = list(zip(stock_name_array, stock_code_array, last_dividend_date_array, next_dividend_date_array))
 
     return render(request, templates_path + 'query\query_dividend_date.html', locals())
+
+
+# 分红金额查询
+def query_dividend_value(request):
+    global templates_path
+    dividend_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    stock_list = stock.objects.all().values('stock_code', 'stock_name', 'last_dividend_date', 'next_dividend_date')
+    # 持仓股票列表，通过.filter(dividend__stock_id__isnull = False)，过滤出在dividend表中存在的stock_id所对应的stock表记录
+    dividends_stock_list = stock_list.filter(dividend__stock_id__isnull=False).distinct()
+    # 分红年份列表，通过.dates('dividend_date', 'year')，过滤出dividend表中存在的dividend_date所对应的年份列表
+    year_list = dividend.objects.dates('dividend_date', 'year')
+    # 按账号对应的券商备注（境内券商或境外券商）排序
+    account_list = account.objects.all().order_by('broker__broker_script')
+    # 第一次进入页面，默认货币为人民币，账户全选、年份全选为否。
+    dividend_currency = 1
+    is_all_account_checked = "false"
+    is_all_year_checked = "false"
+    if request.method == 'POST':
+        tab_name = request.POST.get('tab_name')
+        if tab_name == '分红金额':
+            stock_code = request.POST.get('stock_code')
+            # 由于stock_code为select列表而非文本框text，如果不选择则返回None而非空，所以不能使用stock_code.strip() == ''
+            if stock_code is None:
+                error_info = '股票不能为空！'
+                return render(request, templates_path + 'query\query_dividend_value.html', locals())
+            stock_object = stock.objects.get(stock_code=stock_code)
+            stock_id = stock_object.id
+            stock_name = stock_object.stock_name
+            dividend_year_list = request.POST.getlist('dividend_year_list')
+            # 将列表中的字符串变成数字，方法一：
+            dividend_year_list = [int(x) for x in dividend_year_list]
+            dividend_account_list = request.POST.getlist('dividend_account_list')
+            # 将列表中的字符串变成数字，方法二：使用内置map返回一个map对象，再用list将其转换为列表
+            dividend_account_list = list(map(int, dividend_account_list))
+            dividend_currency = int(request.POST.get('dividend_currency'))
+            is_all_account_checked = request.POST.get('all_account')
+            is_all_year_checked = request.POST.get('all_year')
+            conditions = dict()
+            conditions['stock'] = stock_id
+            conditions['dividend_date__year__in'] = dividend_year_list
+            conditions['account__in'] = dividend_account_list
+            conditions['dividend_currency'] = dividend_currency
+            dividend_list = dividend.objects.all().filter(**conditions).order_by('-dividend_date')
+            amount_sum = 0
+            for i in dividend_list:
+                amount_sum += i.dividend_amount
+        else:
+            dividend_currency = int(request.POST.get('dividend_currency'))
+            pass
+    # 根据dividend_currency的值从dividend_currency_items中生成dividend_currency_name
+    dividend_currency_name = dividend_currency_items[dividend_currency-1][1]
+    return render(request, templates_path + 'query\query_dividend_value.html', locals())
 
 
 # 交易录入

@@ -14,7 +14,7 @@
         <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
         <link href="{% static 'dashboard.css' %}" rel="stylesheet">
         <link href="{% static 'fontawesome/css/font-awesome.css' %}" rel="stylesheet">
-        <style type="text/css">
+        <style>
             .h.jumbotron {
                 padding: 20px;
                 margin: 4px;
@@ -39,6 +39,7 @@
                     <ul class="nav nav-sidebar">
                         <li class="{% block dividend_history_cls %}{% endblock %}"><a href="/benben/query_dividend_history/"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;分红历史查询</a></li>
                         <li class="{% block dividend_date_cls %}{% endblock %}"><a href="/benben/query_dividend_date/"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;分红日期查询</a></li>
+                        <li class="{% block dividend_value_cls %}{% endblock %}"><a href="/benben/query_dividend_value/"><i class="glyphicon glyphicon-asterisk"></i>&nbsp;分红金额查询</a></li>
                     </ul>
                 </div>
                 <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
