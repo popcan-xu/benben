@@ -25,7 +25,7 @@ def get_position_content(currency):
         abbreviation_array.append(account_abbreviation)
     account_num = len(account_array)
     stock_dict = position.objects.filter(position_currency=currency).values("stock").annotate(
-        count=Count("stock")).values('stock_id')
+        count=Count("stock")).values('stock_id').order_by('stock__stock_code')
     for dict in stock_dict:
         stock_id = dict['stock_id']
         stock_array.append(stock_id)

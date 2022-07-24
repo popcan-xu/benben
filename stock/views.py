@@ -465,7 +465,7 @@ def list_stock(request):
                          one_page_lines=one_page_lines, page_maxtag=page_maxtag)
     page_nav = page_obj.html_page()
     # 对account表中的记录进行切片，取出属于本页的记录
-    stock_list = stock.objects.all()[page_obj.data_start:page_obj.data_end]
+    stock_list = stock.objects.all().order_by('stock_code')[page_obj.data_start:page_obj.data_end]
     return render(request, templates_path + 'backstage\list_stock.html', locals())
 
 
