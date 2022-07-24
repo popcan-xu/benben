@@ -23,6 +23,10 @@
             text-align: center;
             vertical-align: middle!important;
         }
+        /* 为 <div class="custom-control custom-checkbox custom-control-inline"> 设置 z-index，以避免遮挡下拉菜单 */
+        .custom-control.custom-checkbox.custom-control-inline {
+		    z-index: 0; /* 设置所在层的显示优先级 */
+        }
     </style>
 
     {% include 'dashboard\resources_head.html' %}
