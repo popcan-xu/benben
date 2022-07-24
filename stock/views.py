@@ -473,7 +473,7 @@ def list_stock(request):
 def add_position(request):
     global templates_path
     account_list = account.objects.all()
-    stock_list = stock.objects.all()
+    stock_list = stock.objects.all().order_by('stock_code')
     position_currency_items = (
         (1, '人民币'),
         (2, '港元'),
@@ -583,7 +583,7 @@ def add_dividend(request):
         (3, '美元'),
     )
     account_list = account.objects.all()
-    stock_list = stock.objects.all()
+    stock_list = stock.objects.all().order_by('stock_code')
     # broker_list = broker.objects.all()
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
@@ -817,7 +817,7 @@ def add_trade(request):
         (3, '美元'),
     )
     account_list = account.objects.all()
-    stock_list = stock.objects.all()
+    stock_list = stock.objects.all().order_by('stock_code')
     # broker_list = broker.objects.all()
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
@@ -1076,7 +1076,7 @@ def batch_import(request):
 # 从网站中抓取数据导入数据库
 def web_capture(request):
     global templates_path
-    stock_list = stock.objects.all().values('stock_code', 'stock_name')
+    stock_list = stock.objects.all().values('stock_code', 'stock_name').order_by('stock_code')
     holding_stock_list = position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
     if request.method == 'POST':
         tab_name = request.POST.get('tab_name')
@@ -1455,7 +1455,7 @@ def input_trade(request):
         (3, '美元'),
     )
     account_list = account.objects.all()
-    stock_list = stock.objects.all()
+    stock_list = stock.objects.all().order_by('stock_code')
     # broker_list = broker.objects.all()
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
@@ -1520,7 +1520,7 @@ def input_dividend(request):
         (3, '美元'),
     )
     account_list = account.objects.all()
-    stock_list = stock.objects.all()
+    stock_list = stock.objects.all().order_by('stock_code')
     # broker_list = broker.objects.all()
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
