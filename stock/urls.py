@@ -107,4 +107,7 @@ urlpatterns = [
     path('D_list_account/', D_list_account),
     path('D_list_trade/', D_list_trade),
 
+    path('D_stats_position/', D_stats_position),
+    path('D_query_dividend_value/', D_query_dividend_value),
+
 ]
