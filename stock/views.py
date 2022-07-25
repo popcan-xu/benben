@@ -1761,6 +1761,11 @@ def D_list_account(request):
     return render(request, D_templates_path + 'backstage\\list_account.html', locals())
 
 
+def D_list_industry(request):
+    industry_list = industry.objects.all()
+    return render(request,  D_templates_path + 'backstage\\list_industry.html', locals())
+
+
 def D_list_trade(request):
     trade_list = trade.objects.all().order_by('-trade_date')
     return render(request, D_templates_path + 'backstage\\list_trade.html', locals())

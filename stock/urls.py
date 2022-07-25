@@ -105,6 +105,7 @@ urlpatterns = [
     path('D_list_broker/', D_list_broker),
     path('D_list_market/', D_list_market),
     path('D_list_account/', D_list_account),
+    path('D_list_industry/', D_list_industry),
     path('D_list_trade/', D_list_trade),
 
     path('D_stats_position/', D_stats_position),
