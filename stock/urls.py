@@ -106,7 +106,11 @@ urlpatterns = [
     path('D_list_market/', D_list_market),
     path('D_list_account/', D_list_account),
     path('D_list_industry/', D_list_industry),
+    path('D_list_stock/', D_list_stock),
+    path('D_list_position/', D_list_position),
     path('D_list_trade/', D_list_trade),
+    path('D_list_dividend/', D_list_dividend),
+    path('D_list_subscription/', D_list_subscription),
 
     path('D_stats_position/', D_stats_position),
     path('D_query_dividend_value/', D_query_dividend_value),

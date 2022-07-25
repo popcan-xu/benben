@@ -1766,9 +1766,29 @@ def D_list_industry(request):
     return render(request,  D_templates_path + 'backstage\\list_industry.html', locals())
 
 
+def D_list_stock(request):
+    stock_list = stock.objects.all()
+    return render(request,  D_templates_path + 'backstage\\list_stock.html', locals())
+
+
+def D_list_position(request):
+    position_list = position.objects.all()
+    return render(request,  D_templates_path + 'backstage\\list_position.html', locals())
+
+
 def D_list_trade(request):
-    trade_list = trade.objects.all().order_by('-trade_date')
+    trade_list = trade.objects.all()
     return render(request, D_templates_path + 'backstage\\list_trade.html', locals())
+
+
+def D_list_dividend(request):
+    dividend_list = dividend.objects.all()
+    return render(request,  D_templates_path + 'backstage\\list_dividend.html', locals())
+
+
+def D_list_subscription(request):
+    subscription_list = subscription.objects.all()
+    return render(request,  D_templates_path + 'backstage\\list_subscription.html', locals())
 
 
 def D_stats_position(request):

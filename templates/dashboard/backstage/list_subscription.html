@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+{% load static %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <div class="d-sm-flex align-items-center justify-content-between mb-0">
+                <h1 class="h4 mb-0 text-gray-800">打新列表</h1>
+                <a href="/benben/add_subscription/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                    <i class="fa fa-plus fa-sm text-white-50"></i> 增加
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="dataTable" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                    <thead class="bg-gradient-secondary text-gray-100">
+                        <tr>
+                            <th>申购日期</th>
+                            <th>申购名称</th>
+                            <th>申购类型</th>
+                            <th>申购数量</th>
+                            <th>买入价格（元）</th>
+                            <th>卖出价格（元）</th>
+                            <th>证券账户</th>
+                            <th>修改时间</th>
+                            <th>操作</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!--#trade_list即为视图函数list_trade中render传入参数//-->
+                        {% for subscription in subscription_list %}
+                            <tr>
+                                <td>{{ subscription.subscription_date|date:'Y-m-d' }}</td>
+                                <td>{{ subscription.subscription_name }}</td>
+                                <td>{{ subscription.get_subscription_type_display }}</td>
+                                <td>{{ subscription.subscription_quantity|floatformat:0 }}</td>
+                                <td>{{ subscription.buying_price|floatformat:2 }}</td>
+                                <td>{{ subscription.selling_price|floatformat:2 }}</td>
+                                <td>{{ subscription.account.account_abbreviation }}</td>
+                                <td>{{ subscription.modified_time|date:'Y-m-d H:i' }}</td>
+                                <td>
+                                    <a href="/benben/del_industry/{{ subscription.id|safe }}/" class="btn btn-default btn-sm">
+                                        删除
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="/benben/edit_industry/{{ subscription.id|safe }}/" class="btn btn-default btn-sm">
+                                        修改
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4">无相关记录！</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
