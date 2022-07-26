@@ -1756,6 +1756,60 @@ def D_list_market(request):
     return render(request, D_templates_path + 'backstage\\list_market.html', locals())
 
 
+def D_add_account(request):
+    broker_list = broker.objects.all().order_by('broker_script')
+    if request.method == 'POST':
+        account_number = request.POST.get('account_number')
+        broker_id = request.POST.get('broker_id')
+        account_abbreviation = request.POST.get('account_abbreviation')
+        if account_number.strip() == '':
+            error_info = '账号不能为空！'
+            return render(request, D_templates_path + 'backstage\\add_account.html', locals())
+        try:
+            p = account.objects.create(
+                account_number=account_number,
+                broker_id=broker_id,
+                account_abbreviation=account_abbreviation
+            )
+            return redirect('/benben/D_list_account/')
+        except Exception as e:
+            error_info = '输入账号重复或信息有错误！'
+            return render(request, D_templates_path + 'backstage\\add_account.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'backstage\\add_account.html', locals())
+
+
+def D_del_account(requeset, account_id):
+    account_object = account.objects.get(id=account_id)
+    account_object.delete()
+    return redirect('/benben/D_list_account/')
+
+
+def D_edit_account(request, account_id):
+    broker_list = broker.objects.all()
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        account_number = request.POST.get('account_number')
+        broker_id = request.POST.get('broker_id')
+        account_abbreviation = request.POST.get('account_abbreviation')
+        account_object = account.objects.get(id=id)
+        try:
+            account_object.account_number = account_number
+            account_object.broker_id = broker_id
+            account_object.account_abbreviation = account_abbreviation
+            account_object.save()
+        except Exception as e:
+            error_info = '输入账号重复或信息有错误！'
+            return render(request, D_templates_path + 'backstage\edit_account.html', locals())
+        finally:
+            pass
+        return redirect('/benben/D_list_account/')
+    else:
+        account_object = account.objects.get(id=account_id)
+        return render(request, D_templates_path + 'backstage\edit_account.html', locals())
+
+
 def D_list_account(request):
     account_list = account.objects.all()
     return render(request, D_templates_path + 'backstage\\list_account.html', locals())

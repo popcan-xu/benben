@@ -103,8 +103,7 @@ var defaultDate = document.querySelectorAll('.date-picker');
 for (var i = 0; i<defaultDate.length; i++) {
     defaultDate[i].valueAsDate = new Date();
 }
-</script>
-<script language="javascript">
+
 function sumbit_sure() {
     var gnl=confirm("确定要提交?");
     if (gnl==true) {
@@ -116,9 +115,4 @@ function sumbit_sure() {
 }
 </script>
 
-{% endblock %}
-
-<!-- 以下block块给样式类赋值，class="active"//-->
-{% block tradecls %}
-active
 {% endblock %}

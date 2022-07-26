@@ -102,15 +102,54 @@ urlpatterns = [
     path('card_pie_view/', card_pie_view),
     path('charts/', charts),
 
+    # path('D_add_broker/', D_add_broker),
+    # path('D_del_broker/<int:broker_id>/', D_del_broker),
+    # path('D_edit_broker/<int:broker_id>/', D_edit_broker),
     path('D_list_broker/', D_list_broker),
+
+    # path('D_add_market/', D_add_market),
+    # path('D_del_market/<int:market_id>/', D_del_market),
+    # path('D_edit_market/<int:market_id>/', D_edit_market),
     path('D_list_market/', D_list_market),
+
+    path('D_add_account/', D_add_account),
+    path('D_del_account/<int:account_id>/', D_del_account),
+    path('D_edit_account/<int:account_id>/', D_edit_account),
     path('D_list_account/', D_list_account),
+
+    # path('D_add_industry/', D_add_industry),
+    # path('D_del_industry/<int:industry_id>/', D_del_industry),
+    # path('D_edit_industry/<int:industry_id>/', D_edit_industry),
     path('D_list_industry/', D_list_industry),
+
+    # path('D_add_stock/', D_add_stock),
+    # path('D_del_stock/<int:stock_id>/', D_del_stock),
+    # path('D_edit_stock/<int:stock_id>/', D_edit_stock),
     path('D_list_stock/', D_list_stock),
+
+    # path('D_add_position/', D_add_position),
+    # path('D_del_position/<int:position_id>/', D_del_position),
+    # path('D_edit_position/<int:position_id>/', D_edit_position),
     path('D_list_position/', D_list_position),
+
+    # path('D_add_trade/', D_add_trade),
+    # path('D_del_trade/<int:trade_id>/', D_del_trade),
+    # path('D_edit_trade/<int:trade_id>/', D_edit_trade),
     path('D_list_trade/', D_list_trade),
+
+    # path('D_add_dividend/', D_add_dividend),
+    # path('D_del_dividend/<int:dividend_id>/', D_del_dividend),
+    # path('D_edit_dividend/<int:dividend_id>/', D_edit_dividend),
     path('D_list_dividend/', D_list_dividend),
+
+    # path('D_add_subscription/', D_add_subscription),
+    # path('D_del_subscription/<int:subscription_id>/', D_del_subscription),
+    # path('D_edit_subscription/<int:subscription_id>/', D_edit_subscription),
     path('D_list_subscription/', D_list_subscription),
+
+    # path('D_add_dividend_history/', D_add_dividend_history),
+    # path('D_del_dividend_history/<int:dividend_history_id>/', D_del_dividend_history),
+    # path('D_edit_dividend_history/<int:dividend_history_id>/', D_edit_dividend_history),
     path('D_list_dividend_history/', D_list_dividend_history),
 
     path('D_stats_position/', D_stats_position),
