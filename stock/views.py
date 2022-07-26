@@ -1791,6 +1791,11 @@ def D_list_subscription(request):
     return render(request,  D_templates_path + 'backstage\\list_subscription.html', locals())
 
 
+def D_list_dividend_history(request):
+    dividend_history_list = dividend_history.objects.all()
+    return render(request,  D_templates_path + 'backstage\\list_dividend_history.html', locals())
+
+
 def D_stats_position(request):
     currency_CNY = 1
     currency_HKD = 2

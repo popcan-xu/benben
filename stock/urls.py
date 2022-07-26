@@ -111,6 +111,7 @@ urlpatterns = [
     path('D_list_trade/', D_list_trade),
     path('D_list_dividend/', D_list_dividend),
     path('D_list_subscription/', D_list_subscription),
+    path('D_list_dividend_history/', D_list_dividend_history),
 
     path('D_stats_position/', D_stats_position),
     path('D_query_dividend_value/', D_query_dividend_value),

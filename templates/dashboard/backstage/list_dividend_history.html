@@ -7,8 +7,8 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <div class="d-sm-flex align-items-center justify-content-between mb-0">
-                <h1 class="h4 mb-0 text-gray-800">打新列表</h1>
-                <a href="/benben/add_subscription/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                <h1 class="h4 mb-0 text-gray-800">分红历史列表</h1>
+                <a href="/benben/add_dividend_history/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
                     <i class="fa fa-plus fa-sm text-white-50"></i> 增加
                 </a>
             </div>
@@ -18,13 +18,13 @@
                 <table id="dataTable" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
                     <thead class="bg-gradient-secondary text-gray-100">
                         <tr>
-                            <th>申购日期</th>
-                            <th>申购名称</th>
-                            <th>申购类型</th>
-                            <th>申购数量</th>
-                            <th>买入价格（元）</th>
-                            <th>卖出价格（元）</th>
-                            <th>证券账户</th>
+                            <th>股票/代码</th>
+                            <th>报告期</th>
+                            <th>分红方案</th>
+                            <th>公告日</th>
+                            <th>股权登记日</th>
+                            <th>除权除息日</th>
+                            <th>派息日</th>
                             <th>修改时间</th>
                             <th>操作</th>
                             <th>操作</th>
@@ -32,23 +32,23 @@
                     </thead>
                     <tbody>
                         <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                        {% for subscription in subscription_list %}
+                        {% for dividend_history in dividend_history_list %}
                             <tr>
-                                <td>{{ subscription.subscription_date|date:'Y-m-d' }}</td>
-                                <td>{{ subscription.subscription_name }}</td>
-                                <td>{{ subscription.get_subscription_type_display }}</td>
-                                <td>{{ subscription.subscription_quantity|floatformat:0 }}</td>
-                                <td>{{ subscription.buying_price|floatformat:2 }}</td>
-                                <td>{{ subscription.selling_price|floatformat:2 }}</td>
-                                <td>{{ subscription.account.account_abbreviation }}</td>
-                                <td>{{ subscription.modified_time|date:'Y-m-d H:i' }}</td>
+                                <td>{{ dividend_history.stock.stock_name }}({{ dividend_history.stock.stock_code }})</td>
+                                <td>{{ dividend_history.reporting_period }}</td>
+                                <td>{{ dividend_history.dividend_plan }}</td>
+                                <td>{{ dividend_history.announcement_date|date:'Y-m-d' }}</td>
+                                <td>{{ dividend_history.registration_date|date:'Y-m-d' }}</td>
+                                <td>{{ dividend_history.ex_right_date|date:'Y-m-d' }}</td>
+                                <td>{{ dividend_history.dividend_date|date:'Y-m-d' }}</td>
+                                <td>{{ dividend_history.modified_time|date:'Y-m-d H:i' }}</td>
                                 <td>
-                                    <a href="/benben/del_subscription/{{ subscription.id|safe }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/del_dividend_history/{{ dividend_history.id|safe }}/" class="btn btn-default btn-sm">
                                         删除
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/benben/edit_subscription/{{ subscription.id|safe }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/edit_dividend_history/{{ dividend_history.id|safe }}/" class="btn btn-default btn-sm">
                                         修改
                                     </a>
                                 </td>
@@ -70,7 +70,7 @@ $(document).ready(function() {
     $('#dataTable').DataTable( {
         //先按第一列逆序排序，如果有相同，再按第二列顺序排序
         //order后面就是一个多维数组，可以自由增删
-        "order": [[ 0, "desc" ]]
+        "order": [[ 7, "desc" ]]
     } );
 } );
 </script>
