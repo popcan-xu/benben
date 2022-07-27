@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-2 text-gray-800">修改市场</h1>
+    <p class="mb-4">请在这里修改市场</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">市场</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col-md-6">
+                    <form action="" method="post" class="form-horizontal" role="form" onsubmit="return sumbit_sure()">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" id="id" value="{{ market_object.id|safe }}" >
+                        <div class="row form-group">
+                            <label for="market_name" class="col-md-4 control-label text-right">市场：</label>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control"  name="market_name" id="market_name"  value="{{ market_object.market_name }}">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="market_abbreviation" class="col-md-4 control-label text-right">简称：</label>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control" name="market_abbreviation" id="market_abbreviation"  value="{{ market_object.market_abbreviation }}">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="transaction_currency" class="col-md-4 control-label text-right">交易货币：</label>
+                            <div class="col-md-8">
+                                {% for key,v in transaction_currency_items %}
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    {% if key == market_object.transaction_currency %}
+                                    <input type="radio" class="custom-control-input" name="transaction_currency" id="transaction_currency{{ key }}" value="{{ key }}" checked />
+                                    <label class="custom-control-label" for="transaction_currency{{ key }}">{{ v }}</label>
+                                    {% else %}
+                                    <input type="radio" class="custom-control-input" name="transaction_currency" id="transaction_currency{{ key }}" value="{{ key }}" />
+                                    <label class="custom-control-label" for="transaction_currency{{ key }}">{{ v }}</label>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="row form-group" style="text-align:center">
+                            <div class="col-md-offset-4 col-md-12">
+                                <input type="submit" class="btn btn-primary" value="保存">
+                                <input type="reset" class="btn btn-primary" value="取消">
+                            </div>
+                        </div>
+                    </form>
+                    {{ error_info }}
+                </div>
+                <div class="col-md-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sumbit_sure() {
+    var gnl=confirm("确定要提交?");
+    if (gnl==true) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+</script>
+
+{% endblock %}

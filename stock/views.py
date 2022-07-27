@@ -1746,9 +1746,119 @@ def form_view(request):
     return render(request, 'dashboard\\form_view.html', locals())
 
 
+def D_add_broker(request):
+    if request.method == 'POST':
+        broker_name = request.POST.get('broker_name')
+        broker_script = request.POST.get('broker_script')
+        if broker_name.strip() == '':
+            error_info = '券商名称不能为空！'
+            return render(request, D_templates_path + 'backstage\\add_broker.html', locals())
+        try:
+            p = broker.objects.create(
+                broker_name=broker_name,
+                broker_script=broker_script
+            )
+            return redirect('/benben/D_list_broker/')
+        except Exception as e:
+            error_info = '输入券商名称重复或信息有错误！'
+            return render(request, D_templates_path + 'backstage\\add_broker.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'backstage\\add_broker.html', locals())
+
+
+def D_del_broker(requeset, broker_id):
+    broker_object = broker.objects.get(id=broker_id)
+    broker_object.delete()
+    return redirect('/benben/D_list_broker/')
+
+
+def D_edit_broker(request, broker_id):
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        broker_name = request.POST.get('broker_name')
+        broker_script = request.POST.get('broker_script')
+        broker_object = broker.objects.get(id=id)
+        try:
+            broker_object.broker_name = broker_name
+            broker_object.broker_script = broker_script
+            broker_object.save()
+        except Exception as e:
+            error_info = '输入券商名称重复或信息有错误！'
+            return render(request, D_templates_path + 'backstage\edit_broker.html', locals())
+        finally:
+            pass
+        return redirect('/benben/D_list_broker/')
+    else:
+        broker_object = broker.objects.get(id=broker_id)
+        return render(request, D_templates_path + 'backstage\edit_broker.html', locals())
+
+
 def D_list_broker(request):
     broker_list = broker.objects.all()
     return render(request, D_templates_path + 'backstage\\list_broker.html', locals())
+
+
+def D_add_market(request):
+    transaction_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    if request.method == 'POST':
+        market_name = request.POST.get('market_name')
+        market_abbreviation = request.POST.get('market_abbreviation')
+        transaction_currency = request.POST.get('transaction_currency')
+        if market_name.strip() == '':
+            error_info = '市场名称不能为空！'
+            return render(request, D_templates_path + 'backstage\\add_market.html', locals())
+        try:
+            p = market.objects.create(
+                market_name=market_name,
+                market_abbreviation=market_abbreviation,
+                transaction_currency=transaction_currency
+            )
+            return redirect('/benben/D_list_market/')
+        except Exception as e:
+            error_info = '输入市场名称重复或信息有错误！'
+            return render(request, D_templates_path + 'backstage\\add_market.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'backstage\\add_market.html', locals())
+
+
+def D_del_market(requeset, market_id):
+    market_object = market.objects.get(id=market_id)
+    market_object.delete()
+    return redirect('/benben/D_list_market/')
+
+
+def D_edit_market(request, market_id):
+    transaction_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        market_name = request.POST.get('market_name')
+        market_abbreviation = request.POST.get('market_abbreviation')
+        transaction_currency = request.POST.get('transaction_currency')
+        market_object = market.objects.get(id=id)
+        try:
+            market_object.market_name = market_name
+            market_object.market_abbreviation = market_abbreviation
+            market_object.transaction_currency = transaction_currency
+            market_object.save()
+        except Exception as e:
+            error_info = '输入市场名称重复或信息有错误！'
+            return render(request, D_templates_path + 'backstage\edit_market.html', locals())
+        finally:
+            pass
+        return redirect('/benben/D_list_market/')
+    else:
+        market_object = market.objects.get(id=market_id)
+        return render(request, D_templates_path + 'backstage\edit_market.html', locals())
 
 
 def D_list_market(request):

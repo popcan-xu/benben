@@ -102,14 +102,14 @@ urlpatterns = [
     path('card_pie_view/', card_pie_view),
     path('charts/', charts),
 
-    # path('D_add_broker/', D_add_broker),
-    # path('D_del_broker/<int:broker_id>/', D_del_broker),
-    # path('D_edit_broker/<int:broker_id>/', D_edit_broker),
+    path('D_add_broker/', D_add_broker),
+    path('D_del_broker/<int:broker_id>/', D_del_broker),
+    path('D_edit_broker/<int:broker_id>/', D_edit_broker),
     path('D_list_broker/', D_list_broker),
 
-    # path('D_add_market/', D_add_market),
-    # path('D_del_market/<int:market_id>/', D_del_market),
-    # path('D_edit_market/<int:market_id>/', D_edit_market),
+    path('D_add_market/', D_add_market),
+    path('D_del_market/<int:market_id>/', D_del_market),
+    path('D_edit_market/<int:market_id>/', D_edit_market),
     path('D_list_market/', D_list_market),
 
     path('D_add_account/', D_add_account),

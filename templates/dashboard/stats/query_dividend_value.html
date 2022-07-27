@@ -108,10 +108,10 @@
                                     {% for key,v in dividend_currency_items %}
                                     <div class="custom-control custom-radio custom-control-inline">
                                         {% if key == dividend_currency %}
-                                            <input type="radio" class="custom-control-input" name="dividend_currency" id="dividend_currency{{ key }}" value="{{ key }}" checked>
+                                            <input type="radio" class="custom-control-input" name="dividend_currency" id="dividend_currency{{ key }}" value="{{ key }}" checked />
                                             <label class="custom-control-label" for="dividend_currency{{ key }}">{{ v }}</label>
                                         {% else %}
-                                            <input type="radio" class="custom-control-input" name="dividend_currency" id="dividend_currency{{ key }}" value="{{ key }}">
+                                            <input type="radio" class="custom-control-input" name="dividend_currency" id="dividend_currency{{ key }}" value="{{ key }}" />
                                             <label class="custom-control-label" for="dividend_currency{{ key }}">{{ v }}</label>
                                         {% endif %}
                                     </div>
