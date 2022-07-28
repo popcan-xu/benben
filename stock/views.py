@@ -52,7 +52,7 @@ def add_broker(request):
     return render(request, templates_path + 'backstage\\add_broker.html', locals())
 
 
-def del_broker(requeset, broker_id):
+def del_broker(request, broker_id):
     broker_object = broker.objects.get(id=broker_id)
     broker_object.delete()
     return redirect('/benben/list_broker/')
@@ -142,7 +142,7 @@ def add_market(request):
     return render(request, templates_path + 'backstage\\add_market.html', locals())
 
 
-def del_market(requeset, market_id):
+def del_market(request, market_id):
     market_object = market.objects.get(id=market_id)
     market_object.delete()
     return redirect('/benben/list_market/')
@@ -238,7 +238,7 @@ def add_account(request):
     return render(request, templates_path + 'backstage\\add_account.html', locals())
 
 
-def del_account(requeset, account_id):
+def del_account(request, account_id):
     account_object = account.objects.get(id=account_id)
     account_object.delete()
     return redirect('/benben/list_account/')
@@ -327,7 +327,7 @@ def add_industry(request):
     return render(request, templates_path + 'backstage\\add_industry.html', locals())
 
 
-def del_industry(requeset, industry_id):
+def del_industry(request, industry_id):
     industry_object = industry.objects.get(id=industry_id)
     industry_object.delete()
     return redirect('/benben/list_industry/')
@@ -408,7 +408,7 @@ def add_stock(request):
     return render(request, templates_path + 'backstage\\add_stock.html', locals())
 
 
-def del_stock(requeset, stock_id):
+def del_stock(request, stock_id):
     stock_object = stock.objects.get(id=stock_id)
     stock_object.delete()
     return redirect('/benben/list_stock/')
@@ -504,7 +504,7 @@ def add_position(request):
     return render(request, templates_path + 'backstage\\add_position.html', locals())
 
 
-def del_position(requeset, position_id):
+def del_position(request, position_id):
     position_object = position.objects.get(id=position_id)
     position_object.delete()
     return redirect('/benben/list_position/')
@@ -611,7 +611,7 @@ def add_dividend(request):
     return render(request, templates_path + 'backstage\\add_dividend.html', locals())
 
 
-def del_dividend(requeset, dividend_id):
+def del_dividend(request, dividend_id):
     dividend_object = dividend.objects.get(id=dividend_id)
     dividend_object.delete()
     return redirect('/benben/list_dividend/')
@@ -726,7 +726,7 @@ def add_subscription(request):
     return render(request, templates_path + 'backstage\\add_subscription.html', locals())
 
 
-def del_subscription(requeset, subscription_id):
+def del_subscription(request, subscription_id):
     subscription_object = subscription.objects.get(id=subscription_id)
     subscription_object.delete()
     return redirect('/benben/list_subscription/')
@@ -851,7 +851,7 @@ def add_trade(request):
     return render(request, templates_path + 'backstage\\add_trade.html', locals())
 
 
-def del_trade(requeset, trade_id):
+def del_trade(request, trade_id):
     trade_object = trade.objects.get(id=trade_id)
     trade_object.delete()
     return redirect('/benben/list_trade/')
@@ -973,7 +973,7 @@ def add_dividend_history(request):
     return render(request, templates_path + 'backstage\\add_dividend_history.html', locals())
 
 
-def del_dividend_history(requeset, dividend_history_id):
+def del_dividend_history(request, dividend_history_id):
     dividend_history_object = dividend_history.objects.get(id=dividend_history_id)
     dividend_history_object.delete()
     return redirect('/benben/list_dividend_history/')
@@ -1767,7 +1767,7 @@ def D_add_broker(request):
     return render(request, D_templates_path + 'backstage\\add_broker.html', locals())
 
 
-def D_del_broker(requeset, broker_id):
+def D_del_broker(request, broker_id):
     broker_object = broker.objects.get(id=broker_id)
     broker_object.delete()
     return redirect('/benben/D_list_broker/')
@@ -1827,7 +1827,7 @@ def D_add_market(request):
     return render(request, D_templates_path + 'backstage\\add_market.html', locals())
 
 
-def D_del_market(requeset, market_id):
+def D_del_market(request, market_id):
     market_object = market.objects.get(id=market_id)
     market_object.delete()
     return redirect('/benben/D_list_market/')
@@ -1890,7 +1890,7 @@ def D_add_account(request):
     return render(request, D_templates_path + 'backstage\\add_account.html', locals())
 
 
-def D_del_account(requeset, account_id):
+def D_del_account(request, account_id):
     account_object = account.objects.get(id=account_id)
     account_object.delete()
     return redirect('/benben/D_list_account/')
@@ -1923,6 +1923,58 @@ def D_edit_account(request, account_id):
 def D_list_account(request):
     account_list = account.objects.all()
     return render(request, D_templates_path + 'backstage\\list_account.html', locals())
+
+
+def D_add_industry(request):
+    if request.method == 'POST':
+        industry_code = request.POST.get('industry_code')
+        industry_name = request.POST.get('industry_name')
+        industry_abbreviation = request.POST.get('industry_abbreviation')
+        if industry_code.strip() == '':
+            error_info = '行业代码不能为空！'
+            return render(request, D_templates_path + 'backstage\\add_industry.html', locals())
+        try:
+            p = industry.objects.create(
+                industry_code=industry_code,
+                industry_name=industry_name,
+                industry_abbreviation=industry_abbreviation
+            )
+            return redirect('/benben/D_list_industry/')
+        except Exception as e:
+            error_info = '输入行业代码重复或信息有错误！'
+            return render(request, D_templates_path + 'backstage\\add_industry.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'backstage\\add_industry.html', locals())
+
+
+def D_del_industry(request, industry_id):
+    industry_object = industry.objects.get(id=industry_id)
+    industry_object.delete()
+    return redirect('/benben/D_list_industry/')
+
+
+def D_edit_industry(request, industry_id):
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        industry_code = request.POST.get('industry_code')
+        industry_name = request.POST.get('industry_name')
+        industry_abbreviation = request.POST.get('industry_abbreviation')
+        industry_object = industry.objects.get(id=id)
+        try:
+            industry_object.industry_code = industry_code
+            industry_object.industry_name = industry_name
+            industry_object.industry_abbreviation = industry_abbreviation
+            industry_object.save()
+        except Exception as e:
+            error_info = '输入行业代码重复或信息有错误！'
+            return render(request, D_templates_path + 'backstage\\edit_industry.html', locals())
+        finally:
+            pass
+        return redirect('/benben/D_list_industry/')
+    else:
+        industry_object = industry.objects.get(id=industry_id)
+        return render(request, D_templates_path + 'backstage\\edit_industry.html', locals())
 
 
 def D_list_industry(request):

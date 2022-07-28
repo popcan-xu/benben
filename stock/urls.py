@@ -117,9 +117,9 @@ urlpatterns = [
     path('D_edit_account/<int:account_id>/', D_edit_account),
     path('D_list_account/', D_list_account),
 
-    # path('D_add_industry/', D_add_industry),
-    # path('D_del_industry/<int:industry_id>/', D_del_industry),
-    # path('D_edit_industry/<int:industry_id>/', D_edit_industry),
+    path('D_add_industry/', D_add_industry),
+    path('D_del_industry/<int:industry_id>/', D_del_industry),
+    path('D_edit_industry/<int:industry_id>/', D_edit_industry),
     path('D_list_industry/', D_list_industry),
 
     # path('D_add_stock/', D_add_stock),
