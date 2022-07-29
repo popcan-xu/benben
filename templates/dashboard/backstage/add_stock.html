@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+{% load static %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-2 text-gray-800">增加股票</h1>
+    <p class="mb-4">请在这里增加股票</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">股票</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col-md-6">
+                    <form action="" method="post" class="form-horizontal" role="form" onsubmit="return sumbit_sure()">
+                        {% csrf_token %}
+                        <div class="row form-group">
+                            <label for="stock_code" class="col-md-4 control-label text-right">股票代码：</label>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control"  name="stock_code" id="stock_code" placeholder="请录入股票代码">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="stock_name" class="col-md-4 control-label text-right">股票名称：</label>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control"  name="stock_name" id="stock_name" placeholder="请录入股票名称">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="industry_name" class="col-md-4 control-label text-right">行业：</label>
+                            <div class="col-md-8">
+                                <select class="form-control" name="industry_id" id="industry_id">
+                                {% for industry in industry_list %}
+                                    {% if industry.industry_code == stock.industry.industry_code %}
+                                    <option value="{{ industry.id }}" selected>{{ industry.industry_name }}</option>
+                                    {% else %}
+                                    <option value="{{ industry.id }}">{{ industry.industry_name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="market_name" class="col-md-4 control-label text-right">市场：</label>
+                            <div class="col-md-8">
+                                <select class="form-control" name="market_id" id="market_id">
+                                {% for market in market_list %}
+                                    {% if market.market_name == stock.market.market_name %}
+                                    <option value="{{ market.id }}" selected>{{ market.market_name }}</option>
+                                    {% else %}
+                                    <option value="{{ market.id }}">{{ market.market_name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row form-group" style="text-align:center">
+                            <div class="col-md-offset-4 col-md-12">
+                                <input type="submit" class="btn btn-primary" value="增加">
+                                <input type="reset" class="btn btn-primary" value="取消">
+                            </div>
+                        </div>
+                    </form>
+                    {{ error_info }}
+                </div>
+                <div class="col-md-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sumbit_sure() {
+    var gnl=confirm("确定要提交?");
+    if (gnl==true) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+</script>
+{% endblock %}

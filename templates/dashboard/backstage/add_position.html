@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+{% load static %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-2 text-gray-800">增加仓位</h1>
+    <p class="mb-4">请在这里增加仓位</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">仓位</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col-md-6">
+                    <form action="" method="post" class="form-horizontal" role="form" onsubmit="return sumbit_sure()">
+                        {% csrf_token %}
+                        <div class="row form-group">
+                            <label for="account_name" class="col-md-4 control-label text-right">证券账户：</label>
+                            <div class="col-md-8">
+                                <select class="form-control" name="account_id" id="account_id">
+                                {% for account in account_list %}
+                                    {% if account.account_number == position.account.account_number %}
+                                    <option value="{{ account.id }}" selected>{{ account.broker.broker_name }}({{ account.account_number }})</option>
+                                    {% else %}
+                                    <option value="{{ account.id }}">{{ account.broker.broker_name }}({{ account.account_number }})</option>
+                                    {% endif %}
+                                {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="stock_name" class="col-md-4 control-label text-right">股票：</label>
+                            <div class="col-md-8">
+                                <select class="form-control" name="stock_id" id="stock_id">
+                                {% for stock in stock_list %}
+                                    {% if stock.stock_code == position.stock.stock_code %}
+                                    <option value="{{ stock.id }}" selected>{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                    {% else %}
+                                    <option value="{{ stock.id }}">{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                    {% endif %}
+                                {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="position_quantity" class="col-md-4 control-label text-right">持仓数量：</label>
+                            <div class="col-md-8">
+                                <input type="number" class="form-control"  name="position_quantity" id="position_quantity" placeholder="请录入持仓数量">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="position_currency" class="col-md-4 control-label text-right">持仓货币：</label>
+                            <div class="col-md-8">
+                                {% for key,v in position_currency_items %}
+                                <label class="custom-control custom-radio custom-control-inline">
+                                    {% if key == 1 %}
+                                    <input type="radio" class="custom-control-input" name="position_currency" id="position_currency{{ key }}" value="{{ key }}" checked />
+                                    <label class="custom-control-label" for="position_currency{{ key }}">{{ v }}</label>
+                                    {% else %}
+                                    <input type="radio" class="custom-control-input" name="position_currency" id="position_currency{{ key }}" value="{{ key }}" />
+                                    <label class="custom-control-label" for="position_currency{{ key }}">{{ v }}</label>
+                                    {% endif %}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="row form-group" style="text-align:center">
+                            <div class="col-md-offset-4 col-md-12">
+                                <input type="submit" class="btn btn-primary" value="增加">
+                                <input type="reset" class="btn btn-primary" value="取消">
+                            </div>
+                        </div>
+                    </form>
+                    {{ error_info }}
+                </div>
+                <div class="col-md-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sumbit_sure() {
+    var gnl=confirm("确定要提交?");
+    if (gnl==true) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+</script>
+{% endblock %}

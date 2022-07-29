@@ -122,14 +122,14 @@ urlpatterns = [
     path('D_edit_industry/<int:industry_id>/', D_edit_industry),
     path('D_list_industry/', D_list_industry),
 
-    # path('D_add_stock/', D_add_stock),
-    # path('D_del_stock/<int:stock_id>/', D_del_stock),
-    # path('D_edit_stock/<int:stock_id>/', D_edit_stock),
+    path('D_add_stock/', D_add_stock),
+    path('D_del_stock/<int:stock_id>/', D_del_stock),
+    path('D_edit_stock/<int:stock_id>/', D_edit_stock),
     path('D_list_stock/', D_list_stock),
 
-    # path('D_add_position/', D_add_position),
-    # path('D_del_position/<int:position_id>/', D_del_position),
-    # path('D_edit_position/<int:position_id>/', D_edit_position),
+    path('D_add_position/', D_add_position),
+    path('D_del_position/<int:position_id>/', D_del_position),
+    path('D_edit_position/<int:position_id>/', D_edit_position),
     path('D_list_position/', D_list_position),
 
     # path('D_add_trade/', D_add_trade),

@@ -1746,6 +1746,7 @@ def form_view(request):
     return render(request, 'dashboard\\form_view.html', locals())
 
 
+# 券商表的增删改查
 def D_add_broker(request):
     if request.method == 'POST':
         broker_name = request.POST.get('broker_name')
@@ -1799,6 +1800,7 @@ def D_list_broker(request):
     return render(request, D_templates_path + 'backstage\\list_broker.html', locals())
 
 
+# 市场表的增删改查
 def D_add_market(request):
     transaction_currency_items = (
         (1, '人民币'),
@@ -1866,6 +1868,7 @@ def D_list_market(request):
     return render(request, D_templates_path + 'backstage\\list_market.html', locals())
 
 
+# 账户表的增删改查
 def D_add_account(request):
     broker_list = broker.objects.all().order_by('broker_script')
     if request.method == 'POST':
@@ -1925,6 +1928,7 @@ def D_list_account(request):
     return render(request, D_templates_path + 'backstage\\list_account.html', locals())
 
 
+# 行业表的增删改查
 def D_add_industry(request):
     if request.method == 'POST':
         industry_code = request.POST.get('industry_code')
@@ -1982,9 +1986,141 @@ def D_list_industry(request):
     return render(request,  D_templates_path + 'backstage\\list_industry.html', locals())
 
 
+# 股票表的增删改查
+def D_add_stock(request):
+    market_list = market.objects.all()
+    industry_list = industry.objects.all()
+    if request.method == 'POST':
+        stock_code = request.POST.get('stock_code')
+        stock_name = request.POST.get('stock_name')
+        industry_id = request.POST.get('industry_id')
+        market_id = request.POST.get('market_id')
+        if stock_code.strip() == '':
+            error_info = '股票代码不能为空！'
+            return render(request, D_templates_path + 'backstage\\add_stock.html', locals())
+        try:
+            p = stock.objects.create(
+                stock_code=stock_code,
+                stock_name=stock_name,
+                industry_id=industry_id,
+                market_id=market_id
+            )
+            return redirect('/benben/D_list_stock/')
+        except Exception as e:
+            error_info = '输入股票代码重复或信息有错误！'
+            return render(request, D_templates_path + 'backstage\\add_stock.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'backstage\\add_stock.html', locals())
+
+
+def D_del_stock(request, stock_id):
+    stock_object = stock.objects.get(id=stock_id)
+    stock_object.delete()
+    return redirect('/benben/D_list_stock/')
+
+
+def D_edit_stock(request, stock_id):
+    market_list = market.objects.all()
+    industry_list = industry.objects.all()
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        stock_code = request.POST.get('stock_code')
+        stock_name = request.POST.get('stock_name')
+        industry_id = request.POST.get('industry_id')
+        market_id = request.POST.get('market_id')
+        stock_object = stock.objects.get(id=id)
+        try:
+            stock_object.stock_code = stock_code
+            stock_object.stock_name = stock_name
+            stock_object.industry_id = industry_id
+            stock_object.market_id = market_id
+            stock_object.save()
+        except Exception as e:
+            error_info = '输入股票代码重复或信息有错误！'
+            return render(request, D_templates_path + 'backstage\\edit_stock.html', locals())
+        finally:
+            pass
+        return redirect('/benben/D_list_stock/')
+    else:
+        stock_object = stock.objects.get(id=stock_id)
+        return render(request, D_templates_path + 'backstage\\edit_stock.html', locals())
+
+
 def D_list_stock(request):
     stock_list = stock.objects.all()
     return render(request,  D_templates_path + 'backstage\\list_stock.html', locals())
+
+
+# 持仓表增删改查
+def D_add_position(request):
+    account_list = account.objects.all()
+    stock_list = stock.objects.all().order_by('stock_code')
+    position_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    if request.method == 'POST':
+        account_id = request.POST.get('account_id')
+        stock_id = request.POST.get('stock_id')
+        position_quantity = request.POST.get('position_quantity')
+        position_currency = request.POST.get('position_currency')
+        if stock_id.strip() == '':
+            error_info = '股票不能为空！'
+            return render(request, D_templates_path + 'backstage\\add_position.html', locals())
+        try:
+            p = position.objects.create(
+                account_id=account_id,
+                stock_id=stock_id,
+                position_quantity=position_quantity,
+                position_currency=position_currency
+            )
+            return redirect('/benben/D_list_position/')
+        except Exception as e:
+            error_info = '输入信息有错误！'
+            return render(request, D_templates_path + 'backstage\\add_position.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'backstage\\add_position.html', locals())
+
+
+def D_del_position(request, position_id):
+    position_object = position.objects.get(id=position_id)
+    position_object.delete()
+    return redirect('/benben/D_list_position/')
+
+
+def D_edit_position(request, position_id):
+    position_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    account_list = account.objects.all()
+    stock_list = stock.objects.all()
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        account_id = request.POST.get('account_id')
+        stock_id = request.POST.get('stock_id')
+        position_quantity = request.POST.get('position_quantity')
+        position_currency = request.POST.get('position_currency')
+        position_object = position.objects.get(id=id)
+        try:
+            position_object.account_id = account_id
+            position_object.stock_id = stock_id
+            position_object.position_quantity = position_quantity
+            position_object.position_currency = position_currency
+            position_object.save()
+        except Exception as e:
+            error_info = '输入信息有错误！'
+            return render(request, D_templates_path + 'backstage\\edit_position.html', locals())
+        finally:
+            pass
+        return redirect('/benben/D_list_position/')
+    else:
+        position_object = position.objects.get(id=position_id)
+        return render(request, D_templates_path + 'backstage\\edit_position.html', locals())
 
 
 def D_list_position(request):
