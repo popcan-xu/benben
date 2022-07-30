@@ -2128,14 +2128,261 @@ def D_list_position(request):
     return render(request,  D_templates_path + 'backstage\\list_position.html', locals())
 
 
+# 交易表增删改查
+def D_add_trade(request):
+    trade_type_items = (
+        (1, '买'),
+        (2, '卖'),
+    )
+    settlement_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    account_list = account.objects.all()
+    stock_list = stock.objects.all().order_by('stock_code')
+    if request.method == 'POST':
+        account_id = request.POST.get('account_id')
+        stock_id = request.POST.get('stock_id')
+        trade_date = request.POST.get('trade_date')
+        trade_type = request.POST.get('trade_type')
+        trade_price = request.POST.get('trade_price')
+        trade_quantity = request.POST.get('trade_quantity')
+        settlement_currency = request.POST.get('settlement_currency')
+        if stock_id.strip() == '':
+            error_info = "股票不能为空！"
+            return render(request, D_templates_path + 'backstage\\add_trade.html', locals())
+        try:
+            p = trade.objects.create(
+                account_id=account_id,
+                stock_id=stock_id,
+                trade_date=trade_date,
+                trade_type=trade_type,
+                trade_price=trade_price,
+                trade_quantity=trade_quantity,
+                settlement_currency=settlement_currency,
+                filed_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            )
+            return redirect('/benben/D_list_trade/')
+        except Exception as e:
+            # print(str(e))
+            error_info = "输入信息有错误！"
+            return render(request, D_templates_path + 'backstage\\add_trade.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'backstage\\add_trade.html', locals())
+
+
+def D_del_trade(request, trade_id):
+    trade_object = trade.objects.get(id=trade_id)
+    trade_object.delete()
+    return redirect('/benben/D_list_trade/')
+
+
+def D_edit_trade(request, trade_id):
+    trade_type_items = (
+        (1, '买'),
+        (2, '卖'),
+    )
+    settlement_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    account_list = account.objects.all()
+    stock_list = stock.objects.all()
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        account_id = request.POST.get('account_id')
+        stock_id = request.POST.get('stock_id')
+        trade_date = request.POST.get('trade_date')
+        trade_type = request.POST.get('trade_type')
+        trade_price = request.POST.get('trade_price')
+        trade_quantity = request.POST.get('trade_quantity')
+        settlement_currency = request.POST.get('settlement_currency')
+        trade_object = trade.objects.get(id=id)
+        try:
+            trade_object.account_id = account_id
+            trade_object.stock_id = stock_id
+            trade_object.trade_date = trade_date
+            trade_object.trade_type = trade_type
+            trade_object.trade_price = trade_price
+            trade_object.trade_quantity = trade_quantity
+            trade_object.settlement_currency = settlement_currency
+            trade_object.save()
+        except Exception as e:
+            error_info = "输入信息有错误！"
+            return render(request, D_templates_path + 'backstage\\edit_trade.html', locals())
+        finally:
+            pass
+        return redirect('/benben/D_list_trade/')
+    else:
+        trade_object = trade.objects.get(id=trade_id)
+        return render(request, D_templates_path + 'backstage\\edit_trade.html', locals())
+
+
 def D_list_trade(request):
     trade_list = trade.objects.all()
     return render(request, D_templates_path + 'backstage\\list_trade.html', locals())
 
 
+# 分红表增删改查
+def D_add_dividend(request):
+    dividend_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    account_list = account.objects.all()
+    stock_list = stock.objects.all().order_by('stock_code')
+    if request.method == 'POST':
+        account_id = request.POST.get('account_id')
+        stock_id = request.POST.get('stock_id')
+        dividend_date = request.POST.get('dividend_date')
+        dividend_amount = request.POST.get('dividend_amount')
+        dividend_currency = request.POST.get('dividend_currency')
+        if stock_id.strip() == '':
+            error_info = '股票不能为空！'
+            return render(request, D_templates_path + 'backstage\\add_dividend.html', locals())
+        try:
+            p = dividend.objects.create(
+                account_id=account_id,
+                stock_id=stock_id,
+                dividend_date=dividend_date,
+                dividend_amount=dividend_amount,
+                dividend_currency=dividend_currency
+            )
+            return redirect('/benben/D_list_dividend/')
+        except Exception as e:
+            error_info = '输入信息有误！'
+            return render(request, D_templates_path + 'backstage\\add_dividend.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'backstage\\add_dividend.html', locals())
+
+
+def D_del_dividend(request, dividend_id):
+    dividend_object = dividend.objects.get(id=dividend_id)
+    dividend_object.delete()
+    return redirect('/benben/D_list_dividend/')
+
+
+def D_edit_dividend(request, dividend_id):
+    dividend_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    account_list = account.objects.all()
+    stock_list = stock.objects.all()
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        account_id = request.POST.get('account_id')
+        stock_id = request.POST.get('stock_id')
+        dividend_date = request.POST.get('dividend_date')
+        dividend_amount = request.POST.get('dividend_amount')
+        dividend_currency = request.POST.get('dividend_currency')
+        dividend_object = dividend.objects.get(id=id)
+        try:
+            dividend_object.account_id = account_id
+            dividend_object.stock_id = stock_id
+            dividend_object.dividend_date = dividend_date
+            dividend_object.dividend_amount = dividend_amount
+            dividend_object.dividend_currency = dividend_currency
+            dividend_object.save()
+        except Exception as e:
+            error_info = '输入信息有错误！'
+            return render(request, D_templates_path + 'backstage\\edit_dividend.html', locals())
+        finally:
+            pass
+        return redirect('/benben/D_list_dividend/')
+    else:
+        dividend_object = dividend.objects.get(id=dividend_id)
+        return render(request, D_templates_path + 'backstage\\edit_dividend.html', locals())
+
+
 def D_list_dividend(request):
     dividend_list = dividend.objects.all()
     return render(request,  D_templates_path + 'backstage\\list_dividend.html', locals())
+
+
+# 打新表增删改查
+def D_add_subscription(request):
+    subscription_type_items = (
+        (1, '股票'),
+        (2, '可转债'),
+    )
+    account_list = account.objects.all()
+    if request.method == 'POST':
+        account_id = request.POST.get('account_id')
+        subscription_name = request.POST.get('subscription_name')
+        subscription_date = request.POST.get('subscription_date')
+        subscription_type = request.POST.get('subscription_type')
+        subscription_quantity = request.POST.get('subscription_quantity')
+        buying_price = request.POST.get('buying_price')
+        selling_price = request.POST.get('selling_price')
+        if account_id.strip() == '':
+            error_info = '证券账户不能为空！'
+            return render(request, D_templates_path + 'backstage\\add_subscription.html', locals())
+        try:
+            p = subscription.objects.create(
+                account_id=account_id,
+                subscription_name=subscription_name,
+                subscription_date=subscription_date,
+                subscription_type=subscription_type,
+                subscription_quantity=subscription_quantity,
+                buying_price=buying_price,
+                selling_price=selling_price
+            )
+            return redirect('/benben/D_list_subscription/')
+        except Exception as e:
+            error_info = '输入信息有错误！'
+            return render(request, D_templates_path + 'backstage\\add_subscription.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'backstage\\add_subscription.html', locals())
+
+
+def D_del_subscription(request, subscription_id):
+    subscription_object = subscription.objects.get(id=subscription_id)
+    subscription_object.delete()
+    return redirect('/benben/D_list_subscription/')
+
+
+def D_edit_subscription(request, subscription_id):
+    subscription_type_items = (
+        (1, '股票'),
+        (2, '可转债'),
+    )
+    account_list = account.objects.all()
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        account_id = request.POST.get('account_id')
+        subscription_name = request.POST.get('subscription_name')
+        subscription_date = request.POST.get('subscription_date')
+        subscription_type = request.POST.get('subscription_type')
+        subscription_quantity = request.POST.get('subscription_quantity')
+        buying_price = request.POST.get('buying_price')
+        selling_price = request.POST.get('selling_price')
+        subscription_object = subscription.objects.get(id=id)
+        try:
+            subscription_object.account_id = account_id
+            subscription_object.subscription_name = subscription_name
+            subscription_object.subscription_date = subscription_date
+            subscription_object.subscription_type = subscription_type
+            subscription_object.subscription_quantity = subscription_quantity
+            subscription_object.buying_price = buying_price
+            subscription_object.selling_price = selling_price
+            subscription_object.save()
+        except Exception as e:
+            error_info = '输入信息有错误！'
+            return render(request, D_templates_path + 'backstage\edit_subscription.html', locals())
+        finally:
+            pass
+        return redirect('/benben/D_list_subscription/')
+    else:
+        subscription_object = subscription.objects.get(id=subscription_id)
+        return render(request, D_templates_path + 'backstage\edit_subscription.html', locals())
 
 
 def D_list_subscription(request):

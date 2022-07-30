@@ -33,12 +33,12 @@
                                 <td>{{ account.broker.broker_name }}</td>
                                 <td>{{ account.account_abbreviation }}</td>
                                 <td>
-                                    <a href="/benben/D_del_account/{{ account.id }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/D_del_account/{{ account.id|safe }}/" class="btn btn-default btn-sm">
                                         删除
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/benben/D_edit_account/{{ account.id }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/D_edit_account/{{ account.id|safe }}/" class="btn btn-default btn-sm">
                                         修改
                                     </a>
                                 </td>

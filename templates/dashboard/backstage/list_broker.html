@@ -31,12 +31,12 @@
                                 <td>{{ broker.broker_name }}</td>
                                 <td>{{ broker.broker_script }}</td>
                                 <td>
-                                    <a href="/benben/D_del_broker/{{ broker.id }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/D_del_broker/{{ broker.id|safe }}/" class="btn btn-default btn-sm">
                                         删除
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/benben/D_edit_broker/{{ broker.id }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/D_edit_broker/{{ broker.id|safe }}/" class="btn btn-default btn-sm">
                                         修改
                                     </a>
                                 </td>

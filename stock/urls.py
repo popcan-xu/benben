@@ -132,19 +132,19 @@ urlpatterns = [
     path('D_edit_position/<int:position_id>/', D_edit_position),
     path('D_list_position/', D_list_position),
 
-    # path('D_add_trade/', D_add_trade),
-    # path('D_del_trade/<int:trade_id>/', D_del_trade),
-    # path('D_edit_trade/<int:trade_id>/', D_edit_trade),
+    path('D_add_trade/', D_add_trade),
+    path('D_del_trade/<int:trade_id>/', D_del_trade),
+    path('D_edit_trade/<int:trade_id>/', D_edit_trade),
     path('D_list_trade/', D_list_trade),
 
-    # path('D_add_dividend/', D_add_dividend),
-    # path('D_del_dividend/<int:dividend_id>/', D_del_dividend),
-    # path('D_edit_dividend/<int:dividend_id>/', D_edit_dividend),
+    path('D_add_dividend/', D_add_dividend),
+    path('D_del_dividend/<int:dividend_id>/', D_del_dividend),
+    path('D_edit_dividend/<int:dividend_id>/', D_edit_dividend),
     path('D_list_dividend/', D_list_dividend),
 
-    # path('D_add_subscription/', D_add_subscription),
-    # path('D_del_subscription/<int:subscription_id>/', D_del_subscription),
-    # path('D_edit_subscription/<int:subscription_id>/', D_edit_subscription),
+    path('D_add_subscription/', D_add_subscription),
+    path('D_del_subscription/<int:subscription_id>/', D_del_subscription),
+    path('D_edit_subscription/<int:subscription_id>/', D_edit_subscription),
     path('D_list_subscription/', D_list_subscription),
 
     # path('D_add_dividend_history/', D_add_dividend_history),

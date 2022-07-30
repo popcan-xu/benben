@@ -19,7 +19,7 @@
                         <div class="col-md-8">
                             <select class="form-control" name="account_id" id="account_id">
                             {% for account in account_list %}
-                                {% if account.account_number == trade.account.account_number %}
+                                {% if account.account_number == subscription.account.account_number %}
                                 <option value="{{ account.id }}" selected>{{ account.broker.broker_name }}({{ account.account_number }})</option>
                                 {% else %}
                                 <option value="{{ account.id }}">{{ account.broker.broker_name }}({{ account.account_number }})</option>
@@ -41,7 +41,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="subscription_type" class="col-md-4 control-label">交易类型：</label>
+                        <label for="subscription_type" class="col-md-4 control-label">申购类型：</label>
                         <div class="col-md-8">
                             {% for key,v in subscription_type_items %}
                             <label class="radio-inline">

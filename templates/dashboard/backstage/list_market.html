@@ -38,12 +38,12 @@
                                 <td>{{ market.exchange_rate }}</td>
                                 <td>{{ market.modified_time|date:'Y-m-d H:i' }}</td>
                                 <td>
-                                    <a href="/benben/D_del_market/{{ market.id }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/D_del_market/{{ market.id|safe }}/" class="btn btn-default btn-sm">
                                         删除
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/benben/D_edit_market/{{ market.id }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/D_edit_market/{{ market.id|safe }}/" class="btn btn-default btn-sm">
                                         修改
                                     </a>
                                 </td>

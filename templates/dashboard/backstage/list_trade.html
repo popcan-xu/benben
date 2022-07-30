@@ -8,7 +8,7 @@
         <div class="card-header py-3">
             <div class="d-sm-flex align-items-center justify-content-between mb-0">
                 <h1 class="h4 mb-0 text-gray-800">交易列表</h1>
-                <a href="/benben/add_trade/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                <a href="/benben/D_add_trade/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
                     <i class="fa fa-plus fa-sm text-white-50"></i> 增加
                 </a>
             </div>
@@ -47,12 +47,12 @@
                                 <!--<td style="vertical-align: middle;">{{ trade.created_time }}</td>-->
                                 <td>{{ trade.modified_time|date:'Y-m-d H:i' }}</td>
                                 <td>
-                                    <a href="/benben/del_trade/{{ trade.id }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/D_del_trade/{{ trade.id|safe }}/" class="btn btn-default btn-sm">
                                         删除
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/benben/edit_trade/{{ trade.id }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/D_edit_trade/{{ trade.id|safe }}/" class="btn btn-default btn-sm">
                                         修改
                                     </a>
                                 </td>
