@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+{% load static %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-2 text-gray-800">增加分红历史</h1>
+    <p class="mb-4">请在这里增加分红历史</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">分红历史</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col-md-6">
+                    <form action="" method="post" class="form-horizontal" role="form" onsubmit="return sumbit_sure()">
+                        {% csrf_token %}
+                        <div class="row form-group">
+                            <label for="stock_id" class="col-md-4 control-label text-right">股票：</label>
+                            <div class="col-md-8">
+                                <select class="form-control" name="stock_id" id="stock_id">
+                                {% for stock in stock_list %}
+                                    {% if stock.stock_code == dividend_history.stock.stock_code %}
+                                    <option value="{{ stock.id }}" selected>{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                    {% else %}
+                                    <option value="{{ stock.id }}">{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                    {% endif %}
+                                {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="reporting_period" class="col-md-4 control-label text-right">报告期：</label>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control"  name="reporting_period" id="reporting_period" placeholder="请录入报告期">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="dividend_plan" class="col-md-4 control-label text-right">分红方案：</label>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control"  name="dividend_plan" id="dividend_plan" placeholder="请录入分红方案">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="announcement_date" class="col-md-4 control-label text-right">公告日：</label>
+                            <div class="col-md-8">
+                                <input type="date" class="form-control date-picker"  name="announcement_date" id="announcement_date" placeholder="请选择公告日">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="registration_date" class="col-md-4 control-label text-right">股权登记日：</label>
+                            <div class="col-md-8">
+                                <input type="date" class="form-control date-picker"  name="registration_date" id="registration_date" placeholder="请选择股权登记日">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="ex_right_date" class="col-md-4 control-label text-right">除权除息日：</label>
+                            <div class="col-md-8">
+                                <input type="date" class="form-control date-picker"  name="ex_right_date" id="ex_right_date" placeholder="请选择除权除息日">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="dividend_date" class="col-md-4 control-label text-right">派息日：</label>
+                            <div class="col-md-8">
+                                <input type="date" class="form-control date-picker"  name="dividend_date" id="dividend_date" placeholder="请选择派息日">
+                            </div>
+                        </div>
+                        <div class="row form-group" style="text-align:center">
+                            <div class="col-md-offset-4 col-md-12">
+                                <input type="submit" class="btn btn-primary" value="增加">
+                                <input type="reset" class="btn btn-primary" value="取消">
+                            </div>
+                        </div>
+                    </form>
+                    {{ error_info }}
+                </div>
+                <div class="col-md-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sumbit_sure() {
+    var gnl=confirm("确定要提交?");
+    if (gnl==true) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+</script>
+{% endblock %}

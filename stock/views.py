@@ -2390,6 +2390,77 @@ def D_list_subscription(request):
     return render(request,  D_templates_path + 'backstage\\list_subscription.html', locals())
 
 
+# 分红历史表增删改查
+def D_add_dividend_history(request):
+    stock_list = stock.objects.all().order_by('stock_code')
+    if request.method == 'POST':
+        stock_id = request.POST.get('stock_id')
+        reporting_period = request.POST.get('reporting_period')
+        dividend_plan = request.POST.get('dividend_plan')
+        announcement_date = request.POST.get('announcement_date')
+        registration_date = request.POST.get('registration_date')
+        ex_right_date = request.POST.get('ex_right_date')
+        dividend_date = request.POST.get('dividend_date')
+        if stock_id.strip() == '':
+            error_info = "股票不能为空！"
+            return render(request, D_templates_path + 'backstage\\add_dividend_history.html', locals())
+        try:
+            p = dividend_history.objects.create(
+                stock_id=stock_id,
+                reporting_period=reporting_period,
+                dividend_plan=dividend_plan,
+                announcement_date=announcement_date,
+                registration_date=registration_date,
+                ex_right_date=ex_right_date,
+                dividend_date=dividend_date
+            )
+            return redirect('/benben/D_list_dividend_history/')
+        except Exception as e:
+            error_info = "输入信息有错误！"
+            return render(request, D_templates_path + 'backstage\\add_dividend_history.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'backstage\\add_dividend_history.html', locals())
+
+
+def D_del_dividend_history(request, dividend_history_id):
+    dividend_history_object = dividend_history.objects.get(id=dividend_history_id)
+    dividend_history_object.delete()
+    return redirect('/benben/D_list_dividend_history/')
+
+
+def D_edit_dividend_history(request, dividend_history_id):
+    stock_list = stock.objects.all().order_by('stock_code')
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        stock_id = request.POST.get('stock_id')
+        reporting_period = request.POST.get('reporting_period')
+        dividend_plan = request.POST.get('dividend_plan')
+        announcement_date = request.POST.get('announcement_date')
+        registration_date = request.POST.get('registration_date')
+        ex_right_date = request.POST.get('ex_right_date')
+        dividend_date = request.POST.get('dividend_date')
+        dividend_history_object = dividend_history.objects.get(id=id)
+        try:
+            dividend_history_object.stock_id = stock_id
+            dividend_history_object.reporting_period = reporting_period
+            dividend_history_object.dividend_plan = dividend_plan
+            dividend_history_object.announcement_date = announcement_date
+            dividend_history_object.registration_date = registration_date
+            dividend_history_object.ex_right_date = ex_right_date
+            dividend_history_object.dividend_date = dividend_date
+            dividend_history_object.save()
+        except Exception as e:
+            error_info = "输入信息有错误！"
+            return render(request, D_templates_path + 'backstage\\edit_dividend_history.html', locals())
+        finally:
+            pass
+        return redirect('/benben/D_list_dividend_history/')
+    else:
+        dividend_history_object = dividend_history.objects.get(id=dividend_history_id)
+        return render(request, D_templates_path + 'backstage\\edit_dividend_history.html', locals())
+
+
 def D_list_dividend_history(request):
     dividend_history_list = dividend_history.objects.all()
     return render(request,  D_templates_path + 'backstage\\list_dividend_history.html', locals())

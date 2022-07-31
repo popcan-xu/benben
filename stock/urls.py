@@ -147,9 +147,9 @@ urlpatterns = [
     path('D_edit_subscription/<int:subscription_id>/', D_edit_subscription),
     path('D_list_subscription/', D_list_subscription),
 
-    # path('D_add_dividend_history/', D_add_dividend_history),
-    # path('D_del_dividend_history/<int:dividend_history_id>/', D_del_dividend_history),
-    # path('D_edit_dividend_history/<int:dividend_history_id>/', D_edit_dividend_history),
+    path('D_add_dividend_history/', D_add_dividend_history),
+    path('D_del_dividend_history/<int:dividend_history_id>/', D_del_dividend_history),
+    path('D_edit_dividend_history/<int:dividend_history_id>/', D_edit_dividend_history),
     path('D_list_dividend_history/', D_list_dividend_history),
 
     path('D_stats_position/', D_stats_position),
