@@ -1746,6 +1746,140 @@ def form_view(request):
     return render(request, 'dashboard\\form_view.html', locals())
 
 
+# 交易录入
+def D_input_trade(request):
+    trade_type_items = (
+        (1, '买'),
+        (2, '卖'),
+    )
+    settlement_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    account_list = account.objects.all()
+    stock_list = stock.objects.all().order_by('stock_code')
+    if request.method == 'POST':
+        account_id = request.POST.get('account_id')
+        stock_id = request.POST.get('stock_id')
+        trade_date = request.POST.get('trade_date')
+        trade_type = request.POST.get('trade_type')
+        trade_price = request.POST.get('trade_price')
+        trade_quantity = request.POST.get('trade_quantity')
+        settlement_currency = request.POST.get('settlement_currency')
+        if stock_id.strip() == '':
+            error_info = "股票不能为空！"
+            return render(request, D_templates_path + 'input\\input_trade.html', locals())
+        try:
+            # 新增一条交易记录
+            p = trade.objects.create(
+                account_id=account_id,
+                stock_id=stock_id,
+                trade_date=trade_date,
+                trade_type=trade_type,
+                trade_price=trade_price,
+                trade_quantity=trade_quantity,
+                settlement_currency=settlement_currency,
+                filed_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            )
+            # 更新（删除）或新增一条仓位记录
+            position_objects = position.objects.filter(stock_id=stock_id, account_id=account_id)
+            if position_objects.exists():
+                # 更新一条仓位记录
+                if trade_type == '2':
+                    trade_quantity = -1 * int(trade_quantity)
+                else:
+                    trade_quantity = int(trade_quantity)
+                for position_object in position_objects:
+                    position_object.position_quantity += trade_quantity
+                    position_object.save()
+                    if position_object.position_quantity == 0:
+                        position_object.delete()
+            else:
+                # 新增一条仓位记录
+                q = position.objects.create(
+                    account_id=account_id,
+                    stock_id=stock_id,
+                    position_quantity=trade_quantity,
+                    position_currency=settlement_currency
+                )
+            return redirect('/benben/D_list_trade/')
+        except Exception as e:
+            error_info = "输入信息有错误！"
+            return render(request, D_templates_path + 'input\\input_trade.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'input\\input_trade.html', locals())
+
+
+# 分红录入
+def D_input_dividend(request):
+    dividend_currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    account_list = account.objects.all()
+    stock_list = stock.objects.all().order_by('stock_code')
+    if request.method == 'POST':
+        account_id = request.POST.get('account_id')
+        stock_id = request.POST.get('stock_id')
+        dividend_date = request.POST.get('dividend_date')
+        dividend_amount = request.POST.get('dividend_amount')
+        dividend_currency = request.POST.get('dividend_currency')
+        if stock_id.strip() == '':
+            return render(request, D_templates_path + 'input\\input_dividend.html', locals())
+        try:
+            p = dividend.objects.create(
+                account_id=account_id,
+                stock_id=stock_id,
+                dividend_date=dividend_date,
+                dividend_amount=dividend_amount,
+                dividend_currency=dividend_currency
+            )
+            return redirect('/benben/D_list_dividend/')
+        except Exception as e:
+            return render(request, D_templates_path + 'input\\input_dividend.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'input\\input_dividend.html', locals())
+
+
+# 打新录入
+def D_input_subscription(request):
+    subscription_type_items = (
+        (1, '股票'),
+        (2, '可转债'),
+    )
+    account_list = account.objects.all()
+    if request.method == 'POST':
+        account_id = request.POST.get('account_id')
+        subscription_name = request.POST.get('subscription_name')
+        subscription_date = request.POST.get('subscription_date')
+        subscription_type = request.POST.get('subscription_type')
+        subscription_quantity = request.POST.get('subscription_quantity')
+        buying_price = request.POST.get('buying_price')
+        selling_price = request.POST.get('selling_price')
+        if account_id.strip() == '':
+            return render(request, D_templates_path + 'input\\input_subscription.html', locals())
+        try:
+            p = subscription.objects.create(
+                account_id=account_id,
+                subscription_name=subscription_name,
+                subscription_date=subscription_date,
+                subscription_type=subscription_type,
+                subscription_quantity=subscription_quantity,
+                buying_price=buying_price,
+                selling_price=selling_price
+            )
+            return redirect('/benben/D_list_subscription/')
+        except Exception as e:
+            return render(request, D_templates_path + 'input\\input_subscription.html', locals())
+        finally:
+            pass
+    return render(request, D_templates_path + 'input\\input_subscription.html', locals())
+
+
 # 券商表的增删改查
 def D_add_broker(request):
     if request.method == 'POST':
