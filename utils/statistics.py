@@ -323,29 +323,50 @@ def get_dividend_stock_content(currency):
 
 
 def get_dividend_year_content(currency):
-    year_content = []
     amount_sum = 0.0
-    year_array = []
+    year_content = []
+    year_table_array = []
+    year_chart_array = []
     amount_array = []
     percent_array = []
     # 通过dividend_date__year按年份分组
     year_dict = dividend.objects.filter(dividend_currency=currency).values("dividend_date__year").annotate(
         amount=Sum("dividend_amount")).values('dividend_date__year', 'amount')
     for dict in year_dict:
+        name_array1 = []
+        name_list = ''
         year = dict['dividend_date__year']
         amount = dict['amount']
         amount_sum += float(amount)
-        year_array.append(year)
+        record_list = dividend.objects.filter(dividend_date__year=year, dividend_currency=currency).values(
+            'stock__stock_name')
+        for record in record_list:
+            stock_name = record['stock__stock_name']
+            # 将同一账号下的持仓股票名称写入name_array1列表
+            name_array1.append(stock_name)
+        # 列表去重，存入name_array2
+        name_array2 = list(set(name_array1))
+        name_array2.sort(key=name_array1.index)
+        # 将name_array2中的每个列表值合并成字符串name_list，并用‘/’分隔
+        i = 0
+        while i < len(name_array2):
+            name_list = name_list + name_array2[i] + '/'
+            i += 1
+        # 将字符串的最后一个'/'截掉
+        name_list = name_list[:-1]
+        year_table_array.append(str(year) + '（' + name_list + '）')
+        year_chart_array.append(year)
         amount_array.append(float(amount))
     i = 0
     while i < len(amount_array):
         percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
         i += 1
-    year_content = list(zip(year_array, amount_array, percent_array))
+    year_table_content = list(zip(year_table_array, amount_array, percent_array))
+    year_chart_content = list(zip(year_chart_array, amount_array, percent_array))
     # year_content.sort(key=take_col1, reverse=True)  # 对stock_content列表按第1列（年份）降序排序
-    name_array, value_array = get_chart_array(year_content, -1, 0, 1)
-    return year_content, amount_sum, json.dumps(name_array), value_array
+    name_array, value_array = get_chart_array(year_chart_content, -1, 0, 1)
+    return year_table_content, amount_sum, json.dumps(name_array), value_array
 
 
 def get_dividend_industry_content(currency):
