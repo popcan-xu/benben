@@ -106,6 +106,11 @@ urlpatterns = [
     path('D_input_dividend/', D_input_dividend),
     path('D_input_subscription/', D_input_subscription),
 
+    path('D_stats_position/', D_stats_position),
+    path('D_stats_value/', D_stats_value),
+    path('D_stats_dividend/', D_stats_dividend),
+    path('D_query_dividend_value/', D_query_dividend_value),
+
     path('D_add_broker/', D_add_broker),
     path('D_del_broker/<int:broker_id>/', D_del_broker),
     path('D_edit_broker/<int:broker_id>/', D_edit_broker),
@@ -155,8 +160,5 @@ urlpatterns = [
     path('D_del_dividend_history/<int:dividend_history_id>/', D_del_dividend_history),
     path('D_edit_dividend_history/<int:dividend_history_id>/', D_edit_dividend_history),
     path('D_list_dividend_history/', D_list_dividend_history),
-
-    path('D_stats_position/', D_stats_position),
-    path('D_query_dividend_value/', D_query_dividend_value),
 
 ]

@@ -322,9 +322,9 @@ def get_dividend_stock_content(currency):
     return stock_content, amount_sum, json.dumps(name_array), value_array
 
 
-def get_dividend_year_content(amount_sum, currency):
+def get_dividend_year_content(currency):
     year_content = []
-    # amount_sum = 0.0
+    amount_sum = 0.0
     year_array = []
     amount_array = []
     percent_array = []
@@ -334,7 +334,7 @@ def get_dividend_year_content(amount_sum, currency):
     for dict in year_dict:
         year = dict['dividend_date__year']
         amount = dict['amount']
-        # amount_sum += float(amount)
+        amount_sum += float(amount)
         year_array.append(year)
         amount_array.append(float(amount))
     i = 0
@@ -345,11 +345,13 @@ def get_dividend_year_content(amount_sum, currency):
     year_content = list(zip(year_array, amount_array, percent_array))
     # year_content.sort(key=take_col1, reverse=True)  # 对stock_content列表按第1列（年份）降序排序
     name_array, value_array = get_chart_array(year_content, -1, 0, 1)
-    return year_content, json.dumps(name_array), value_array
+    return year_content, amount_sum, json.dumps(name_array), value_array
 
 
-def get_dividend_industry_content(amount_sum, currency):
-    industry_array = []
+def get_dividend_industry_content(currency):
+    amount_sum = 0.0
+    industry_table_array = []
+    industry_chart_array = []
     amount_array = []
     percent_array = []
     # 通过stock__industry按股票所属行业分组
@@ -365,7 +367,8 @@ def get_dividend_industry_content(amount_sum, currency):
         industry_id = dict['stock__industry__id']
         industry_name = dict['stock__industry__industry_name']
         amount = dict['amount']
-        percent = format(float(amount) / amount_sum, '.2%')
+        amount_sum += float(amount)
+        #percent = format(float(amount) / amount_sum, '.2%')
         record_list = dividend.objects.filter(stock__industry=industry_id, dividend_currency=currency).values(
             'stock__stock_name')
         for record in record_list:
@@ -382,16 +385,27 @@ def get_dividend_industry_content(amount_sum, currency):
             i += 1
         # 将字符串的最后一个'/'截掉
         name_list = name_list[:-1]
-        industry_array.append(industry_name + '（' + name_list + '）')
+        industry_table_array.append(industry_name + '（' + name_list + '）')
+        industry_chart_array.append(industry_name)
         amount_array.append(float(amount))
+        #percent_array.append(percent)
+    i = 0
+    while i < len(amount_array):
+        percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
-    industry_content = list(zip(industry_array, amount_array, percent_array))
-    industry_content.sort(key=take_col2, reverse=True)
-    return industry_content
+        i += 1
+    industry_table_content = list(zip(industry_table_array, amount_array, percent_array))
+    industry_chart_content = list(zip(industry_chart_array, amount_array, percent_array))
+    industry_table_content.sort(key=take_col2, reverse=True)
+    industry_chart_content.sort(key=take_col2, reverse=True)
+    name_array, value_array = get_chart_array(industry_chart_content, -1, 0, 1)
+    return industry_table_content, amount_sum, json.dumps(name_array), value_array
 
 
-def get_dividend_market_content(amount_sum, currency):
-    market_array = []
+def get_dividend_market_content(currency):
+    amount_sum = 0.0
+    market_table_array = []
+    market_chart_array = []
     amount_array = []
     percent_array = []
     # 通过stock__industry按股票所属行业分组
@@ -407,7 +421,8 @@ def get_dividend_market_content(amount_sum, currency):
         market_id = dict['stock__market__id']
         market_name = dict['stock__market__market_name']
         amount = dict['amount']
-        percent = format(float(amount) / amount_sum, '.2%')
+        amount_sum += float(amount)
+        #percent = format(float(amount) / amount_sum, '.2%')
         record_list = dividend.objects.filter(stock__market=market_id, dividend_currency=currency).values(
             'stock__stock_name')
         for record in record_list:
@@ -424,16 +439,27 @@ def get_dividend_market_content(amount_sum, currency):
             i += 1
         # 将字符串的最后一个'/'截掉
         name_list = name_list[:-1]
-        market_array.append(market_name + '（' + name_list + '）')
+        market_table_array.append(market_name + '（' + name_list + '）')
+        market_chart_array.append(market_name)
         amount_array.append(float(amount))
+        #percent_array.append(percent)
+    i = 0
+    while i < len(amount_array):
+        percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
-    market_content = list(zip(market_array, amount_array, percent_array))
-    market_content.sort(key=take_col2, reverse=True)
-    return market_content
+        i += 1
+    market_table_content = list(zip(market_table_array, amount_array, percent_array))
+    market_chart_content = list(zip(market_chart_array, amount_array, percent_array))
+    market_table_content.sort(key=take_col2, reverse=True)
+    market_chart_content.sort(key=take_col2, reverse=True)
+    name_array, value_array = get_chart_array(market_chart_content, -1, 0, 1)
+    return market_table_content, amount_sum, json.dumps(name_array), value_array
 
 
-def get_dividend_account_content(amount_sum, currency):
-    account_array = []
+def get_dividend_account_content(currency):
+    amount_sum = 0.0
+    account_table_array = []
+    account_chart_array = []
     amount_array = []
     percent_array = []
     # 通过stock__account按股票所属账号分组
@@ -449,7 +475,8 @@ def get_dividend_account_content(amount_sum, currency):
         account_id = dict['account__id']
         account_abbreviation = dict['account__account_abbreviation']
         amount = dict['amount']
-        percent = format(float(amount) / amount_sum, '.2%')
+        amount_sum += float(amount)
+        #percent = format(float(amount) / amount_sum, '.2%')
         record_list = dividend.objects.filter(account=account_id, dividend_currency=currency).values(
             'stock__stock_name')
         for record in record_list:
@@ -466,12 +493,21 @@ def get_dividend_account_content(amount_sum, currency):
             i += 1
         # 将字符串的最后一个'/'截掉
         name_list = name_list[:-1]
-        account_array.append(account_abbreviation + '（' + name_list + '）')
+        account_table_array.append(account_abbreviation + '（' + name_list + '）')
+        account_chart_array.append(account_abbreviation)
         amount_array.append(float(amount))
+        #percent_array.append(percent)
+    i = 0
+    while i < len(amount_array):
+        percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
-    account_content = list(zip(account_array, amount_array, percent_array))
-    account_content.sort(key=take_col2, reverse=True)
-    return account_content
+        i += 1
+    account_table_content = list(zip(account_table_array, amount_array, percent_array))
+    account_chart_content = list(zip(account_chart_array, amount_array, percent_array))
+    account_table_content.sort(key=take_col2, reverse=True)
+    account_chart_content.sort(key=take_col2, reverse=True)
+    name_array, value_array = get_chart_array(account_chart_content, -1, 0, 1)
+    return account_table_content, amount_sum, json.dumps(name_array), value_array
 
 
 def get_subscription_year_content(subscription_type):
