@@ -9,27 +9,18 @@
             <h6 class="m-0 font-weight-bold text-primary">分红金额查询</h6>
         </div>
         <div class="card-body">
-            <ul id="queryTab" class="nav nav-tabs">
-                <li class="nav-item">
-                    <a class="nav-link active" href="#dividend_value" data-toggle="tab">分红金额</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#" data-toggle="tab">按年份</a>
-                </li>
-            </ul>
-            <div id="queryTabContent" class="tab-content">
-                <div class="tab-pane fade show active" id="dividend_value">
-                    <p></p>
-                    <div class="row">
-                        <form action="" method="post" class="form-horizontal" role="form">
-                            {% csrf_token %}
-                            <input type="hidden" style="visibility: hidden;" name="tab_name" value="分红金额" />
+            <div class="h jumbotron bg-gray-100">
+                <form action="" method="post" class="form-horizontal" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" style="visibility: hidden;" name="tab_name" value="分红金额" />
+                    <div class="row align-items-center h-100">
+                        <div class="col-md-11">
                             <div class="row form-group">
-                                <div class="col-md-4 text-right">
+                                <div class="col-md-1 text-right">
                                     <label for="stock_code" class="control-label">股票：</label>
                                 </div>
-                                <div class="col-md-4">
-                                    <select class="form-control" name="stock_code" id="stock_code">
+                                <div class="col-md-10">
+                                    <select class="form-control control-inline" name="stock_code" id="stock_code">
                                         <option disabled selected value="">请选择股票...</option>
                                         {% for stock in dividends_stock_list %}
                                             {% if stock.stock_code == stock_code %}
@@ -40,13 +31,13 @@
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <div class="col-md-4"></div>
+                                <div class="col-md-1"></div>
                             </div>
                             <div class="row form-group">
-                                <div class="col-md-4 text-right">
+                                <div class="col-md-1 text-right">
                                     <label class="control-label">年份：</label>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-10">
                                     {% for year in year_list %}
                                         <div class="custom-control custom-checkbox custom-control-inline">
                                             {% if year.year in dividend_year_list %}
@@ -59,7 +50,7 @@
                                         </div>
                                     {% endfor %}
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-1">
                                     <div class="custom-control custom-checkbox custom-control-inline">
                                         {% if is_all_year_checked == "true" %}
                                             <input class="year custom-control-input" type="checkbox" id="all_year" name="all_year" value="true" onclick="checkOrCancelAll_year();" checked />
@@ -72,10 +63,10 @@
                                 </div>
                             </div>
                             <div class="row form-group">
-                                <div class="col-md-4 text-right">
+                                <div class="col-md-1 text-right">
                                     <label class="control-label">账户：</label>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-10">
                                     {% for account in account_list %}
                                         <div class="custom-control custom-checkbox custom-control-inline">
                                             {% if account.id in dividend_account_list %}
@@ -88,7 +79,7 @@
                                         </div>
                                     {% endfor %}
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-1">
                                     <div class="custom-control custom-checkbox custom-control-inline">
                                         {% if is_all_account_checked == "true" %}
                                             <input class="account custom-control-input" type="checkbox" id="all_account" name="all_account" value="true" onclick="checkOrCancelAll_account();" checked />
@@ -101,10 +92,10 @@
                                 </div>
                             </div>
                             <div class="row form-group">
-                                <div class="col-md-4 text-right">
+                                <div class="col-md-1 text-right">
                                     <label class="control-label">货币：</label>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-10">
                                     {% for key,v in dividend_currency_items %}
                                     <div class="custom-control custom-radio custom-control-inline">
                                         {% if key == dividend_currency %}
@@ -117,47 +108,52 @@
                                     </div>
                                     {% endfor %}
                                 </div>
-                                <div class="col-md-4"></div>
+                                <div class="col-md-1"></div>
                             </div>
-                            <div class="row form-group" style="text-align:center">
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group" style="text-align:center">
                                 <div class="col-md-12">
                                     <input type="submit" class="btn btn-primary" value="查询">
                                 </div>
                             </div>
-                        </form>
+                        </div>
                     </div>
-                    {{ error_info }}
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-condensed table-striped table-hover list_tab">
-                            <thead class="thead bg-gradient-secondary text-gray-100">
+                </form>
+            </div>
+            <hr class="sidebar-divider">
+            {{ error_info }}
+            <div class="h jumbotron bg-gray-100">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                        <thead class="thead bg-gradient-secondary text-gray-100">
+                            <tr>
+                                <th>股票/代码</th>
+                                <th>账户</th>
+                                <th>分红日期</th>
+                                <th>金额({{ dividend_currency_name }})</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!--#dividend_history_list即为视图函数list_dividend_history中render传入参数//-->
+                            {% for i in dividend_list %}
                                 <tr>
-                                    <th>股票/代码</th>
-                                    <th>账户</th>
-                                    <th>分红日期</th>
-                                    <th>金额({{ dividend_currency_name }})</th>
+                                    <td>{{ stock_name }}({{ stock_code }})</td>
+                                    <td>{{ i.account.account_abbreviation }}</td>
+                                    <td>{{ i.dividend_date|date:'Y-m-d' }}</td>
+                                    <td>{{ i.dividend_amount }}</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <!--#dividend_history_list即为视图函数list_dividend_history中render传入参数//-->
-                                {% for i in dividend_list %}
-                                    <tr>
-                                        <td>{{ stock_name }}({{ stock_code }})</td>
-                                        <td>{{ i.account.account_abbreviation }}</td>
-                                        <td>{{ i.dividend_date|date:'Y-m-d' }}</td>
-                                        <td>{{ i.dividend_amount }}</td>
-                                    </tr>
-                                {% empty %}
-                                    <tr>
-                                        <td colspan="7">无相关记录！</td>
-                                    </tr>
-                                {% endfor %}
+                            {% empty %}
                                 <tr>
-                                    <td colspan="3">小计</td>
-                                    <td>{{ amount_sum }}</td>
+                                    <td colspan="7">无相关记录！</td>
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                            {% endfor %}
+                            <tr>
+                                <td colspan="3">小计</td>
+                                <td>{{ amount_sum }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
