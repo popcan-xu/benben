@@ -562,10 +562,11 @@ def get_subscription_year_content(subscription_type):
     return year_content, amount_sum, json.dumps(year_array), amount_array
 
 
-def get_subscription_account_content(amount_sum, subscription_type):
+def get_subscription_account_content(subscription_type):
     account_array = []
     amount_array = []
     percent_array = []
+    amount_sum = 0.0
     account_dict = subscription.objects.filter(subscription_type=subscription_type).values(
         "account"
     ).annotate(
@@ -577,20 +578,25 @@ def get_subscription_account_content(amount_sum, subscription_type):
     for dict in account_dict:
         account = dict['account__account_abbreviation']
         amount = dict['amount']
+        amount_sum += float(amount)
         account_array.append(account)
         amount_array.append(int(amount))
-        percent = format(float(amount) / amount_sum, '.2%')
+    i = 0
+    while i < len(amount_array):
+        percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
+        i += 1
     account_content = list(zip(account_array, amount_array, percent_array))
     # account_content.sort(key=take_col2, reverse=True)  # 对account_content列表按第2列（金额）降序排序
 
-    return account_content, json.dumps(account_array), amount_array
+    return account_content, amount_sum, json.dumps(account_array), amount_array
 
 
-def get_subscription_name_content(amount_sum, subscription_type):
+def get_subscription_name_content(subscription_type):
     subscription_name_array = []
     amount_array = []
     percent_array = []
+    amount_sum = 0.0
     subscription_dict = subscription.objects.filter(subscription_type=subscription_type).values(
         "subscription_name"
     ).annotate(
@@ -602,14 +608,18 @@ def get_subscription_name_content(amount_sum, subscription_type):
     for dict in subscription_dict:
         subscription_name = dict['subscription_name']
         amount = dict['amount']
+        amount_sum += float(amount)
         subscription_name_array.append(subscription_name)
         amount_array.append(int(amount))
-        percent = format(float(amount) / amount_sum, '.2%')
+    i = 0
+    while i < len(amount_array):
+        percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
+        i += 1
     name_content = list(zip(subscription_name_array, amount_array, percent_array))
     name_content.sort(key=take_col2, reverse=True)
     name_array, value_array = get_chart_array(name_content, 20, 0, 1)
-    return name_content, json.dumps(name_array), value_array
+    return name_content, amount_sum, json.dumps(name_array), value_array
 
 
 def get_account_stock_content(account_id, price_increase_array, HKD_rate, USD_rate):

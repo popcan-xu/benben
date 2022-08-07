@@ -1241,11 +1241,10 @@ def statistics_subscription(request):
     type_BOND = 2
     year_content_STOCK, amount_sum_STOCK, name_array_11, value_array_11 = get_subscription_year_content(type_STOCK)
     year_content_BOND, amount_sum_BOND, name_array_12, value_array_12 = get_subscription_year_content(type_BOND)
-    account_content_STOCK, name_array_21, value_array_21 = get_subscription_account_content(amount_sum_STOCK,
-                                                                                            type_STOCK)
-    account_content_BOND, name_array_22, value_array_22 = get_subscription_account_content(amount_sum_BOND, type_BOND)
-    name_content_STOCK, name_array_31, value_array_31 = get_subscription_name_content(amount_sum_STOCK, type_STOCK)
-    name_content_BOND, name_array_32, value_array_32 = get_subscription_name_content(amount_sum_BOND, type_BOND)
+    account_content_STOCK, amount_sum_STOCK, name_array_21, value_array_21 = get_subscription_account_content(type_STOCK)
+    account_content_BOND, amount_sum_BOND, name_array_22, value_array_22 = get_subscription_account_content(type_BOND)
+    name_content_STOCK, amount_sum_STOCK, name_array_31, value_array_31 = get_subscription_name_content(type_STOCK)
+    name_content_BOND, amount_sum_BOND, name_array_32, value_array_32 = get_subscription_name_content(type_BOND)
 
     return render(request, templates_path + 'stats\statistics_subscription.html', locals())
 
@@ -1954,26 +1953,6 @@ def D_stats_dividend(request):
         (2, '港元'),
         (3, '美元'),
     )
-    #currency_CNY = 1
-    #currency_HKD = 2
-    #currency_USD = 3
-    #stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
-    #stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
-    #stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
-    #year_content_CNY, amount_sum_CNY, name_array_21, value_array_21 = get_dividend_year_content(currency_CNY)
-    #year_content_HKD, amount_sum_HKD, name_array_22, value_array_22 = get_dividend_year_content(currency_HKD)
-    #year_content_USD, amount_sum_USD, name_array_23, value_array_23 = get_dividend_year_content(currency_USD)
-    #industry_content_CNY, amount_sum_CNY = get_dividend_industry_content(currency_CNY)
-    #industry_content_HKD, amount_sum_HKD = get_dividend_industry_content(currency_HKD)
-    #industry_content_USD, amount_sum_USD = get_dividend_industry_content(currency_USD)
-    #market_content_CNY, amount_sum_CNY = get_dividend_market_content(currency_CNY)
-    #market_content_HKD, amount_sum_HKD = get_dividend_market_content(currency_HKD)
-    #market_content_USD, amount_sum_USD = get_dividend_market_content(currency_USD)
-    #account_content_CNY, amount_sum_CNY = get_dividend_account_content(currency_CNY)
-    #account_content_HKD, amount_sum_HKD = get_dividend_account_content(currency_HKD)
-    #account_content_USD, amount_sum_USD = get_dividend_account_content(currency_USD)
-
-
     caliber = 1
     dividend_currency = 1
     currency_name = dividend_currency_items[dividend_currency-1][1]
@@ -1989,17 +1968,46 @@ def D_stats_dividend(request):
             content, amount_sum, name_array, value_array = get_dividend_year_content(dividend_currency)
         elif caliber == 3:
             content, amount_sum, name_array, value_array = get_dividend_industry_content(dividend_currency)
-            #content, amount_sum, name_array, value_array = get_dividend_year_content(dividend_currency)
         elif caliber == 4:
             content, amount_sum, name_array, value_array = get_dividend_market_content(dividend_currency)
         elif caliber == 5:
             content, amount_sum, name_array, value_array = get_dividend_account_content(dividend_currency)
         else:
             pass
-        return render(request, D_templates_path + 'stats\\stats_dividend.html', locals())
-
 
     return render(request, D_templates_path + 'stats\\stats_dividend.html', locals())
+
+
+# 打新统计
+def D_stats_subscription(request):
+    caliber_items = (
+        (1, '年份'),
+        (2, '账户'),
+        (3, '名称'),
+    )
+    subscription_type_items = (
+        (1, '股票'),
+        (2, '可转债'),
+    )
+    caliber = 1
+    subscription_type = 1
+    type_name = subscription_type_items[subscription_type-1][1]
+    condition_id = '11'
+    if request.method == 'POST':
+        caliber = int(request.POST.get('caliber'))
+        subscription_type = int(request.POST.get('subscription_type'))
+        type_name = subscription_type_items[subscription_type-1][1]
+        condition_id = str(caliber) + str(subscription_type)
+        if caliber == 1:
+            content, amount_sum, name_array, value_array = get_subscription_year_content(subscription_type)
+        elif caliber == 2:
+            content, amount_sum, name_array, value_array = get_subscription_account_content(subscription_type)
+        elif caliber == 3:
+            content, amount_sum, name_array, value_array = get_subscription_name_content(subscription_type)
+        else:
+            pass
+
+    return render(request, D_templates_path + 'stats\stats_subscription.html', locals())
 
 
 # 分红金额查询
