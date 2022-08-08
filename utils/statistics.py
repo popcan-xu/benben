@@ -53,7 +53,8 @@ def get_position_content(currency):
 
 
 def get_value_stock_content(position_currency, price_increase_array, HKD_rate, USD_rate):
-    stock_array = []
+    stock_table_array = []
+    stock_chart_array = []
     price_array = []
     increase_array = []
     color_array = []
@@ -93,7 +94,8 @@ def get_value_stock_content(position_currency, price_increase_array, HKD_rate, U
         increase = format(increase / 100, '.2%')
         amount_sum += amount
 
-        stock_array.append(stock_nc)
+        stock_table_array.append(stock_nc)
+        stock_chart_array.append(stock_name)
         price_array.append(price)
         increase_array.append(increase)
         color_array.append(color)
@@ -104,16 +106,22 @@ def get_value_stock_content(position_currency, price_increase_array, HKD_rate, U
         percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
         i += 1
-    stock_content = list(
-        zip(stock_array, price_array, increase_array, color_array, quantity_array, amount_array, percent_array))
-    stock_content.sort(key=take_col6, reverse=True)  # 对stock_content列表按第6列（金额）降序排序
-    return stock_content, amount_sum
+    stock_table_content = list(
+        zip(stock_table_array, price_array, increase_array, color_array, quantity_array, amount_array, percent_array))
+    stock_chart_content = list(
+        zip(stock_chart_array, price_array, increase_array, color_array, quantity_array, amount_array, percent_array))
+    stock_table_content.sort(key=take_col6, reverse=True)  # 对stock_content列表按第6列（金额）降序排序
+    stock_chart_content.sort(key=take_col6, reverse=True)  # 对stock_content列表按第6列（金额）降序排序
+    name_array, value_array = get_chart_array(stock_chart_content, 11, 0, 5) # 取前十位，剩下的并入其他
+    return stock_table_content, amount_sum, json.dumps(name_array), value_array
 
 
-def get_value_industry_content(amount_sum, position_currency, price_array, HKD_rate, USD_rate):
-    industry_array = []
+def get_value_industry_content(position_currency, price_array, HKD_rate, USD_rate):
+    industry_table_array = []
+    industry_chart_array = []
     amount_array = []
     percent_array = []
+    amount_sum = 0.0
     # 对position表分组查询，按stock、industry跨表字段分组，返回每个分组的id（通过双下划线取得多级关联表的字段值）和每个分组的quantity个数
     industry_dict = position.objects.filter(position_currency=position_currency).values("stock__industry").annotate(
         count=Count("stock")).values(
@@ -162,19 +170,29 @@ def get_value_industry_content(amount_sum, position_currency, price_array, HKD_r
             i += 1
         # 将字符串的最后一个'/'截掉
         name_list = name_list[:-1]
-        industry_array.append(industry_name + '（' + name_list + '）')
+        industry_table_array.append(industry_name + '（' + name_list + '）')
+        industry_chart_array.append(industry_name)
         amount_array.append(amount)
-        percent = format(float(amount) / amount_sum, '.2%')
+        amount_sum += amount
+    i = 0
+    while i < len(amount_array):
+        percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
-    industry_content = list(zip(industry_array, amount_array, percent_array))
-    industry_content.sort(key=take_col2, reverse=True)  # 对industry_content列表按第二列（金额）降序排序
-    return industry_content
+        i += 1
+    industry_table_content = list(zip(industry_table_array, amount_array, percent_array))
+    industry_chart_content = list(zip(industry_chart_array, amount_array, percent_array))
+    industry_table_content.sort(key=take_col2, reverse=True)  # 对industry_content列表按第二列（金额）降序排序
+    industry_chart_content.sort(key=take_col2, reverse=True)  # 对industry_content列表按第二列（金额）降序排序
+    name_array, value_array = get_chart_array(industry_chart_content, -1, 0, 1)
+    return industry_table_content, amount_sum, json.dumps(name_array), value_array
 
 
-def get_value_market_content(amount_sum, position_currency, price_array, HKD_rate, USD_rate):
-    market_array = []
+def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate):
+    market_table_array = []
+    market_chart_array = []
     amount_array = []
     percent_array = []
+    amount_sum = 0.0
     # 对position表分组查询，按stock、industry跨表字段分组，返回每个分组的id（通过双下划线取得多级关联表的字段值）和每个分组的quantity个数
     market_dict = position.objects.filter(position_currency=position_currency).values("stock__market").annotate(
         count=Count("stock")).values(
@@ -223,19 +241,29 @@ def get_value_market_content(amount_sum, position_currency, price_array, HKD_rat
             i += 1
         # 将字符串的最后一个'/'截掉
         name_list = name_list[:-1]
-        market_array.append(market_name + '（' + name_list + '）')
+        market_table_array.append(market_name + '（' + name_list + '）')
+        market_chart_array.append(market_name)
         amount_array.append(amount)
-        percent = format(float(amount) / amount_sum, '.2%')
+        amount_sum += amount
+    i = 0
+    while i < len(amount_array):
+        percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
-    market_content = list(zip(market_array, amount_array, percent_array))
-    market_content.sort(key=take_col2, reverse=True)  # 对industry_content列表按第二列（金额）降序排序
-    return market_content
+        i += 1
+    market_table_content = list(zip(market_table_array, amount_array, percent_array))
+    market_chart_content = list(zip(market_chart_array, amount_array, percent_array))
+    market_table_content.sort(key=take_col2, reverse=True)  # 对industry_content列表按第二列（金额）降序排序
+    market_chart_content.sort(key=take_col2, reverse=True)  # 对industry_content列表按第二列（金额）降序排序
+    name_array, value_array = get_chart_array(market_chart_content, -1, 0, 1)
+    return market_table_content, amount_sum, json.dumps(name_array), value_array
 
 
-def get_value_account_content(amount_sum, position_currency, price_array, HKD_rate, USD_rate):
-    account_array = []
+def get_value_account_content(position_currency, price_array, HKD_rate, USD_rate):
+    account_table_array = []
+    account_chart_array = []
     amount_array = []
     percent_array = []
+    amount_sum = 0.0
     # 对position表分组查询，按account字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
     account_dict = position.objects.filter(position_currency=position_currency).values("account").annotate(
         count=Count("account")).values(
@@ -283,13 +311,21 @@ def get_value_account_content(amount_sum, position_currency, price_array, HKD_ra
             i += 1
         # 将字符串的最后一个'/'截掉
         name_list = name_list[:-1]
-        account_array.append(account_abbreviation + '（' + name_list + '）')
+        account_table_array.append(account_abbreviation + '（' + name_list + '）')
+        account_chart_array.append(account_abbreviation)
         amount_array.append(amount)
-        percent = format(float(amount) / amount_sum, '.2%')
+        amount_sum += amount
+    i = 0
+    while i < len(amount_array):
+        percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
-    account_content = list(zip(account_array, amount_array, percent_array))
-    account_content.sort(key=take_col2, reverse=True)  # 对account_content列表按第二列（金额）降序排序
-    return account_content
+        i += 1
+    account_table_content = list(zip(account_table_array, amount_array, percent_array))
+    account_chart_content = list(zip(account_chart_array, amount_array, percent_array))
+    account_table_content.sort(key=take_col2, reverse=True)  # 对account_content列表按第二列（金额）降序排序
+    account_chart_content.sort(key=take_col2, reverse=True)  # 对account_content列表按第二列（金额）降序排序
+    name_array, value_array = get_chart_array(account_chart_content, -1, 0, 1)
+    return account_table_content, amount_sum, json.dumps(name_array), value_array
 
 
 def get_dividend_stock_content(currency):
@@ -318,7 +354,7 @@ def get_dividend_stock_content(currency):
         i += 1
     stock_content = list(zip(stock_code_array, stock_name_array, amount_array, percent_array))
     stock_content.sort(key=take_col3, reverse=True)  # 对account_content列表按第3列（金额）降序排序
-    name_array, value_array = get_chart_array(stock_content, 10, 1, 2)
+    name_array, value_array = get_chart_array(stock_content, 11, 1, 2) # 取前十位，剩下的并入其他
     return stock_content, amount_sum, json.dumps(name_array), value_array
 
 

@@ -1178,18 +1178,18 @@ def statistics_value(request):
             else:
                 price_array_CNY.append((stock_code, price, increase, color))
 
-    stock_content_CNY, amount_sum_CNY = get_value_stock_content(currency_CNY, price_array_CNY, rate_HKD, rate_USD)
-    stock_content_HKD, amount_sum_HKD = get_value_stock_content(currency_HKD, price_array_HKD, rate_HKD, rate_USD)
-    stock_content_USD, amount_sum_USD = get_value_stock_content(currency_USD, price_array_USD, rate_HKD, rate_USD)
-    industry_content_CNY = get_value_industry_content(amount_sum_CNY, currency_CNY, price_array_CNY, rate_HKD, rate_USD)
-    industry_content_HKD = get_value_industry_content(amount_sum_HKD, currency_HKD, price_array_HKD, rate_HKD, rate_USD)
-    industry_content_USD = get_value_industry_content(amount_sum_USD, currency_USD, price_array_USD, rate_HKD, rate_USD)
-    market_content_CNY = get_value_market_content(amount_sum_CNY, currency_CNY, price_array_CNY, rate_HKD, rate_USD)
-    market_content_HKD = get_value_market_content(amount_sum_HKD, currency_HKD, price_array_HKD, rate_HKD, rate_USD)
-    market_content_USD = get_value_market_content(amount_sum_USD, currency_USD, price_array_USD, rate_HKD, rate_USD)
-    account_content_CNY = get_value_account_content(amount_sum_CNY, currency_CNY, price_array_CNY, rate_HKD, rate_USD)
-    account_content_HKD = get_value_account_content(amount_sum_HKD, currency_HKD, price_array_HKD, rate_HKD, rate_USD)
-    account_content_USD = get_value_account_content(amount_sum_USD, currency_USD, price_array_USD, rate_HKD, rate_USD)
+    stock_content_CNY, amount_sum_CNY, name_array, value_array = get_value_stock_content(currency_CNY, price_array_CNY, rate_HKD, rate_USD)
+    stock_content_HKD, amount_sum_HKD, name_array, value_array = get_value_stock_content(currency_HKD, price_array_HKD, rate_HKD, rate_USD)
+    stock_content_USD, amount_sum_USD, name_array, value_array = get_value_stock_content(currency_USD, price_array_USD, rate_HKD, rate_USD)
+    industry_content_CNY, amount_sum_CNY, name_array, value_array = get_value_industry_content(currency_CNY, price_array_CNY, rate_HKD, rate_USD)
+    industry_content_HKD, amount_sum_HKD, name_array, value_array = get_value_industry_content(currency_HKD, price_array_HKD, rate_HKD, rate_USD)
+    industry_content_USD, amount_sum_USD, name_array, value_array = get_value_industry_content(currency_USD, price_array_USD, rate_HKD, rate_USD)
+    market_content_CNY, amount_sum_CNY, name_array, value_array = get_value_market_content(currency_CNY, price_array_CNY, rate_HKD, rate_USD)
+    market_content_HKD, amount_sum_HKD, name_array, value_array = get_value_market_content(currency_HKD, price_array_HKD, rate_HKD, rate_USD)
+    market_content_USD, amount_sum_USD, name_array, value_array = get_value_market_content(currency_USD, price_array_USD, rate_HKD, rate_USD)
+    account_content_CNY, amount_sum_CNY, name_array, value_array = get_value_account_content(currency_CNY, price_array_CNY, rate_HKD, rate_USD)
+    account_content_HKD, amount_sum_HKD, name_array, value_array = get_value_account_content(currency_HKD, price_array_HKD, rate_HKD, rate_USD)
+    account_content_USD, amount_sum_USD, name_array, value_array = get_value_account_content(currency_USD, price_array_USD, rate_HKD, rate_USD)
 
     return render(request, templates_path + 'stats\statistics_value.html', locals())
 
@@ -1895,16 +1895,30 @@ def D_stats_position(request):
 
 # 市值统计
 def D_stats_value(request):
-    currency_CNY = 1
-    currency_HKD = 2
-    currency_USD = 3
-    price_array_CNY = []
-    price_array_HKD = []
-    price_array_USD = []
+    caliber_items = (
+        (1, '股票'),
+        (2, '行业'),
+        (3, '市场'),
+        (4, '账户'),
+    )
+    currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    caliber = 1
+    currency = 1
+    currency_name = currency_items[currency-1][1]
+    condition_id = '11'
+    price_array = []
     rate_HKD, rate_USD = get_stock_rate()
 
-    # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
-    for currency in range(1, 4):
+    if request.method == 'POST':
+        caliber = int(request.POST.get('caliber'))
+        currency = int(request.POST.get('currency'))
+        currency_name = currency_items[currency-1][1]
+        condition_id = str(caliber) + str(currency)
+        # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
         stock_dict = position.objects.filter(position_currency=currency).values("stock").annotate(
             count=Count("stock")).values('stock__stock_code')
         for dict in stock_dict:
@@ -1916,25 +1930,17 @@ def D_stats_value(request):
                 color = 'green'
             else:
                 color = 'grey'
-            if currency == 3:
-                price_array_USD.append((stock_code, price, increase, color))
-            elif currency == 2:
-                price_array_HKD.append((stock_code, price, increase, color))
-            else:
-                price_array_CNY.append((stock_code, price, increase, color))
-
-    stock_content_CNY, amount_sum_CNY = get_value_stock_content(currency_CNY, price_array_CNY, rate_HKD, rate_USD)
-    stock_content_HKD, amount_sum_HKD = get_value_stock_content(currency_HKD, price_array_HKD, rate_HKD, rate_USD)
-    stock_content_USD, amount_sum_USD = get_value_stock_content(currency_USD, price_array_USD, rate_HKD, rate_USD)
-    industry_content_CNY = get_value_industry_content(amount_sum_CNY, currency_CNY, price_array_CNY, rate_HKD, rate_USD)
-    industry_content_HKD = get_value_industry_content(amount_sum_HKD, currency_HKD, price_array_HKD, rate_HKD, rate_USD)
-    industry_content_USD = get_value_industry_content(amount_sum_USD, currency_USD, price_array_USD, rate_HKD, rate_USD)
-    market_content_CNY = get_value_market_content(amount_sum_CNY, currency_CNY, price_array_CNY, rate_HKD, rate_USD)
-    market_content_HKD = get_value_market_content(amount_sum_HKD, currency_HKD, price_array_HKD, rate_HKD, rate_USD)
-    market_content_USD = get_value_market_content(amount_sum_USD, currency_USD, price_array_USD, rate_HKD, rate_USD)
-    account_content_CNY = get_value_account_content(amount_sum_CNY, currency_CNY, price_array_CNY, rate_HKD, rate_USD)
-    account_content_HKD = get_value_account_content(amount_sum_HKD, currency_HKD, price_array_HKD, rate_HKD, rate_USD)
-    account_content_USD = get_value_account_content(amount_sum_USD, currency_USD, price_array_USD, rate_HKD, rate_USD)
+            price_array.append((stock_code, price, increase, color))
+        if caliber == 1:
+            content, amount_sum, name_array, value_array = get_value_stock_content(currency, price_array, rate_HKD, rate_USD)
+        elif caliber == 2:
+            content, amount_sum, name_array, value_array = get_value_industry_content(currency, price_array, rate_HKD, rate_USD)
+        elif caliber == 3:
+            content, amount_sum, name_array, value_array = get_value_market_content(currency, price_array, rate_HKD, rate_USD)
+        elif caliber == 4:
+            content, amount_sum, name_array, value_array = get_value_account_content(currency, price_array, rate_HKD, rate_USD)
+        else:
+            pass
 
     return render(request, D_templates_path + 'stats\\stats_value.html', locals())
 
