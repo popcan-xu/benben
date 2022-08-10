@@ -654,7 +654,7 @@ def get_subscription_name_content(subscription_type):
         i += 1
     name_content = list(zip(subscription_name_array, amount_array, percent_array))
     name_content.sort(key=take_col2, reverse=True)
-    name_array, value_array = get_chart_array(name_content, 20, 0, 1)
+    name_array, value_array = get_chart_array(name_content, 51, 0, 1)
     return name_content, amount_sum, json.dumps(name_array), value_array
 
 

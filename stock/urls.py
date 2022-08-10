@@ -102,6 +102,8 @@ urlpatterns = [
     path('card_pie_view/', card_pie_view),
     path('charts/', charts),
 
+    path('market_value/', market_value),
+
     path('D_input_trade/', D_input_trade),
     path('D_input_dividend/', D_input_dividend),
     path('D_input_subscription/', D_input_subscription),
