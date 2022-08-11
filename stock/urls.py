@@ -92,7 +92,6 @@ urlpatterns = [
     # path('statistics_dividend/stock_pie/',views.ChartView_dividend_stock_pie.as_view(),name='stock_pie'),
     # path('statistics_dividend/',views.IndexView.as_view()),
 
-    path('dashboard/', dashboard),
     path('stats_view/', stats_view),
     path('list_view/', list_view),
     path('form_view/', form_view),
@@ -101,6 +100,8 @@ urlpatterns = [
     path('card_bar_view/', card_bar_view),
     path('card_pie_view/', card_pie_view),
     path('charts/', charts),
+
+    path('dashboard/', dashboard),
 
     path('market_value/', market_value),
 
@@ -163,5 +164,7 @@ urlpatterns = [
     path('D_del_dividend_history/<int:dividend_history_id>/', D_del_dividend_history),
     path('D_edit_dividend_history/<int:dividend_history_id>/', D_edit_dividend_history),
     path('D_list_dividend_history/', D_list_dividend_history),
+
+    path('capture_dividend_history/', D_capture_dividend_history),
 
 ]

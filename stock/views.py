@@ -2833,3 +2833,70 @@ def D_edit_dividend_history(request, dividend_history_id):
 def D_list_dividend_history(request):
     dividend_history_list = dividend_history.objects.all()
     return render(request,  D_templates_path + 'backstage\\list_dividend_history.html', locals())
+
+# 从网站中抓取数据导入数据库
+def D_capture_dividend_history(request):
+    stock_list = stock.objects.all().values('stock_code', 'stock_name').order_by('stock_code')
+    holding_stock_list = position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
+    if request.method == 'POST':
+        stock_code_list = []
+        stock_code_POST = request.POST.get('stock_code')
+        # print(tab_name, stock_code_POST)
+        if stock_code_POST == '全部':
+            for rs in stock_list:
+                stock_code_list.append(rs['stock_code'])
+        elif stock_code_POST == '持仓股票':
+            for rs in holding_stock_list:
+                stock_code_list.append(rs['stock__stock_code'])
+        else:
+            stock_code_list.append(stock_code_POST)
+        # print("stock_code_list=", stock_code_list)
+        for stock_code in stock_code_list:
+            stock_object = stock.objects.get(stock_code=stock_code)
+            stock_id = stock_object.id
+            stock_dividend_dict = get_stock_dividend_history(stock_code)
+            next_dividend_date, last_dividend_date = get_dividend_date(stock_dividend_dict)
+            count = 0
+            try:
+                # 删除dividend_history表中的相关记录
+                # dividend_history_object = dividend_history.objects.get(stock_id = stock_id)
+                dividend_history.objects.filter(stock_id=stock_id).delete()
+
+                # 在dividend_history表中增加相关记录
+                for i in stock_dividend_dict:
+                    # print(stock_code, i['dividend_plan'], i['dividend_date'])
+                    # 若日期字段的值为‘’或‘None’，则将该字段的值赋为 None，以防止插入数据库时报错
+                    if i['announcement_date'] == '' or i['announcement_date'] == 'None':
+                        i['announcement_date'] = None
+                    if i['registration_date'] == '' or i['registration_date'] == 'None':
+                        i['registration_date'] = None
+                    if i['ex_right_date'] == '' or i['ex_right_date'] == 'None':
+                        i['ex_right_date'] = None
+                    if i['dividend_date'] == '' or i['dividend_date'] == 'None':
+                        i['dividend_date'] = None
+                    p = dividend_history.objects.create(
+                        stock_id=stock_id,
+                        reporting_period=i['reporting_period'],
+                        dividend_plan=i['dividend_plan'],
+                        announcement_date=i['announcement_date'],
+                        registration_date=i['registration_date'],
+                        ex_right_date=i['ex_right_date'],
+                        dividend_date=i['dividend_date']
+                    )
+                    count += 1
+
+                # 更新stock表相关记录的next_dividend_date和last_dividend_date字段
+                # stock_object.update(next_dividend_date=next_dividend_date, last_dividend_date=last_dividend_date)
+                stock_object.next_dividend_date = next_dividend_date
+                stock_object.last_dividend_date = last_dividend_date
+                stock_object.dividend_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                stock_object.save()
+
+            except Exception as e:
+                print('插入第' + str(count) + '条记录失败！')
+                print('错误明细是', e.__class__.__name__, e)
+            print('插入' + '股票（' + stock_code + '）的历史分红记录' + str(count) + '条！')
+
+    return render(request, D_templates_path + 'capture\\capture_dividend_history.html', locals())
+
+
