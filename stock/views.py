@@ -1581,6 +1581,9 @@ def input_subscription(request):
     return render(request, templates_path + 'input\input_subscription.html', locals())
 
 
+#=========================================================#
+
+
 # dashbord模板
 def dashboard(request):
     return render(request, 'dashboard\index.html')
@@ -2113,6 +2116,39 @@ def D_query_dividend_value(request):
     # 根据dividend_currency的值从dividend_currency_items中生成dividend_currency_name
     dividend_currency_name = dividend_currency_items[dividend_currency-1][1]
     return render(request, D_templates_path + 'query\\query_dividend_value.html', locals())
+
+
+# 分红日期查询
+def D_query_dividend_date(request):
+    current_year = datetime.datetime.today().year
+
+    stock_list = stock.objects.all().values('stock_name', 'stock_code', 'last_dividend_date', 'next_dividend_date').order_by('stock_code')
+    # 持仓股票列表，通过.filter(position__stock_id__isnull = False)，过滤出在position表中存在的stock_id所对应的stock表记录
+    position_stock_list = stock_list.filter(position__stock_id__isnull=False).distinct().order_by('-next_dividend_date', '-last_dividend_date')
+    # 当年已分红股票列表
+    current_year_dividend_list = position_stock_list.filter(last_dividend_date__year=current_year).order_by('-next_dividend_date', '-last_dividend_date')
+    # 当年未分红股票列表
+    current_year_no_dividend_list = position_stock_list.filter(next_dividend_date__year=current_year).order_by('-next_dividend_date', '-last_dividend_date')
+
+    # stock_name_array = []
+    # stock_code_array = []
+    # next_dividend_date_array = []
+    # last_dividend_date_array = []
+    # dividend_date_array = []
+    # next_dividend_date = None
+    # last_dividend_date = None
+    # for rs in position_stock_list:
+    #     stock_code = rs.stock_code
+    #     stock_name = rs.stock_name
+    #     #stock_dividend_dict = get_stock_dividend_history_2lines(stock_code)
+    #     #next_dividend_date, last_dividend_date = get_dividend_date(stock_dividend_dict)
+    #     stock_name_array.append(stock_name)
+    #     stock_code_array.append(stock_code)
+    #     next_dividend_date_array.append(next_dividend_date)
+    #     last_dividend_date_array.append(last_dividend_date)
+    # dividend_date_array = list(zip(stock_name_array, stock_code_array, last_dividend_date_array, next_dividend_date_array))
+
+    return render(request, D_templates_path + 'query\\query_dividend_date.html', locals())
 
 
 # 分红历史查询
