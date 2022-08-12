@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">分红历史查询</h6>
+        </div>
+        <div class="card-body">
+            <div class="h jumbotron bg-gray-100">
+                <form action="" method="post" class="form-horizontal" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" style="visibility: hidden;" name="tab_name" value="分红历史" />
+                    <div class="row align-items-center h-100">
+                        <div class="col-md-11">
+                            <div class="row form-group">
+                                <div class="col-md-1 text-right">
+                                    <label for="stock_code" class="control-label">股票：</label>
+                                </div>
+                                <div class="col-md-11">
+                                    <select class="form-control control-inline" name="stock_code" id="stock_code">
+                                        <option disabled selected value="">请选择股票...</option>
+                                        {% for stock in stock_list %}
+                                            <option value="{{ stock.stock_code }}">{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group" style="text-align:center">
+                                <div class="col-md-12">
+                                    <input type="submit" class="btn btn-primary" value="查询">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <hr class="sidebar-divider">
+            {{ error_info }}
+            <div class="h jumbotron bg-gray-100">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                        <thead class="thead bg-gradient-secondary text-gray-100">
+                            <tr>
+                                <th>股票/代码</th>
+                                <th>报告期</th>
+                                <th>分红方案</th>
+                                <th>公告日</th>
+                                <th>股权登记日</th>
+                                <th>除权除息日</th>
+                                <th>派息日</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!--#dividend_history_list即为视图函数list_dividend_history中render传入参数//-->
+                            {% for i in stock_dividend_dict %}
+                                <tr>
+                                    <td>{{ stock_name }}({{ stock_code_POST }})</td>
+                                    <td>{{ i.reporting_period }}</td>
+                                    <td>{{ i.dividend_plan }}</td>
+                                    <td>{{ i.announcement_date }}</td>
+                                    <td>{{ i.registration_date }}</td>
+                                    <td>{{ i.ex_right_date }}</td>
+                                    <td>{{ i.dividend_date }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="7">无相关记录！</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

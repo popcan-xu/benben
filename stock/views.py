@@ -2112,7 +2112,17 @@ def D_query_dividend_value(request):
             pass
     # 根据dividend_currency的值从dividend_currency_items中生成dividend_currency_name
     dividend_currency_name = dividend_currency_items[dividend_currency-1][1]
-    return render(request, D_templates_path + 'stats\\query_dividend_value.html', locals())
+    return render(request, D_templates_path + 'query\\query_dividend_value.html', locals())
+
+
+# 分红历史查询
+def D_query_dividend_history(request):
+    stock_list = stock.objects.all().values('stock_name', 'stock_code')
+    if request.method == 'POST':
+        stock_code_POST = request.POST.get('stock_code')
+        stock_dividend_dict = get_stock_dividend_history(stock_code_POST)
+        stock_name = stock.objects.get(stock_code=stock_code_POST).stock_name
+    return render(request, D_templates_path + 'query\\query_dividend_history.html', locals())
 
 
 # 券商表的增删改查
