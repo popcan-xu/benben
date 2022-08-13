@@ -1282,7 +1282,7 @@ def statistics_account(request):
             stock_code = dict['stock__stock_code']
             price, increase = get_stock_price(stock_code)
             price_array.append((stock_code, price))
-        stock_content_tmp, amount_sum_tmp = get_account_stock_content(account_id, price_array, rate_HKD, rate_USD)
+        stock_content_tmp, amount_sum_tmp, name_array, value_array = get_account_stock_content(account_id, price_array, rate_HKD, rate_USD)
         stock_content.append((stock_content_tmp, amount_sum_tmp, account_name))
     return render(request, templates_path + 'stats\statistics_account.html', locals())
 
@@ -1988,6 +1988,27 @@ def D_stats_value(request):
             pass
 
     return render(request, D_templates_path + 'stats\\stats_value.html', locals())
+
+
+# 账户统计
+def D_stats_account(request):
+    account_list1 = account.objects.all().filter(broker__broker_script='境内券商')
+    account_list2 = account.objects.all().filter(broker__broker_script='境外券商')
+    account_abbreviation = '银河6811'
+    rate_HKD, rate_USD = get_stock_rate()
+    if request.method == 'POST':
+        account_abbreviation = request.POST.get('account')
+        account_id = account.objects.get(account_abbreviation=account_abbreviation).id
+        price_array = []
+        # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
+        stock_dict = position.objects.filter(account=account_id).values("stock").annotate(
+            count=Count("stock")).values('stock__stock_code')
+        for dict in stock_dict:
+            stock_code = dict['stock__stock_code']
+            price, increase = get_stock_price(stock_code)
+            price_array.append((stock_code, price))
+        stock_content, amount_sum, name_array, value_array = get_account_stock_content(account_id, price_array, rate_HKD, rate_USD)
+    return render(request, D_templates_path + 'stats\\stats_account.html', locals())
 
 
 # 分红统计

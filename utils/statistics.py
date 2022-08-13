@@ -659,7 +659,8 @@ def get_subscription_name_content(subscription_type):
 
 
 def get_account_stock_content(account_id, price_increase_array, HKD_rate, USD_rate):
-    stock_array = []
+    stock_table_array = []
+    stock_chart_array = []
     price_array = []
     increase_array = []
     color_array = []
@@ -696,7 +697,8 @@ def get_account_stock_content(account_id, price_increase_array, HKD_rate, USD_ra
         # increase = format(increase / 100, '.2%')
         amount_sum += amount
 
-        stock_array.append(stock_nc)
+        stock_table_array.append(stock_nc)
+        stock_chart_array.append(stock_name)
         # price_array.append(price)
         # increase_array.append(increase)
         # color_array.append(color)
@@ -709,9 +711,12 @@ def get_account_stock_content(account_id, price_increase_array, HKD_rate, USD_ra
         i += 1
     # stock_content = list(zip(stock_array, price_array, increase_array, color_array, quantity_array, amount_array, percent_array))
     # stock_content.sort(key=take_col6, reverse=True)  # 对stock_content列表按第6列（金额）降序排序
-    stock_content = list(zip(stock_array, amount_array, percent_array))
-    stock_content.sort(key=take_col2, reverse=True)  # 对stock_content列表按第2列（金额）降序排序
-    return stock_content, amount_sum
+    stock_table_content = list(zip(stock_table_array, amount_array, percent_array))
+    stock_chart_content = list(zip(stock_chart_array, amount_array, percent_array))
+    stock_table_content.sort(key=take_col2, reverse=True)  # 对stock_content列表按第2列（金额）降序排序
+    stock_chart_content.sort(key=take_col2, reverse=True)  # 对stock_content列表按第2列（金额）降序排序
+    name_array, value_array = get_chart_array(stock_chart_content, -1, 0, 1)
+    return stock_table_content, amount_sum, json.dumps(name_array), value_array
 
 
 def get_stock_profit(stock_code):

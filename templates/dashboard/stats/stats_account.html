@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">账户统计</h6>
+        </div>
+        <div class="card-body">
+            <div class="h jumbotron bg-gray-100">
+                <form action="" method="post" class="form-horizontal" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" style="visibility: hidden;" name="tab_name" value="账户" />
+                    <div class="row align-items-center h-100">
+                        <div class="col-md-11">
+                            <div class="row form-group">
+                                <div class="col-md-1 text-right">
+                                    <label class="control-label">境内券商：</label>
+                                </div>
+                                <div class="col-md-11">
+                                    {% for account in account_list1 %}
+                                    <div class="custom-control custom-radio custom-control-inline">
+                                        {% if account.account_abbreviation == account_abbreviation %}
+                                            <input type="radio" class="custom-control-input" name="account" id="{{ account.account_abbreviation }}" value="{{ account.account_abbreviation }}" checked />
+                                            <label class="custom-control-label" for="{{ account.account_abbreviation }}">{{ account.account_abbreviation }}</label>
+                                        {% else %}
+                                            <input type="radio" class="custom-control-input" name="account" id="caliber{{ account.account_abbreviation }}" value="{{ account.account_abbreviation }}" />
+                                            <label class="custom-control-label" for="caliber{{ account.account_abbreviation }}">{{ account.account_abbreviation }}</label>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="row form-group">
+                                <div class="col-md-1 text-right">
+                                    <label class="control-label">境外券商：</label>
+                                </div>
+                                <div class="col-md-11">
+                                    {% for account in account_list2 %}
+                                    <div class="custom-control custom-radio custom-control-inline">
+                                        {% if account.account_abbreviation == account_abbreviation %}
+                                            <input type="radio" class="custom-control-input" name="account" id="{{ account.account_abbreviation }}" value="{{ account.account_abbreviation }}" checked />
+                                            <label class="custom-control-label" for="{{ account.account_abbreviation }}">{{ account.account_abbreviation }}</label>
+                                        {% else %}
+                                            <input type="radio" class="custom-control-input" name="account" id="caliber{{ account.account_abbreviation }}" value="{{ account.account_abbreviation }}" />
+                                            <label class="custom-control-label" for="caliber{{ account.account_abbreviation }}">{{ account.account_abbreviation }}</label>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group" style="text-align:center">
+                                <div class="col-md-12">
+                                    <input type="submit" class="btn btn-primary" value="查询">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <hr class="sidebar-divider">
+            {{ error_info }}
+            <div class="h jumbotron bg-gray-100">
+                <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">
+                    <ul class="nav">
+                        <li class="breadcrumb-item"><a href="#table_{{ account_abbreviation }}" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
+                        <li class="breadcrumb-item"><a href="#bar_{{ account_abbreviation }}" data-toggle="tab" style="text-decoration:none;" id="bar_link_{{ account_abbreviation }}">柱状图</a></li>
+                        <li class="breadcrumb-item"><a href="#pie_{{ account_abbreviation }}" data-toggle="tab" style="text-decoration:none;" id="pie_link_{{ account_abbreviation }}">饼状图</a></li>
+                    </ul>
+                </nav>
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="table_{{ account_abbreviation }}">
+                        <p></p>
+                        <div style="display:inline;float:left;">
+                            市值（人民币）：{{ amount_sum|floatformat:0 }}元
+                        </div>
+                        <div style="display:inline;float:right;">
+                            港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                <thead class="thead bg-gradient-secondary text-gray-100">
+                                    <tr>
+                                        <th>股票/代码</th>
+                                        <th>金额（人民币元）</th>
+                                        <th>百分比</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for i in stock_content %}
+                                    <tr>
+                                        <td>{{ i.0|stringformat:"s" }}</td>
+                                        <td style="text-align: right">{{ i.1|floatformat:0 }}</td>
+                                        <td style="text-align: right">{{ i.2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr>
+                                        <td><b>合计</b></td>
+                                        <td style="text-align: right"><b>{{ amount_sum|floatformat:0 }}</b></td>
+                                        <td style="text-align: right"><b>100.00%</b></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="bar_{{ account_abbreviation }}">
+                        <div id="bar_area_{{ account_abbreviation }}" style="width:800px; height:500px;"></div><!--数据展现的容器1-->
+                    </div>
+                    <div class="tab-pane fade" id="pie_{{ account_abbreviation }}">
+                        <div id="pie_area_{{ account_abbreviation }}" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+	bar_container = document.getElementById('bar_area_{{ account_abbreviation }}');
+    pie_container = document.getElementById('pie_area_{{ account_abbreviation }}');
+	bar = echarts.init(bar_container, 'white', {renderer: 'canvas'});
+	pie = echarts.init(pie_container, 'white', {renderer: 'canvas'});
+	bar_name = JSON.parse('{{ name_array|safe }}');
+	bar_value = {{ value_array|safe }};
+	pie_data = get_pie_data(bar_name, bar_value);
+	document.getElementById('bar_link_{{ account_abbreviation }}').onclick = function () { draw_bar(bar, bar_container, bar_name, bar_value); };
+	document.getElementById('pie_link_{{ account_abbreviation }}').onclick = function () { draw_pie(pie, pie_container, pie_data); };
+
+	function draw_bar(chart_bar, container, bar_name, bar_value) {
+        resize_chart(chart_bar, container);
+		var option = {
+			title: {
+				text: ''
+			},
+			tooltip: {
+				trigger: "item",
+				formatter: "{a} <br/>{b} : {c}"
+			},
+			legend: {
+				data:['市值']
+			},
+			xAxis: {
+				data: bar_name,
+				axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+					show: true,
+					interval: 'auto',
+					rotate: -35,
+					margin: 8,
+					// formatter: null,
+					textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+						color: '#333'
+					}
+				}
+			},
+			//xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
+			yAxis: {},
+			series: [{
+				name: '市值',
+				type: 'bar',
+				data: bar_value
+			}]
+		};
+        chart_bar.setOption(option);
+        window.onresize = function () { resize_chart(chart_bar, container); };
+	}
+
+	function draw_pie(chart_pie, container, pie_data) {
+        resize_chart(chart_pie, container);
+        var option = {
+                    //backgroundColor: "#2c343c",
+                    // 标题的一些配置参数
+                    title: {
+                        text: "",
+                        left: "center",
+                        top: 10,
+                        /*
+                        textStyle: {
+                            color: "pink"
+                        }
+                        */
+                    },
+                    //鼠标点击出现的文字
+                    tooltip: {
+                        trigger: "item",
+                        formatter: "{a} <br/>{b} : {c} ({d}%)"
+                    },
+                    //视觉映射器
+                    /*
+                    visualMap: {
+                        show: false,
+                        min: 20,
+                        max: 600,
+                        inRange: {
+                            colorLightness: [0, 1]
+                        }
+                    },
+                    */
+                    legend: {
+                        right: "10%",
+                        top: "5%",
+                        orient: "vertical",    // 图例列表水平布局
+                        show: false
+                        /*
+                        show: true,              // 显示图例
+                        left: "75%",             // 图例组件离容器左侧的距离
+                        top: 10,                 // 图例组件离容器上侧的距离
+                        right: "15%",            // 图例组件离容器右侧的距离
+                        bottom: 30,              // 图例组件离容器下侧的距离
+                        width: "50%",            // 图例组件的宽度
+                        height: 10,              // 图例组件的高度
+                        itemGap: 15,             // 图例每项之间的间隔
+                        itemWidth: 10,           // 图例标记的图形宽度
+                        itemHeight: 15,          // 图例标记的图形高度
+                        textStyle: {             // 图例文本样式
+                          color: "rgba(239, 15, 15, 1)",
+                          fontStyle: "italic",
+                          fontWeight: "bold",
+                          fontFamily: "serif",
+                          fontSize: 15
+                        },
+                        icon: "circle"     // 图例项的 icon
+                        */
+                    },
+                    //表格数据
+                    series: [{
+                        name: "市值",
+                        type: "pie",
+                        //radius: "55%", //饼图弧度大小
+                        radius: ["30%", "75%"],
+                        center: ["40%", "50%"], //饼图位置
+                        data: pie_data,
+                            /*
+                            [
+                                { value: 335, name: "直接访问" },
+                                { value: 310, name: "邮件营销" },
+                                { value: 274, name: "联盟广告" },
+                                { value: 235, name: "视频广告" },
+                                { value: 400, name: "搜索引擎" }
+                            ].sort(function(a, b) {
+                                return a.value - b.value;
+                            }),
+                            */
+                        //roseType: "radius",
+                        //roseType: "area",
+                        // 标注字的的颜色
+                        /*
+                        label: {
+                            normal: {
+                                textStyle: {
+                                    color: "rgba(255, 255, 255, 0.3)"
+                                }
+                            }
+                        },
+                        */
+                        // 指示线的颜色
+                        /*
+                        labelLine: {
+                            normal: {
+                                lineStyle: {
+                                    color: "rgba(255, 255, 255, 0.3)"
+                                },
+                                smooth: 0.2,
+                                length: 10,
+                                length2: 20
+                            }
+                        },
+                        itemStyle: {
+                            normal: {
+                                color: "#c23531",
+                                shadowBlur: 200,
+                                shadowColor: "rgba(0, 0, 0, 0.5)"
+                            }
+                        },
+                        */
+                        animationType: "scale",
+                        animationEasing: "elasticOut",
+                        animationDelay: function(idx) {
+                            return Math.random() * 200;
+                        }
+                    }]
+                };
+		chart_pie.setOption(option);
+        window.onresize = function () { resize_chart(chart_pie, container); };
+	}
+
+	function get_pie_data(name_array, value_array) {
+		var pie_data = [];
+		for(i = 0; i < name_array.length; i++){
+			pie_data.push(
+				{
+				   value: value_array[i],
+				   name: name_array[i]
+				}
+			);
+		}
+		return pie_data;
+	}
+
+    function resize_chart(chart, container){
+        container.style.width = (window.innerWidth - 250) + 'px';
+        chart.resize();
+    }
+
+</script>
+
+{% endblock %}
