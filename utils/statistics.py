@@ -744,15 +744,16 @@ def get_stock_profit(stock_code):
         ))
         amount_sum += trade_amount
         quantity_sum += trade_quantity
+    value = price * quantity_sum
     if quantity_sum == 0:
-        price_avg = -1  # 负无穷大
+        price_avg = 0  # 负无穷大
     else:
         price_avg = amount_sum / quantity_sum
     # profit = (price - float(price_avg)) * quantity_sum
     profit = price * quantity_sum - float(amount_sum)
-    if amount_sum != 0:
+    if amount_sum > 0:
         profit_margin = profit / float(amount_sum) * 100
     else:
-        profit_margin = -100  # 正无穷大
+        profit_margin = 9999.99  # 正无穷大
     # trade_array.sort(key=take_col1, reverse=True)
-    return trade_array, amount_sum, quantity_sum, price_avg, price, profit, profit_margin
+    return trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin

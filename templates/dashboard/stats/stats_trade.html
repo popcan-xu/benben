@@ -5,13 +5,13 @@
 <div class="container-fluid">
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">分红历史查询</h6>
+            <h6 class="m-0 font-weight-bold text-primary">交易统计</h6>
         </div>
         <div class="card-body">
             <div class="h jumbotron bg-gray-100">
                 <form action="" method="post" class="form-horizontal" role="form">
                     {% csrf_token %}
-                    <input type="hidden" style="visibility: hidden;" name="tab_name" value="分红历史" />
+                    <input type="hidden" style="visibility: hidden;" name="tab_name" value="交易" />
                     <div class="row align-items-center h-100">
                         <div class="col-md-11">
                             <div class="row form-group">
@@ -45,36 +45,63 @@
             <hr class="sidebar-divider">
             {{ error_info }}
             <div class="h jumbotron bg-gray-100">
+                {% if stock_code %}
+                    <div class="row col-md-12">
+                        <div class="col-md-4">
+                            市值：{{ value|floatformat:0 }}元
+                        </div>
+                        <div class="col-md-4">
+                            价格：{{ price|floatformat:3 }}元
+                        </div>
+                        <div class="col-md-4">
+                            利润：{{ profit|floatformat:0 }}元
+                        </div>
+                    </div>
+                    <div class="row col-md-12">
+                        <div class="col-md-4">
+                            成本：{{ amount_sum|floatformat:0 }}元
+                        </div>
+                        <div class="col-md-4">
+                            均价：{{ price_avg|floatformat:3 }}元
+                        </div>
+                        <div class="col-md-4">
+                            利润率：{{ profit_margin|floatformat:2 }}%
+                        </div>
+                    </div>
+                {% endif %}
                 <div class="table-responsive">
-                    <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                    <table class="table table-bordered table-condensed table-striped table-hover list_tab">
                         <thead class="thead bg-gradient-secondary text-gray-100">
                             <tr>
+                                <th>交易日期</th>
+                                <th>账户</th>
                                 <th>股票/代码</th>
-                                <th>报告期</th>
-                                <th>分红方案</th>
-                                <th>公告日</th>
-                                <th>股权登记日</th>
-                                <th>除权除息日</th>
-                                <th>派息日</th>
+                                <th>价格（{{ market.get_transaction_currency_display }}）</th>
+                                <th>数量</th>
+                                <th>交易金额</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!--#dividend_history_list即为视图函数list_dividend_history中render传入参数//-->
-                            {% for i in stock_dividend_dict %}
-                                <tr>
-                                    <td>{{ stock_name }}({{ stock_code_POST }})</td>
-                                    <td>{{ i.reporting_period }}</td>
-                                    <td>{{ i.dividend_plan }}</td>
-                                    <td>{{ i.announcement_date }}</td>
-                                    <td>{{ i.registration_date }}</td>
-                                    <td>{{ i.ex_right_date }}</td>
-                                    <td>{{ i.dividend_date }}</td>
-                                </tr>
+                            {% for trade in trade_array %}
+                            <tr>
+                                <td>{{ trade.0|date:'Y-m-d' }}</td>
+                                <td>{{ trade.1 }}</td>
+                                <td>{{ trade.2 }}（{{ trade.3 }}）</td>
+                                <td style="text-align: right">{{ trade.4|floatformat:3 }}</td>
+                                <td style="text-align: right">{{ trade.5|floatformat:0 }}</td>
+                                <td style="text-align: right">{{ trade.6|floatformat:0 }}</td>
+                            </tr>
                             {% empty %}
                                 <tr>
-                                    <td colspan="7">无相关记录！</td>
+                                    <td colspan="6">无相关记录！</td>
                                 </tr>
                             {% endfor %}
+                            <tr>
+                                <td colspan="3"><b>小计</b></td>
+                                <td style="text-align: right"><b>{{ price_avg|floatformat:3 }}</b></td>
+                                <td style="text-align: right"><b>{{ quantity_sum|floatformat:0 }}</b></td>
+                                <td style="text-align: right"><b>{{ amount_sum|floatformat:0 }}</b></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

@@ -1253,7 +1253,7 @@ def statistics_subscription(request):
 def statistics_trade(request):
     global templates_path
 
-    trade_array, amount_sum, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit('00700')
+    trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit('00700')
     return render(request, templates_path + 'stats\statistics_trade.html', locals())
 
 
@@ -1587,165 +1587,6 @@ def input_subscription(request):
 # dashbord模板
 def dashboard(request):
     return render(request, 'dashboard\index.html')
-
-
-def stats_view(request):
-    currency_CNY = 1
-    currency_HKD = 2
-    currency_USD = 3
-    stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
-    stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
-    stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
-    year_content_CNY, name_array_21, value_array_21 = get_dividend_year_content(amount_sum_CNY, currency_CNY)
-    year_content_HKD, name_array_22, value_array_22 = get_dividend_year_content(amount_sum_HKD, currency_HKD)
-    year_content_USD, name_array_23, value_array_23 = get_dividend_year_content(amount_sum_USD, currency_USD)
-    industry_content_CNY = get_dividend_industry_content(amount_sum_CNY, currency_CNY)
-    industry_content_HKD = get_dividend_industry_content(amount_sum_HKD, currency_HKD)
-    industry_content_USD = get_dividend_industry_content(amount_sum_USD, currency_USD)
-    market_content_CNY = get_dividend_market_content(amount_sum_CNY, currency_CNY)
-    market_content_HKD = get_dividend_market_content(amount_sum_HKD, currency_HKD)
-    market_content_USD = get_dividend_market_content(amount_sum_USD, currency_USD)
-    account_content_CNY = get_dividend_account_content(amount_sum_CNY, currency_CNY)
-    account_content_HKD = get_dividend_account_content(amount_sum_HKD, currency_HKD)
-    account_content_USD = get_dividend_account_content(amount_sum_USD, currency_USD)
-
-    return render(request, 'dashboard\\stats_view.html', locals())
-
-
-def list_view(request):
-    trade_list = trade.objects.all().order_by('-trade_date')
-    return render(request, 'dashboard\\list_view.html', locals())
-
-
-def card_view(request):
-    currency_CNY = 1
-    currency_HKD = 2
-    currency_USD = 3
-    stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
-    stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
-    stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
-    year_content_CNY, name_array_21, value_array_21 = get_dividend_year_content(amount_sum_CNY, currency_CNY)
-    year_content_HKD, name_array_22, value_array_22 = get_dividend_year_content(amount_sum_HKD, currency_HKD)
-    year_content_USD, name_array_23, value_array_23 = get_dividend_year_content(amount_sum_USD, currency_USD)
-    industry_content_CNY = get_dividend_industry_content(amount_sum_CNY, currency_CNY)
-    industry_content_HKD = get_dividend_industry_content(amount_sum_HKD, currency_HKD)
-    industry_content_USD = get_dividend_industry_content(amount_sum_USD, currency_USD)
-    market_content_CNY = get_dividend_market_content(amount_sum_CNY, currency_CNY)
-    market_content_HKD = get_dividend_market_content(amount_sum_HKD, currency_HKD)
-    market_content_USD = get_dividend_market_content(amount_sum_USD, currency_USD)
-    account_content_CNY = get_dividend_account_content(amount_sum_CNY, currency_CNY)
-    account_content_HKD = get_dividend_account_content(amount_sum_HKD, currency_HKD)
-    account_content_USD = get_dividend_account_content(amount_sum_USD, currency_USD)
-
-    return render(request, 'dashboard\\card_view.html', locals())
-
-
-def card_table_view(request):
-    currency_CNY = 1
-    currency_HKD = 2
-    currency_USD = 3
-    stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
-    stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
-    stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
-    year_content_CNY, name_array_21, value_array_21 = get_dividend_year_content(amount_sum_CNY, currency_CNY)
-    year_content_HKD, name_array_22, value_array_22 = get_dividend_year_content(amount_sum_HKD, currency_HKD)
-    year_content_USD, name_array_23, value_array_23 = get_dividend_year_content(amount_sum_USD, currency_USD)
-    industry_content_CNY = get_dividend_industry_content(amount_sum_CNY, currency_CNY)
-    industry_content_HKD = get_dividend_industry_content(amount_sum_HKD, currency_HKD)
-    industry_content_USD = get_dividend_industry_content(amount_sum_USD, currency_USD)
-    market_content_CNY = get_dividend_market_content(amount_sum_CNY, currency_CNY)
-    market_content_HKD = get_dividend_market_content(amount_sum_HKD, currency_HKD)
-    market_content_USD = get_dividend_market_content(amount_sum_USD, currency_USD)
-    account_content_CNY = get_dividend_account_content(amount_sum_CNY, currency_CNY)
-    account_content_HKD = get_dividend_account_content(amount_sum_HKD, currency_HKD)
-    account_content_USD = get_dividend_account_content(amount_sum_USD, currency_USD)
-
-    return render(request, 'dashboard\\card_table_view.html', locals())
-
-
-def card_bar_view(request):
-    currency_CNY = 1
-    currency_HKD = 2
-    currency_USD = 3
-    stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
-    stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
-    stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
-    year_content_CNY, name_array_21, value_array_21 = get_dividend_year_content(amount_sum_CNY, currency_CNY)
-    year_content_HKD, name_array_22, value_array_22 = get_dividend_year_content(amount_sum_HKD, currency_HKD)
-    year_content_USD, name_array_23, value_array_23 = get_dividend_year_content(amount_sum_USD, currency_USD)
-    industry_content_CNY = get_dividend_industry_content(amount_sum_CNY, currency_CNY)
-    industry_content_HKD = get_dividend_industry_content(amount_sum_HKD, currency_HKD)
-    industry_content_USD = get_dividend_industry_content(amount_sum_USD, currency_USD)
-    market_content_CNY = get_dividend_market_content(amount_sum_CNY, currency_CNY)
-    market_content_HKD = get_dividend_market_content(amount_sum_HKD, currency_HKD)
-    market_content_USD = get_dividend_market_content(amount_sum_USD, currency_USD)
-    account_content_CNY = get_dividend_account_content(amount_sum_CNY, currency_CNY)
-    account_content_HKD = get_dividend_account_content(amount_sum_HKD, currency_HKD)
-    account_content_USD = get_dividend_account_content(amount_sum_USD, currency_USD)
-
-    return render(request, 'dashboard\\card_bar_view.html', locals())
-
-
-def card_pie_view(request):
-    currency_CNY = 1
-    currency_HKD = 2
-    currency_USD = 3
-    stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
-    stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
-    stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
-    year_content_CNY, name_array_21, value_array_21 = get_dividend_year_content(amount_sum_CNY, currency_CNY)
-    year_content_HKD, name_array_22, value_array_22 = get_dividend_year_content(amount_sum_HKD, currency_HKD)
-    year_content_USD, name_array_23, value_array_23 = get_dividend_year_content(amount_sum_USD, currency_USD)
-    industry_content_CNY = get_dividend_industry_content(amount_sum_CNY, currency_CNY)
-    industry_content_HKD = get_dividend_industry_content(amount_sum_HKD, currency_HKD)
-    industry_content_USD = get_dividend_industry_content(amount_sum_USD, currency_USD)
-    market_content_CNY = get_dividend_market_content(amount_sum_CNY, currency_CNY)
-    market_content_HKD = get_dividend_market_content(amount_sum_HKD, currency_HKD)
-    market_content_USD = get_dividend_market_content(amount_sum_USD, currency_USD)
-    account_content_CNY = get_dividend_account_content(amount_sum_CNY, currency_CNY)
-    account_content_HKD = get_dividend_account_content(amount_sum_HKD, currency_HKD)
-    account_content_USD = get_dividend_account_content(amount_sum_USD, currency_USD)
-
-    return render(request, 'dashboard\\card_pie_view.html', locals())
-
-
-def charts(request):
-    return render(request, 'dashboard\\charts.html')
-
-
-def form_view(request):
-    trade_type_items = (
-        (1, '买'),
-        (2, '卖'),
-    )
-    account_list = account.objects.all()
-    stock_list = stock.objects.all()
-    broker_list = broker.objects.all()
-    if request.method == 'POST':
-        account_id = request.POST.get('account_id')
-        stock_id = request.POST.get('stock_id')
-        trade_date = request.POST.get('trade_date')
-        trade_type = request.POST.get('trade_type')
-        trade_price = request.POST.get('trade_price')
-        trade_quantity = request.POST.get('trade_quantity')
-        if stock_id.strip() == '':
-            return render(request, 'dashboard\\form_view.html', locals())
-        try:
-            p = trade.objects.create(
-                account_id=account_id,
-                stock_id=stock_id,
-                trade_date=trade_date,
-                trade_type=trade_type,
-                trade_price=trade_price,
-                trade_quantity=trade_quantity,
-                filed_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            )
-            return redirect('/benben/form_view/')
-        except Exception as e:
-            return render(request, 'dashboard\\form_view.html', locals())
-        finally:
-            pass
-    return render(request, 'dashboard\\form_view.html', locals())
 
 
 # 持仓市值
@@ -2082,6 +1923,18 @@ def D_stats_subscription(request):
     return render(request, D_templates_path + 'stats\stats_subscription.html', locals())
 
 
+# 交易统计
+def D_stats_trade(request):
+    stock_list = stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
+    if request.method == 'POST':
+        stock_code = request.POST.get('stock_code')
+        stock_name = stock.objects.get(stock_code=stock_code).stock_name
+        market = stock.objects.get(stock_code=stock_code).market
+        #stock_dividend_dict = get_stock_dividend_history(stock_code_POST)
+        trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit(stock_code)
+    return render(request, D_templates_path + 'stats\\stats_trade.html', locals())
+
+
 # 分红金额查询
 def D_query_dividend_value(request):
     dividend_currency_items = (
@@ -2174,11 +2027,11 @@ def D_query_dividend_date(request):
 
 # 分红历史查询
 def D_query_dividend_history(request):
-    stock_list = stock.objects.all().values('stock_name', 'stock_code')
+    stock_list = stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
     if request.method == 'POST':
-        stock_code_POST = request.POST.get('stock_code')
-        stock_dividend_dict = get_stock_dividend_history(stock_code_POST)
-        stock_name = stock.objects.get(stock_code=stock_code_POST).stock_name
+        stock_code = request.POST.get('stock_code')
+        stock_dividend_dict = get_stock_dividend_history(stock_code)
+        stock_name = stock.objects.get(stock_code=stock_code).stock_name
     return render(request, D_templates_path + 'query\\query_dividend_history.html', locals())
 
 
@@ -2965,5 +2818,164 @@ def D_capture_dividend_history(request):
             print('插入' + '股票（' + stock_code + '）的历史分红记录' + str(count) + '条！')
 
     return render(request, D_templates_path + 'capture\\capture_dividend_history.html', locals())
+
+
+def stats_view(request):
+    currency_CNY = 1
+    currency_HKD = 2
+    currency_USD = 3
+    stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
+    stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
+    stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
+    year_content_CNY, name_array_21, value_array_21 = get_dividend_year_content(amount_sum_CNY, currency_CNY)
+    year_content_HKD, name_array_22, value_array_22 = get_dividend_year_content(amount_sum_HKD, currency_HKD)
+    year_content_USD, name_array_23, value_array_23 = get_dividend_year_content(amount_sum_USD, currency_USD)
+    industry_content_CNY = get_dividend_industry_content(amount_sum_CNY, currency_CNY)
+    industry_content_HKD = get_dividend_industry_content(amount_sum_HKD, currency_HKD)
+    industry_content_USD = get_dividend_industry_content(amount_sum_USD, currency_USD)
+    market_content_CNY = get_dividend_market_content(amount_sum_CNY, currency_CNY)
+    market_content_HKD = get_dividend_market_content(amount_sum_HKD, currency_HKD)
+    market_content_USD = get_dividend_market_content(amount_sum_USD, currency_USD)
+    account_content_CNY = get_dividend_account_content(amount_sum_CNY, currency_CNY)
+    account_content_HKD = get_dividend_account_content(amount_sum_HKD, currency_HKD)
+    account_content_USD = get_dividend_account_content(amount_sum_USD, currency_USD)
+
+    return render(request, 'dashboard\\stats_view.html', locals())
+
+
+def list_view(request):
+    trade_list = trade.objects.all().order_by('-trade_date')
+    return render(request, 'dashboard\\list_view.html', locals())
+
+
+def card_view(request):
+    currency_CNY = 1
+    currency_HKD = 2
+    currency_USD = 3
+    stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
+    stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
+    stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
+    year_content_CNY, name_array_21, value_array_21 = get_dividend_year_content(amount_sum_CNY, currency_CNY)
+    year_content_HKD, name_array_22, value_array_22 = get_dividend_year_content(amount_sum_HKD, currency_HKD)
+    year_content_USD, name_array_23, value_array_23 = get_dividend_year_content(amount_sum_USD, currency_USD)
+    industry_content_CNY = get_dividend_industry_content(amount_sum_CNY, currency_CNY)
+    industry_content_HKD = get_dividend_industry_content(amount_sum_HKD, currency_HKD)
+    industry_content_USD = get_dividend_industry_content(amount_sum_USD, currency_USD)
+    market_content_CNY = get_dividend_market_content(amount_sum_CNY, currency_CNY)
+    market_content_HKD = get_dividend_market_content(amount_sum_HKD, currency_HKD)
+    market_content_USD = get_dividend_market_content(amount_sum_USD, currency_USD)
+    account_content_CNY = get_dividend_account_content(amount_sum_CNY, currency_CNY)
+    account_content_HKD = get_dividend_account_content(amount_sum_HKD, currency_HKD)
+    account_content_USD = get_dividend_account_content(amount_sum_USD, currency_USD)
+
+    return render(request, 'dashboard\\card_view.html', locals())
+
+
+def card_table_view(request):
+    currency_CNY = 1
+    currency_HKD = 2
+    currency_USD = 3
+    stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
+    stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
+    stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
+    year_content_CNY, name_array_21, value_array_21 = get_dividend_year_content(amount_sum_CNY, currency_CNY)
+    year_content_HKD, name_array_22, value_array_22 = get_dividend_year_content(amount_sum_HKD, currency_HKD)
+    year_content_USD, name_array_23, value_array_23 = get_dividend_year_content(amount_sum_USD, currency_USD)
+    industry_content_CNY = get_dividend_industry_content(amount_sum_CNY, currency_CNY)
+    industry_content_HKD = get_dividend_industry_content(amount_sum_HKD, currency_HKD)
+    industry_content_USD = get_dividend_industry_content(amount_sum_USD, currency_USD)
+    market_content_CNY = get_dividend_market_content(amount_sum_CNY, currency_CNY)
+    market_content_HKD = get_dividend_market_content(amount_sum_HKD, currency_HKD)
+    market_content_USD = get_dividend_market_content(amount_sum_USD, currency_USD)
+    account_content_CNY = get_dividend_account_content(amount_sum_CNY, currency_CNY)
+    account_content_HKD = get_dividend_account_content(amount_sum_HKD, currency_HKD)
+    account_content_USD = get_dividend_account_content(amount_sum_USD, currency_USD)
+
+    return render(request, 'dashboard\\card_table_view.html', locals())
+
+
+def card_bar_view(request):
+    currency_CNY = 1
+    currency_HKD = 2
+    currency_USD = 3
+    stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
+    stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
+    stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
+    year_content_CNY, name_array_21, value_array_21 = get_dividend_year_content(amount_sum_CNY, currency_CNY)
+    year_content_HKD, name_array_22, value_array_22 = get_dividend_year_content(amount_sum_HKD, currency_HKD)
+    year_content_USD, name_array_23, value_array_23 = get_dividend_year_content(amount_sum_USD, currency_USD)
+    industry_content_CNY = get_dividend_industry_content(amount_sum_CNY, currency_CNY)
+    industry_content_HKD = get_dividend_industry_content(amount_sum_HKD, currency_HKD)
+    industry_content_USD = get_dividend_industry_content(amount_sum_USD, currency_USD)
+    market_content_CNY = get_dividend_market_content(amount_sum_CNY, currency_CNY)
+    market_content_HKD = get_dividend_market_content(amount_sum_HKD, currency_HKD)
+    market_content_USD = get_dividend_market_content(amount_sum_USD, currency_USD)
+    account_content_CNY = get_dividend_account_content(amount_sum_CNY, currency_CNY)
+    account_content_HKD = get_dividend_account_content(amount_sum_HKD, currency_HKD)
+    account_content_USD = get_dividend_account_content(amount_sum_USD, currency_USD)
+
+    return render(request, 'dashboard\\card_bar_view.html', locals())
+
+
+def card_pie_view(request):
+    currency_CNY = 1
+    currency_HKD = 2
+    currency_USD = 3
+    stock_content_CNY, amount_sum_CNY, name_array_11, value_array_11 = get_dividend_stock_content(currency_CNY)
+    stock_content_HKD, amount_sum_HKD, name_array_12, value_array_12 = get_dividend_stock_content(currency_HKD)
+    stock_content_USD, amount_sum_USD, name_array_13, value_array_13 = get_dividend_stock_content(currency_USD)
+    year_content_CNY, name_array_21, value_array_21 = get_dividend_year_content(amount_sum_CNY, currency_CNY)
+    year_content_HKD, name_array_22, value_array_22 = get_dividend_year_content(amount_sum_HKD, currency_HKD)
+    year_content_USD, name_array_23, value_array_23 = get_dividend_year_content(amount_sum_USD, currency_USD)
+    industry_content_CNY = get_dividend_industry_content(amount_sum_CNY, currency_CNY)
+    industry_content_HKD = get_dividend_industry_content(amount_sum_HKD, currency_HKD)
+    industry_content_USD = get_dividend_industry_content(amount_sum_USD, currency_USD)
+    market_content_CNY = get_dividend_market_content(amount_sum_CNY, currency_CNY)
+    market_content_HKD = get_dividend_market_content(amount_sum_HKD, currency_HKD)
+    market_content_USD = get_dividend_market_content(amount_sum_USD, currency_USD)
+    account_content_CNY = get_dividend_account_content(amount_sum_CNY, currency_CNY)
+    account_content_HKD = get_dividend_account_content(amount_sum_HKD, currency_HKD)
+    account_content_USD = get_dividend_account_content(amount_sum_USD, currency_USD)
+
+    return render(request, 'dashboard\\card_pie_view.html', locals())
+
+
+def charts(request):
+    return render(request, 'dashboard\\charts.html')
+
+
+def form_view(request):
+    trade_type_items = (
+        (1, '买'),
+        (2, '卖'),
+    )
+    account_list = account.objects.all()
+    stock_list = stock.objects.all()
+    broker_list = broker.objects.all()
+    if request.method == 'POST':
+        account_id = request.POST.get('account_id')
+        stock_id = request.POST.get('stock_id')
+        trade_date = request.POST.get('trade_date')
+        trade_type = request.POST.get('trade_type')
+        trade_price = request.POST.get('trade_price')
+        trade_quantity = request.POST.get('trade_quantity')
+        if stock_id.strip() == '':
+            return render(request, 'dashboard\\form_view.html', locals())
+        try:
+            p = trade.objects.create(
+                account_id=account_id,
+                stock_id=stock_id,
+                trade_date=trade_date,
+                trade_type=trade_type,
+                trade_price=trade_price,
+                trade_quantity=trade_quantity,
+                filed_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            )
+            return redirect('/benben/form_view/')
+        except Exception as e:
+            return render(request, 'dashboard\\form_view.html', locals())
+        finally:
+            pass
+    return render(request, 'dashboard\\form_view.html', locals())
 
 
