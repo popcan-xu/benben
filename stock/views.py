@@ -1301,7 +1301,7 @@ def statistics_profit(request):
         transaction_currency = rs.market.transaction_currency
         trade_list = trade.objects.all().filter(stock=stock_id)
         if trade_list.exists() and stock_code != '-1' and stock_code != '155406':
-            trade_array, amount_sum, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit(
+            trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit(
                 stock_code)
             if transaction_currency == 2:
                 profit *= rate_HKD
@@ -1933,6 +1933,33 @@ def D_stats_trade(request):
         #stock_dividend_dict = get_stock_dividend_history(stock_code_POST)
         trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit(stock_code)
     return render(request, D_templates_path + 'stats\\stats_trade.html', locals())
+
+
+# 盈亏统计
+def D_stats_profit(request):
+    rate_HKD, rate_USD = get_stock_rate()
+    profit_array = []
+    profit_sum = 0
+    value_sum = 0
+    stock_list = stock.objects.all().order_by('stock_code')
+    for rs in stock_list:
+        stock_id = rs.id
+        stock_code = rs.stock_code
+        stock_name = rs.stock_name
+        transaction_currency = rs.market.transaction_currency
+        trade_list = trade.objects.all().filter(stock=stock_id)
+        if trade_list.exists() and stock_code != '-1' and stock_code != '155406':
+            trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit(
+                stock_code)
+            if transaction_currency == 2:
+                profit *= rate_HKD
+            elif transaction_currency == 3:
+                profit *= rate_USD
+            profit_sum += profit
+            value_sum += value
+            profit_array.append((stock_name, stock_code, profit, value))
+        profit_array.sort(key=take_col4, reverse=True)  # 对account_content列表按第3列（金额）降序排序
+    return render(request, D_templates_path + 'stats\stats_profit.html', locals())
 
 
 # 分红金额查询

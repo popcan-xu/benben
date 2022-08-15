@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">盈亏统计</h6>
+        </div>
+        <div class="card-body">
+            <div style="height:25px">
+                <div style="display:inline;float:right;">
+                    港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                    <thead class="thead bg-gradient-secondary text-gray-100">
+                        <tr>
+                            <th>股票/代码</th>
+                            <th>账面盈亏金额（人民币）</th>
+                            <th>持仓金额（人民币）</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rs in profit_array %}
+                        <tr>
+                            <td>{{ rs.0 }}（{{ rs.1 }}）</td>
+                            <td style="text-align: right">{{ rs.2|floatformat:0 }}</td>
+                            <td style="text-align: right">{{ rs.3|floatformat:0 }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                            <td><b>合计</b></td>
+                            <td style="text-align: right"><b>{{ profit_sum|floatformat:0 }}</b></td>
+                            <td style="text-align: right"><b>{{ value_sum|floatformat:0 }}</b></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

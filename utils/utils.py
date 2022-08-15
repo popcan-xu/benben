@@ -436,7 +436,12 @@ def take_col3(list):
     return float(list[2])
 
 
-# 返回二维列表的第5列，用于二维列表按第5列排序
+# 返回二维列表的第4列，用于二维列表按第4列排序
+def take_col4(list):
+    return float(list[3])
+
+
+# 返回二维列表的第6列，用于二维列表按第6列排序
 def take_col6(list):
     return float(list[5])
 
