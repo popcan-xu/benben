@@ -1983,37 +1983,32 @@ def D_query_dividend_value(request):
     is_all_account_checked = "false"
     is_all_year_checked = "false"
     if request.method == 'POST':
-        tab_name = request.POST.get('tab_name')
-        if tab_name == '分红金额':
-            stock_code = request.POST.get('stock_code')
-            # 由于stock_code为select列表而非文本框text，如果不选择则返回None而非空，所以不能使用stock_code.strip() == ''
-            if stock_code is None:
-                error_info = '股票不能为空！'
-                return render(request, D_templates_path + 'stats\\query_dividend_value.html', locals())
-            stock_object = stock.objects.get(stock_code=stock_code)
-            stock_id = stock_object.id
-            stock_name = stock_object.stock_name
-            dividend_year_list = request.POST.getlist('dividend_year_list')
-            # 将列表中的字符串变成数字，方法一：
-            dividend_year_list = [int(x) for x in dividend_year_list]
-            dividend_account_list = request.POST.getlist('dividend_account_list')
-            # 将列表中的字符串变成数字，方法二：使用内置map返回一个map对象，再用list将其转换为列表
-            dividend_account_list = list(map(int, dividend_account_list))
-            dividend_currency = int(request.POST.get('dividend_currency'))
-            is_all_account_checked = request.POST.get('all_account')
-            is_all_year_checked = request.POST.get('all_year')
-            conditions = dict()
-            conditions['stock'] = stock_id
-            conditions['dividend_date__year__in'] = dividend_year_list
-            conditions['account__in'] = dividend_account_list
-            conditions['dividend_currency'] = dividend_currency
-            dividend_list = dividend.objects.all().filter(**conditions).order_by('-dividend_date')
-            amount_sum = 0
-            for i in dividend_list:
-                amount_sum += i.dividend_amount
-        else:
-            dividend_currency = int(request.POST.get('dividend_currency'))
-            pass
+        stock_code = request.POST.get('stock_code')
+        # 由于stock_code为select列表而非文本框text，如果不选择则返回None而非空，所以不能使用stock_code.strip() == ''
+        if stock_code is None:
+            error_info = '股票不能为空！'
+            return render(request, D_templates_path + 'stats\\query_dividend_value.html', locals())
+        stock_object = stock.objects.get(stock_code=stock_code)
+        stock_id = stock_object.id
+        stock_name = stock_object.stock_name
+        dividend_year_list = request.POST.getlist('dividend_year_list')
+        # 将列表中的字符串变成数字，方法一：
+        dividend_year_list = [int(x) for x in dividend_year_list]
+        dividend_account_list = request.POST.getlist('dividend_account_list')
+        # 将列表中的字符串变成数字，方法二：使用内置map返回一个map对象，再用list将其转换为列表
+        dividend_account_list = list(map(int, dividend_account_list))
+        dividend_currency = int(request.POST.get('dividend_currency'))
+        is_all_account_checked = request.POST.get('all_account')
+        is_all_year_checked = request.POST.get('all_year')
+        conditions = dict()
+        conditions['stock'] = stock_id
+        conditions['dividend_date__year__in'] = dividend_year_list
+        conditions['account__in'] = dividend_account_list
+        conditions['dividend_currency'] = dividend_currency
+        dividend_list = dividend.objects.all().filter(**conditions).order_by('-dividend_date')
+        amount_sum = 0
+        for i in dividend_list:
+            amount_sum += i.dividend_amount
     # 根据dividend_currency的值从dividend_currency_items中生成dividend_currency_name
     dividend_currency_name = dividend_currency_items[dividend_currency-1][1]
     return render(request, D_templates_path + 'query\\query_dividend_value.html', locals())
@@ -2781,6 +2776,7 @@ def D_list_dividend_history(request):
     dividend_history_list = dividend_history.objects.all()
     return render(request,  D_templates_path + 'backstage\\list_dividend_history.html', locals())
 
+
 # 从网站中抓取数据导入数据库
 def D_capture_dividend_history(request):
     stock_list = stock.objects.all().values('stock_code', 'stock_name').order_by('stock_code')
@@ -2845,6 +2841,30 @@ def D_capture_dividend_history(request):
             print('插入' + '股票（' + stock_code + '）的历史分红记录' + str(count) + '条！')
 
     return render(request, D_templates_path + 'capture\\capture_dividend_history.html', locals())
+
+
+# 从excel表读取数据导入数据库
+def D_batch_import(request):
+    if request.method == 'POST':
+        form_name = request.POST.get('form_name')
+        if form_name == '交易':
+            account_abbreviation = request.POST.get('account_abbreviation')
+            if not account_abbreviation is None:
+                print(form_name, account_abbreviation)
+                # count = excel2trade('D:\\gp\\GP_操作.xlsm', account_abbreviation, -1, -1)
+                # messages.success(request, account_abbreviation + "成功插入" + str(count) + "条记录！")
+        elif form_name == '打新':
+            subscription_type = request.POST.get('subscription_type')
+            print(form_name, subscription_type)
+            # excel2subscription('D:\\gp\\GP_操作.xlsm', '新股', -1, -1)
+            # excel2subscription('D:\\gp\\GP_操作.xlsm', '新债', -1, -1)
+        elif form_name == '分红':
+            account_type = request.POST.get('account_type')
+            print(form_name, account_type)
+            # excel2dividend('D:\\gp\\GP_操作.xlsm', '分红', -1, -1)
+        else:
+            pass
+    return render(request, D_templates_path + 'other\\batch_import.html')  # 这里用'/'，‘//’或者‘\\’代替'\'，防止'\b'被转义
 
 
 def stats_view(request):

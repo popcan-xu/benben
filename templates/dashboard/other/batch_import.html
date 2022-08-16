@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">从EXCEL批量导入数据到数据库</h6>
+        </div>
+        <div class="card-body">
+            <div class="h jumbotron bg-gray-100">
+                <form action="" method="post" class="form-horizontal" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" style="visibility: hidden;" name="form_name" value="交易" />
+                    <div class="row align-items-center h-100">
+                        <div class="col-md-11">
+                            <div class="row form-group">
+                                <div class="col-md-1 text-right">
+                                    <label for="account_id" class="control-label">交易记录：</label>
+                                </div>
+                                <div class="col-md-11">
+                                    <select class="form-control" name="account_abbreviation" id="account_abbreviation">
+                                        <option disabled selected value="">请选择证券账户...</option>
+                                        <option value="银河1">银河1</option>
+                                        <option value="银河2">银河2</option>
+                                        <option value="国金1">国金1</option>
+                                        <option value="国金2">国金2</option>
+                                        <option value="平安">平安</option>
+                                        <option value="打新">打新</option>
+                                        <option value="香港1">香港1</option>
+                                        <option value="香港2">香港2</option>
+                                        <option value="中银">中银</option>
+                                        <option value="盈透">盈透</option>
+                                        <!--
+                                        {% for account in account_list %}
+                                            <option value="{{ account.id }}">{{ account.account_abbreviation }}({{ account.broker.broker_name }}--{{ account.account_number }})</option>
+                                        {% endfor %}
+                                        -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group" style="text-align:center">
+                                <div class="col-md-12">
+                                    <input type="submit" class="btn btn-primary" value="导入">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <form action="" method="post" class="form-horizontal" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" style="visibility: hidden;" name="form_name" value="打新" />
+                    <div class="row align-items-center h-100">
+                        <div class="col-md-11">
+                            <div class="row form-group">
+                                <div class="col-md-1 text-right">
+                                    <label for="account_id" class="control-label">打新记录：</label>
+                                </div>
+                                <div class="col-md-11">
+                                    <select class="form-control" name="subscription_type" id="subscription_type">
+                                        <option disabled selected value="">请选择打新类型...</option>
+                                        <option value="新股（人民币账户）">新股（人民币账户）</option>
+                                        <option value="新股（港元账户）">新股（港元账户）</option>
+                                        <option value="可转债（人民币账户）">可转债（人民币账户）</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group" style="text-align:center">
+                                <div class="col-md-12">
+                                    <input type="submit" class="btn btn-primary" value="导入">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <form action="" method="post" class="form-horizontal" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" style="visibility: hidden;" name="form_name" value="分红" />
+                    <div class="row align-items-center h-100">
+                        <div class="col-md-11">
+                            <div class="row form-group">
+                                <div class="col-md-1 text-right">
+                                    <label for="account_id" class="control-label">分红记录：</label>
+                                </div>
+                                <div class="col-md-11">
+                                    <select class="form-control" name="account_type" id="account_type">
+                                        <option disabled selected value="">请选择证券账户类型...</option>
+                                        <option value="人民币账户">人民币账户</option>
+                                        <option value="港元账户">港元账户</option>
+                                        <option value="美元账户">美元账户</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group" style="text-align:center">
+                                <div class="col-md-12">
+                                    <input type="submit" class="btn btn-primary" value="导入">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            {{ error_info }}
+			{% if messages %}
+				<script>
+					{% for msg in messages %}
+						alert('{{ msg.message }}');
+					{% endfor %}
+				</script>
+			{% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

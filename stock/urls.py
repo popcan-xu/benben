@@ -170,6 +170,8 @@ urlpatterns = [
     path('D_edit_dividend_history/<int:dividend_history_id>/', D_edit_dividend_history),
     path('D_list_dividend_history/', D_list_dividend_history),
 
-    path('capture_dividend_history/', D_capture_dividend_history),
+    path('D_capture_dividend_history/', D_capture_dividend_history),
+
+    path('D_batch_import/', D_batch_import),
 
 ]
