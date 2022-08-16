@@ -61,7 +61,7 @@
                             <!--#dividend_history_list即为视图函数list_dividend_history中render传入参数//-->
                             {% for i in stock_dividend_dict %}
                                 <tr>
-                                    <td>{{ stock_name }}({{ stock_code_POST }})</td>
+                                    <td>{{ stock_name }}({{ stock_code }})</td>
                                     <td>{{ i.reporting_period }}</td>
                                     <td>{{ i.dividend_plan }}</td>
                                     <td>{{ i.announcement_date }}</td>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+{% extends 'dashboard\base_dashboard.html' %}
+{% load static %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">关于</h6>
+        </div>
+        <div class="card-body">
+            <div class="h jumbotron bg-gray-100">
+                    一个基于Django的股票市值管理系统，通过维护证券账户中的交易、分红、打新等信息自动生成仓位、市值等，支持多账户、多市场（港股、美股）。
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
