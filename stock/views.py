@@ -11,11 +11,66 @@ import datetime
 
 import json
 
-#templates_path = 'console\\'
+
 templates_path = 'dashboard\\'
 
-def index(request):
-    return render(request, 'dashboard\index.html')
+
+# 总览
+def overview(request):
+    # 获得汇率数据
+    rate_HKD, rate_USD = get_stock_rate()
+
+    # 获得人民币、港元、美元分红总收益
+    amount_dividend_sum_CNY = dividend.objects.filter(dividend_currency=1).aggregate(amount=Sum('dividend_amount'))['amount']
+    amount_dividend_sum_HKD = dividend.objects.filter(dividend_currency=2).aggregate(amount=Sum('dividend_amount'))['amount']
+    amount_dividend_sum_USD = dividend.objects.filter(dividend_currency=3).aggregate(amount=Sum('dividend_amount'))['amount']
+    amount_dividend_sum = float(amount_dividend_sum_CNY) + float(amount_dividend_sum_HKD) * rate_HKD + float(amount_dividend_sum_USD) * rate_USD
+
+    # 获得新股、新债总收益
+    amount_subscription_sum = float(subscription.objects.aggregate(amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount'])
+
+    # 获取持仓股票数量
+    position_number = position.objects.values("stock").annotate(count=Count("stock")).count()
+
+    # 获得总市值、持仓股票一览数据、持仓前五占比数据
+    # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
+    price_array = []
+    stock_dict = position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
+    for dict in stock_dict:
+        stock_code = dict['stock__stock_code']
+        price, increase = get_stock_price(stock_code)
+        if increase > 0:
+            color = 'red'
+        elif increase < 0:
+            color = 'green'
+        else:
+            color = 'grey'
+        price_array.append((stock_code, price, increase, color))
+    # position_currency=0时，get_value_stock_content返回人民币、港元、美元计价的所有股票的人民币市值汇总
+    content, amount_value_sum, name_array, value_array = get_value_stock_content(0, price_array, rate_HKD, rate_USD)
+    content_top5 = content[:5]
+    # 计算前五大持仓百分比之和
+    top5_percent = 0.0
+    i = 0
+    while i < len(content_top5):
+        top5_percent += float(content_top5[i][6][:-1]) # [:-1]用于截去百分比字符串的最后一位（百分号）
+        i += 1
+
+    # 获得持仓币种占比数据，用于生成chart图表
+    content_1, amount_sum_1, name_array_1, value_array_1 = get_value_market_content(1, price_array, rate_HKD, rate_USD)
+    content_2, amount_sum_2, name_array_2, value_array_2 = get_value_market_content(2, price_array, rate_HKD, rate_USD)
+    content_3, amount_sum_3, name_array_3, value_array_3 = get_value_market_content(3, price_array, rate_HKD, rate_USD)
+    currency_name_array = ['人民币市值', '港元市值', '美元市值']
+    amount_sum_2 *= rate_HKD
+    amount_sum_3 *= rate_USD
+    currency_value_array = [int(amount_sum_1), int(amount_sum_2), int(amount_sum_3)]
+
+    # 获得近期交易、分红、打新列表
+    trade_list = trade.objects.all().order_by('-trade_date')[:5]
+    dividend_list = dividend.objects.all().order_by('-dividend_date')[:5]
+    subscription_list = subscription.objects.all().order_by('-subscription_date')[:5]
+
+    return render(request, templates_path + 'overview.html', locals())
 
 
 # 持仓市值

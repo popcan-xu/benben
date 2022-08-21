@@ -12,7 +12,8 @@ from django.urls import re_path as url
 from . import views
 
 urlpatterns = [
-    path('index/', index),
+    path('index/', overview),
+    path('overview/', overview),
 
     path('market_value/', market_value),
 

@@ -63,14 +63,24 @@ def get_value_stock_content(position_currency, price_increase_array, HKD_rate, U
     percent_array = []
     amount_sum = 0.0
 
-    # 对position表分组查询，按stock字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
-    stock_dict = position.objects.filter(position_currency=position_currency).values("stock").annotate(
-        quantity=Sum("position_quantity")).values(
-        'stock__stock_name',
-        'stock__stock_code',
-        'quantity',
-        'stock__market__transaction_currency'
-    )
+    if position_currency == 0:
+        # 对position表分组查询，按stock字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
+        stock_dict = position.objects.values("stock").annotate(
+            quantity=Sum("position_quantity")).values(
+            'stock__stock_name',
+            'stock__stock_code',
+            'quantity',
+            'stock__market__transaction_currency'
+        )
+    else:
+        # 对position表分组查询，按stock字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
+        stock_dict = position.objects.filter(position_currency=position_currency).values("stock").annotate(
+            quantity=Sum("position_quantity")).values(
+            'stock__stock_name',
+            'stock__stock_code',
+            'quantity',
+            'stock__market__transaction_currency'
+        )
     for dict in stock_dict:
         # 从字典tmp中取出’stock__stock_name‘的值
         stock_name = dict['stock__stock_name']
@@ -80,7 +90,7 @@ def get_value_stock_content(position_currency, price_increase_array, HKD_rate, U
         price = list(filter(lambda x: stock_code in x, price_increase_array))[0][1]
         increase = list(filter(lambda x: stock_code in x, price_increase_array))[0][2]
         color = list(filter(lambda x: stock_code in x, price_increase_array))[0][3]
-        if position_currency == 1:
+        if position_currency == 1 or position_currency == 0:
             if currency == 2:
                 rate = HKD_rate
             elif currency == 3:
