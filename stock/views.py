@@ -9,68 +9,177 @@ from django.template.defaulttags import register
 from django.contrib import messages
 import datetime
 
-import json
+import pathlib
 
+import json
+from django.core import serializers
 
 templates_path = 'dashboard\\'
 
 
 # 总览
 def overview(request):
-    # 获得汇率数据
-    rate_HKD, rate_USD = get_stock_rate()
+    path = pathlib.Path("./templates/dashboard/overview.json")
+    if path.is_file() and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据已提高性能
+        # 读取overview.json
+        dict_overview = FileOperate(filepath='./templates/dashboard/', filename='overview.json').operation_file()
+    else: # 若json文件不存在or点击了刷新按钮，重写json文件（文件不存在则先创建文件）再从json文件中读取overview页面需要的数据已提高性能
+        # 获得汇率数据
+        rate_HKD, rate_USD = get_stock_rate()
+        # 获得人民币、港元、美元分红总收益
+        amount_dividend_sum_CNY = dividend.objects.filter(dividend_currency=1).aggregate(amount=Sum('dividend_amount'))[
+            'amount']
+        amount_dividend_sum_HKD = dividend.objects.filter(dividend_currency=2).aggregate(amount=Sum('dividend_amount'))[
+            'amount']
+        amount_dividend_sum_USD = dividend.objects.filter(dividend_currency=3).aggregate(amount=Sum('dividend_amount'))[
+            'amount']
+        amount_dividend_sum = float(amount_dividend_sum_CNY) + float(amount_dividend_sum_HKD) * rate_HKD + float(
+            amount_dividend_sum_USD) * rate_USD
+        # 获得新股、新债总收益
+        amount_subscription_sum = float(subscription.objects.aggregate(
+            amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount'])
+        # 获取持仓股票数量
+        position_number = position.objects.values("stock").annotate(count=Count("stock")).count()
+        # 获得总市值、持仓股票一览数据、持仓前五占比数据
+        price_array = []  # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
+        stock_dict = position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
+        for dict in stock_dict:
+            stock_code = dict['stock__stock_code']
+            price, increase = get_stock_price(stock_code)
+            if increase > 0:
+                color = 'red'
+            elif increase < 0:
+                color = 'green'
+            else:
+                color = 'grey'
+            price_array.append((stock_code, price, increase, color))
+        # position_currency=0时，get_value_stock_content返回人民币、港元、美元计价的所有股票的人民币市值汇总
+        content, amount_value_sum, name_array, value_array = get_value_stock_content(0, price_array, rate_HKD, rate_USD)
+        content_top5 = content[:5]
+        # 计算前五大持仓百分比之和
+        top5_percent = 0.0
+        i = 0
+        while i < len(content_top5):
+            top5_percent += float(content_top5[i][6][:-1])  # [:-1]用于截去百分比字符串的最后一位（百分号）
+            i += 1
+        # 获得持仓币种占比数据，用于生成chart图表
+        content_1, amount_sum_1, name_array_1, value_array_1 = get_value_market_content(1, price_array, rate_HKD,
+                                                                                        rate_USD)
+        content_2, amount_sum_2, name_array_2, value_array_2 = get_value_market_content(2, price_array, rate_HKD,
+                                                                                        rate_USD)
+        content_3, amount_sum_3, name_array_3, value_array_3 = get_value_market_content(3, price_array, rate_HKD,
+                                                                                        rate_USD)
+        currency_name_array = ['人民币市值', '港元市值', '美元市值']
+        amount_sum_2 *= rate_HKD
+        amount_sum_3 *= rate_USD
+        currency_value_array = [int(amount_sum_1), int(amount_sum_2), int(amount_sum_3)]
+        # 获得近期交易列表
+        trade_list = trade.objects.all().order_by('-trade_date')[:5]
+        # 获得近期分红列表
+        dividend_list = dividend.objects.all().order_by('-dividend_date')[:5]
+        # 获得近期打新列表
+        subscription_list = subscription.objects.all().order_by('-subscription_date')[:5]
 
-    # 获得人民币、港元、美元分红总收益
-    amount_dividend_sum_CNY = dividend.objects.filter(dividend_currency=1).aggregate(amount=Sum('dividend_amount'))['amount']
-    amount_dividend_sum_HKD = dividend.objects.filter(dividend_currency=2).aggregate(amount=Sum('dividend_amount'))['amount']
-    amount_dividend_sum_USD = dividend.objects.filter(dividend_currency=3).aggregate(amount=Sum('dividend_amount'))['amount']
-    amount_dividend_sum = float(amount_dividend_sum_CNY) + float(amount_dividend_sum_HKD) * rate_HKD + float(amount_dividend_sum_USD) * rate_USD
+        # 写入overview.json
+        dict_overview = {}
+        # 汇率
+        dict_overview.update(rate_HKD=rate_HKD, rate_USD=rate_USD)
+        # 总市值、分红收益、打新收益、持股数量
+        dict_overview.update(amount_value_sum=amount_value_sum)
+        dict_overview.update(amount_dividend_sum=amount_dividend_sum)
+        dict_overview.update(amount_subscription_sum=amount_subscription_sum)
+        dict_overview.update(position_number=position_number)
+        # 持藏股票一览
+        holding_stock_array = []
+        for i in content:
+            holding_stock_array.append((i[0], i[1], i[2], i[3]))
+        dict_overview.update(holding_stock_array=holding_stock_array)
+        # 持仓前五占比
+        dict_overview.update(top5_percent=top5_percent)
+        top5_array = []
+        index = 0
+        progress_bar_bg = ['primary', 'success', 'info', 'warning', 'danger']
+        for i in content_top5:
+            top5_array.append((i[0], i[5], i[6], progress_bar_bg[index]))
+            index += 1
+        dict_overview.update(top5_array=top5_array)
+        # 持仓币种占比
+        dict_overview.update(currency_name_array=currency_name_array)
+        dict_overview.update(currency_value_array=currency_value_array)
+        # 近期交易
+        trade_array = []
+        for i in trade_list:
+            trade_array.append((
+                i.trade_date.strftime("%Y-%m-%d"),
+                str(i.stock.stock_name) + '（' + str(i.stock.stock_code) + '）',
+                str(i.get_trade_type_display()),
+                float(i.trade_price),
+                i.trade_quantity,
+                float(i.trade_price * i.trade_quantity),
+                str(i.get_settlement_currency_display()),
+                i.account.account_abbreviation
+            ))
+        dict_overview.update(trade_array=trade_array)
+        # 近期分红
+        dividend_array = []
+        for i in dividend_list:
+            dividend_array.append((
+                i.dividend_date.strftime("%Y-%m-%d"),
+                str(i.stock.stock_name) + '（' + str(i.stock.stock_code) + '）',
+                float(i.dividend_amount),
+                i.account.account_abbreviation
+            ))
+        dict_overview.update(dividend_array=dividend_array)
+        # 近期打新
+        subscription_array = []
+        for i in subscription_list:
+            subscription_array.append((
+                i.subscription_date.strftime("%Y-%m-%d"),
+                str(i.subscription_name),
+                str(i.get_subscription_type_display()),
+                i.subscription_quantity,
+                float((i.selling_price - i.buying_price) * i.subscription_quantity),
+                float(((i.selling_price / i.buying_price) - 1) * 100),
+                i.account.account_abbreviation
+            ))
+        dict_overview.update(subscription_array=subscription_array)
+        # 打时间戳
+        dict_overview.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        # 写入json文件
+        FileOperate(dictData=dict_overview, filepath='./templates/dashboard/',
+                    filename='overview.json').operation_file()
 
-    # 获得新股、新债总收益
-    amount_subscription_sum = float(subscription.objects.aggregate(amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount'])
+    return render(request, templates_path + 'overview.html', {'dict_overview':dict_overview})
 
-    # 获取持仓股票数量
-    position_number = position.objects.values("stock").annotate(count=Count("stock")).count()
 
-    # 获得总市值、持仓股票一览数据、持仓前五占比数据
-    # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
-    price_array = []
-    stock_dict = position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
-    for dict in stock_dict:
-        stock_code = dict['stock__stock_code']
-        price, increase = get_stock_price(stock_code)
-        if increase > 0:
-            color = 'red'
-        elif increase < 0:
-            color = 'green'
-        else:
-            color = 'grey'
-        price_array.append((stock_code, price, increase, color))
-    # position_currency=0时，get_value_stock_content返回人民币、港元、美元计价的所有股票的人民币市值汇总
-    content, amount_value_sum, name_array, value_array = get_value_stock_content(0, price_array, rate_HKD, rate_USD)
-    content_top5 = content[:5]
-    # 计算前五大持仓百分比之和
-    top5_percent = 0.0
-    i = 0
-    while i < len(content_top5):
-        top5_percent += float(content_top5[i][6][:-1]) # [:-1]用于截去百分比字符串的最后一位（百分号）
-        i += 1
+# 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
+class FileOperate:
+    '''
+    需要传入文件所在目录，完整文件名。
+    默认为只读，并将json文件转换为字典类型输出
+    若为写入，需向dictData传入字典类型数据
+    默认为utf-8格式
+    '''
+    def __init__(self,filepath,filename,way='r',dictData = None,encoding='utf-8'):
+        self.filepath = filepath
+        self.filename = filename
+        self.way = way
+        self.dictData = dictData
+        self.encoding = encoding
 
-    # 获得持仓币种占比数据，用于生成chart图表
-    content_1, amount_sum_1, name_array_1, value_array_1 = get_value_market_content(1, price_array, rate_HKD, rate_USD)
-    content_2, amount_sum_2, name_array_2, value_array_2 = get_value_market_content(2, price_array, rate_HKD, rate_USD)
-    content_3, amount_sum_3, name_array_3, value_array_3 = get_value_market_content(3, price_array, rate_HKD, rate_USD)
-    currency_name_array = ['人民币市值', '港元市值', '美元市值']
-    amount_sum_2 *= rate_HKD
-    amount_sum_3 *= rate_USD
-    currency_value_array = [int(amount_sum_1), int(amount_sum_2), int(amount_sum_3)]
-
-    # 获得近期交易、分红、打新列表
-    trade_list = trade.objects.all().order_by('-trade_date')[:5]
-    dividend_list = dividend.objects.all().order_by('-dividend_date')[:5]
-    subscription_list = subscription.objects.all().order_by('-subscription_date')[:5]
-
-    return render(request, templates_path + 'overview.html', locals())
+    def operation_file(self):
+        if self.dictData:
+            self.way = 'w'
+        with open(self.filepath + self.filename, self.way, encoding=self.encoding) as f:
+            if self.dictData:
+                #print(self.dictData)
+                f.write(json.dumps(self.dictData, ensure_ascii=False, indent=2))
+            else:
+                if '.json' in self.filename:
+                    data = json.loads(f.read())
+                else:
+                    data = f.read()
+                return data
 
 
 # 持仓市值
@@ -1519,5 +1628,7 @@ def form_view(request):
         finally:
             pass
     return render(request, 'dashboard\\form_view.html', locals())
+
+
 
 

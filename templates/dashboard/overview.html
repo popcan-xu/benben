@@ -8,17 +8,20 @@
 
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">总览</h1>
-        <div style="display:inline;float:right;">
-            港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+        <h1 class="h3 mb-0 text-gray-800" style="text-align:center">总览</h1>
+        <div style="text-align:center">
+            港元汇率：{{ dict_overview.rate_HKD|floatformat:4 }}，美元汇率：{{ dict_overview.rate_USD|floatformat:4 }}&nbsp;
         </div>
-        <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i
-                class="fas fa-rotate-right fa-sm text-white-50"></i> 刷新</a>
+        <div style="text-align:center">
+            <form action="" method="post" class="form-horizontal" role="form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-rotate-right fa-sm text-white-50"></i>&nbsp&nbsp{{ dict_overview.modified_time }}</button>
+            </form>
+        </div>
     </div>
 
     <!-- Content Card Row -->
     <div class="row">
-
         <!-- 总市值 -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
@@ -27,7 +30,7 @@
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                 总市值</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">￥{{ amount_value_sum|floatformat:0 }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">￥{{ dict_overview.amount_value_sum|floatformat:0 }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-calendar fa-2x text-gray-300"></i>
@@ -46,7 +49,7 @@
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 分红收益</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                ￥{{ amount_dividend_sum|floatformat:0 }}
+                                ￥{{ dict_overview.amount_dividend_sum|floatformat:0 }}
                             </div>
                         </div>
                         <div class="col-auto">
@@ -66,7 +69,7 @@
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 打新收益</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                ￥{{ amount_subscription_sum|floatformat:0 }}
+                                ￥{{ dict_overview.amount_subscription_sum|floatformat:0 }}
                             </div>
                         </div>
                         <div class="col-auto">
@@ -87,12 +90,12 @@
                                 持股数量</div>
                             <div class="row no-gutters align-items-center">
                                 <div class="col-auto">
-                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{ position_number }}</div>
+                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{ dict_overview.position_number }}</div>
                                 </div>
                                 <div class="col">
                                     <div class="progress progress-sm mr-2">
                                         <div class="progress-bar bg-info" role="progressbar"
-                                            style="width: {{ position_number }}%" aria-valuenow="{{ position_number }}" aria-valuemin="0"
+                                            style="width: {{ dict_overview.position_number }}%" aria-valuenow="{{ dict_overview.position_number }}" aria-valuemin="0"
                                             aria-valuemax="100"></div>
                                     </div>
                                 </div>
@@ -150,7 +153,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for i in content %}
+                                    {% for i in dict_overview.holding_stock_array %}
                                         <tr>
                                             <td>{{ i.0|stringformat:"s" }}</td>
                                             <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
@@ -162,16 +165,6 @@
                                             -->
                                         </tr>
                                     {% endfor %}
-                                    <!--
-                                    <tr>
-                                        <td><b>合计</b></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td style="text-align: right"><b>{{ amount_sum|floatformat:0 }}</b></td>
-                                        <td style="text-align: right"><b>100.00%</b></td>
-                                    </tr>
-                                    -->
                                 </tbody>
                             </table>
                         </div>
@@ -186,7 +179,7 @@
                 <!-- Card Header - Dropdown -->
                 <div
                     class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">持仓前五占比（{{ top5_percent|floatformat:2 }}%）</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">持仓前五占比（{{ dict_overview.top5_percent|floatformat:2 }}%）</h6>
                     <div class="dropdown no-arrow">
                         <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
                             data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -205,46 +198,16 @@
                 <!-- Card Body -->
                 <div class="card-body">
                     <div style="height:320px; width:100%; display:block; overflow-y:auto;">
-                        <h4 class="small font-weight-bold">{{ content_top5.0.0 }}
-                            <span>{{ content_top5.0.5|floatformat:0 }}元</span>
-                            <span class="float-right">{{ content_top5.0.6|slice:":-1" }}%</span>
-                        </h4>
-                        <div class="progress mb-4">
-                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ content_top5.0.6|slice:":-1" }}%"
-                                aria-valuenow="{{ content_top5.0.6|slice:":-1" }}" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <h4 class="small font-weight-bold">{{ content_top5.1.0 }}
-                            <span>{{ content_top5.1.5|floatformat:0 }}元</span>
-                            <span class="float-right">{{ content_top5.1.6|slice:":-1" }}%</span>
-                        </h4>
-                        <div class="progress mb-4">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ content_top5.1.6|slice:":-1" }}%"
-                                aria-valuenow="{{ content_top5.1.6|slice:":-1" }}" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <h4 class="small font-weight-bold">{{ content_top5.2.0 }}
-                            <span>{{ content_top5.2.5|floatformat:0 }}元</span>
-                            <span class="float-right">{{ content_top5.2.6|slice:":-1" }}%</span>
-                        </h4>
-                        <div class="progress mb-4">
-                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ content_top5.2.6|slice:":-1" }}%"
-                                aria-valuenow="{{ content_top5.2.6|slice:":-1" }}" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <h4 class="small font-weight-bold">{{ content_top5.3.0 }}
-                            <span>{{ content_top5.3.5|floatformat:0 }}元</span>
-                            <span class="float-right">{{ content_top5.3.6|slice:":-1" }}%</span>
-                        </h4>
-                        <div class="progress mb-4">
-                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ content_top5.3.6|slice:":-1" }}%"
-                                aria-valuenow="{{ content_top5.3.6|slice:":-1" }}" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <h4 class="small font-weight-bold">{{ content_top5.4.0 }}
-                            <span>{{ content_top5.4.5|floatformat:0 }}元</span>
-                            <span class="float-right">{{ content_top5.4.6|slice:":-1" }}%</span>
-                        </h4>
-                        <div class="progress">
-                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ content_top5.4.6|slice:":-1" }}%"
-                                aria-valuenow="{{ content_top5.4.6|slice:":-1" }}" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
+                        {% for i in dict_overview.top5_array %}
+                            <h4 class="small font-weight-bold">{{ i.0 }}
+                                <span>{{ i.1|floatformat:0 }}元</span>
+                                <span class="float-right">{{ i.2|slice:":-1" }}%</span>
+                            </h4>
+                            <div class="progress mb-4">
+                                <div class="progress-bar bg-{{ i.3 }}" role="progressbar" style="width: {{ i.2|slice:":-1" }}%"
+                                    aria-valuenow="{{ i.2|slice:":-1" }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -320,17 +283,17 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for trade in trade_list %}
+                                    {% for i in dict_overview.trade_array %}
                                         <tr>
-                                            <td>{{ trade.trade_date|date:'Y-m-d' }}</td>
-                                            <td>{{ trade.stock.stock_name }}({{ trade.stock.stock_code }})</td>
-                                            <td>{{ trade.get_trade_type_display }}</td>
-                                            <td>{{ trade.trade_price }}</td>
-                                            <td>{{ trade.trade_quantity }}</td>
+                                            <td>{{ i.0 }}</td>
+                                            <td>{{ i.1 }})</td>
+                                            <td>{{ i.2 }}</td>
+                                            <td>{{ i.3 }}</td>
+                                            <td>{{ i.4 }}</td>
                                             <!-- 模板变量的乘法需要使用widthratio // -->
-                                            <td>{% widthratio trade.trade_price 1 trade.trade_quantity %}</td>
-                                            <td>{{ trade.get_settlement_currency_display }}</td>
-                                            <td>{{ trade.account.account_abbreviation }}</td>
+                                            <td>{{ i.5|floatformat:0 }}</td>
+                                            <td>{{ i.6 }}</td>
+                                            <td>{{ i.7 }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -360,12 +323,12 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for dividend in dividend_list %}
+                                    {% for i in dict_overview.dividend_array %}
                                         <tr>
-                                            <td>{{ dividend.dividend_date|date:'Y-m-d' }}</td>
-                                            <td>{{ dividend.stock.stock_name }}（{{ dividend.stock.stock_code }}）</td>
-                                            <td>{{ dividend.dividend_amount|floatformat:0 }}</td>
-                                            <td>{{ dividend.account.account_abbreviation }}</td>
+                                            <td>{{ i.0 }}</td>
+                                            <td>{{ i.1 }}）</td>
+                                            <td>{{ i.2|floatformat:0 }}</td>
+                                            <td>{{ i.3 }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -392,22 +355,21 @@
                                         <th>申购名称</th>
                                         <th>申购类型</th>
                                         <th>申购数量</th>
-                                        <th>买入价格（元）</th>
-                                        <th>卖出价格（元）</th>
+                                        <th>收益</th>
+                                        <th>收益率</th>
                                         <th>证券账户</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                                    {% for subscription in subscription_list %}
+                                    {% for i in dict_overview.subscription_array %}
                                         <tr>
-                                            <td>{{ subscription.subscription_date|date:'Y-m-d' }}</td>
-                                            <td>{{ subscription.subscription_name }}</td>
-                                            <td>{{ subscription.get_subscription_type_display }}</td>
-                                            <td>{{ subscription.subscription_quantity|floatformat:0 }}</td>
-                                            <td>{{ subscription.buying_price|floatformat:2 }}</td>
-                                            <td>{{ subscription.selling_price|floatformat:2 }}</td>
-                                            <td>{{ subscription.account.account_abbreviation }}</td>
+                                            <td>{{ i.0 }}</td>
+                                            <td>{{ i.1 }}</td>
+                                            <td>{{ i.2 }}</td>
+                                            <td>{{ i.3 }}</td>
+                                            <td>{{ i.4|floatformat:0 }}</td>
+                                            <td>{{ i.5|floatformat:2 }}%</td>
+                                            <td>{{ i.6 }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -423,8 +385,8 @@
 
 
 <script>
-    var currency_name_array = {{ currency_name_array|safe }};
-    var currency_value_array = {{ currency_value_array|safe }};
+    var currency_name_array = {{ dict_overview.currency_name_array|safe }};
+    var currency_value_array = {{ dict_overview.currency_value_array|safe }};
     window.onload = function() {
         Chart_Pie("pie_currency", currency_name_array, currency_value_array);
     };
