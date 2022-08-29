@@ -25,8 +25,7 @@ SECRET_KEY = '39vk1*ellwzoz(m8*$b(bsk+dpc-tn%$jc%qzl_p7ht(j+bj+('
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['127.0.0.1', '192.168.50.49', '192.168.50.42']
 
 # Application definition
 
@@ -74,6 +73,11 @@ TEMPLATES = [
         },
     },
 ]
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/2.1/howto/static-files/
+
+STATIC_URL = '/static/'
 
 # 不加这一段，无法通过相对路径访问本地的css文件
 STATICFILES_DIRS = (
@@ -123,7 +127,6 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
 
 #LANGUAGE_CODE = 'zh-hans'会导致用intcomma格式化千位分隔符时，只能处理浮点数，无法处理整数
-#LANGUAGE_CODE = 'zh-hans'
 LANGUAGE_CODE = 'en' #自动按千位分隔符显示数字，包括int和float
 
 TIME_ZONE = 'Asia/Shanghai'
@@ -139,11 +142,6 @@ DECIMAL_SEPARATOR = "."
 USE_THOUSAND_SEPARATOR = True
 THOUSAND_SEPARATOR = ","
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/2.1/howto/static-files/
-
-STATIC_URL = '/static/'
-
 CACHES = {
  'default': {
   'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',  # 指定缓存使用的引擎
@@ -158,5 +156,3 @@ CACHES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
-#DEBUG = False
-ALLOWED_HOSTS = ['127.0.0.1', '192.168.50.49', '192.168.50.42']

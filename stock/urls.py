@@ -88,13 +88,4 @@ urlpatterns = [
 
     path('about/', about),
 
-    path('stats_view/', stats_view),
-    path('list_view/', list_view),
-    path('form_view/', form_view),
-    path('card_view/', card_view),
-    path('card_table_view/', card_table_view),
-    path('card_bar_view/', card_bar_view),
-    path('card_pie_view/', card_pie_view),
-    path('charts/', charts),
-
 ]
