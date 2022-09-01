@@ -12,5 +12,7 @@
 
 <link href="{% static 'stock/css/dashboard.css' %}" rel="stylesheet">
 
+<!-- jquery-3.4.1.min.js需要放在head里，否则 $(document).ready(function())不生效 -->
+<script src="{% static 'jquery-3.4.1.min.js' %}"></script>
 <script src="https://assets.pyecharts.org/assets/echarts.min.js"></script>
 
