@@ -44,13 +44,13 @@ def overview(request):
         stock_dict = position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
         for dict in stock_dict:
             stock_code = dict['stock__stock_code']
-            price, increase = get_stock_price(stock_code)
-            if increase > 0:
-                color = 'red'
-            elif increase < 0:
-                color = 'green'
-            else:
-                color = 'grey'
+            price, increase, color = get_stock_price(stock_code)
+            # if increase > 0:
+            #     color = 'red'
+            # elif increase < 0:
+            #     color = 'green'
+            # else:
+            #     color = 'grey'
             price_array.append((stock_code, price, increase, color))
         # position_currency=0时，get_value_stock_content返回人民币、港元、美元计价的所有股票的人民币市值汇总
         content, value_sum, name_array, value_array = get_value_stock_content(0, price_array, rate_HKD, rate_USD)
@@ -153,38 +153,8 @@ def overview(request):
     return render(request, templates_path + 'overview.html', {'overview':overview})
 
 
-# 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
-class FileOperate:
-    '''
-    需要传入文件所在目录，完整文件名。
-    默认为只读，并将json文件转换为字典类型输出
-    若为写入，需向dictData传入字典类型数据
-    默认为utf-8格式
-    '''
-    def __init__(self,filepath,filename,way='r',dictData = None,encoding='utf-8'):
-        self.filepath = filepath
-        self.filename = filename
-        self.way = way
-        self.dictData = dictData
-        self.encoding = encoding
-
-    def operation_file(self):
-        if self.dictData:
-            self.way = 'w'
-        with open(self.filepath + self.filename, self.way, encoding=self.encoding) as f:
-            if self.dictData:
-                #print(self.dictData)
-                f.write(json.dumps(self.dictData, ensure_ascii=False, indent=2))
-            else:
-                if '.json' in self.filename:
-                    data = json.loads(f.read())
-                else:
-                    data = f.read()
-                return data
-
-
 # 持仓市值
-def market_value(request):
+def market_value_old(request):
     currency_items = (
         (1, '人民币'),
         (2, '港元'),
@@ -207,6 +177,43 @@ def market_value(request):
                 color = 'green'
             else:
                 color = 'grey'
+            if k == 1:
+                currency_CNY = v
+                price_array_CNY.append((stock_code, price, increase, color))
+            elif k == 2:
+                currency_HKD = v
+                price_array_HKD.append((stock_code, price, increase, color))
+            elif k == 3:
+                currency_USD = v
+                price_array_USD.append((stock_code, price, increase, color))
+            else:
+                pass
+    content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array_CNY, rate_HKD, rate_USD)
+    content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array_HKD, rate_HKD, rate_USD)
+    content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array_USD, rate_HKD, rate_USD)
+
+    return render(request, templates_path + 'market_value.html', locals())
+
+
+# 持仓市值
+def market_value(request):
+    currency_items = (
+        (1, '人民币'),
+        (2, '港元'),
+        (3, '美元'),
+    )
+    #price_array = []
+    price_array_CNY = []
+    price_array_HKD = []
+    price_array_USD = []
+    rate_HKD, rate_USD = get_stock_rate()
+    for k,v in currency_items:
+        # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
+        stock_dict = position.objects.filter(position_currency=k).values("stock").annotate(
+            count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
+        for dict in stock_dict:
+            stock_code = dict['stock__stock_code']
+            price, increase, color = get_stock_price(stock_code)
             if k == 1:
                 currency_CNY = v
                 price_array_CNY.append((stock_code, price, increase, color))

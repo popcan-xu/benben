@@ -5,7 +5,7 @@ import os
 import json
 import django
 import datetime, time
-
+import pathlib
 import requests
 
 # from lxml import etree
@@ -44,12 +44,112 @@ def get_chart_array(content, max_rows, name_col, value_col):
 # 从http://qt.gtimg.cn/网站抓取股票价格数据
 def get_stock_price(stock_code):
     stock_object = stock.objects.get(stock_code=stock_code)
+    path = pathlib.Path("./templates/dashboard/price.json")
+    if path.is_file(): # 若json文件存在，从json文件中读取price、increase、color、price_time、index
+        # 读取price.json
+        price_dict = FileOperate(filepath='./templates/dashboard/', filename='price.json').operation_file()
+        price_array = price_dict['price_array']
+        stock_price, increase, color, price_time, index = search_price_array(price_array, stock_code)
+    else: # 若json文件不存在，创建json文件
+        price_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
+        index = -1
+        price_array = []
+        price_dict = {}
+        price_dict.update(price_array=price_array)
+        price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
+    time1 = price_time
+    time2 = datetime.datetime.now()
+    time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
+    # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与数据库价格获取时间间隔大于900秒 且 数据库价格获取时间早于当天的16点30分)
+    if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0) or index == -1:
+        price = []
+        market = stock_object.market.market_abbreviation
+        if market == 'hk':
+            url = 'http://qt.gtimg.cn/q=r_' + market + stock_code  # 在股票代码前面加上'r_'，用于获得实时港股行情
+        else:
+            url = 'http://qt.gtimg.cn/q=' + market + stock_code
+        html = getHTMLText(url)
+        x = html.count('~', 1, len(html))  # 获取返回字符串html中分隔符'~'的出现次数
+        for i in range(0, x + 1):
+            price.append(html.split('~')[i])  # 将html用'~'分隔后的值输出到列表price中
+        stock_price = float(price[3])
+        increase = float(price[32])
+        if increase > 0:
+            color = 'red'
+        elif increase < 0:
+            color = 'green'
+        else:
+            color = 'grey'
+        # 写入json文件
+        if index == -1:
+            price_array.append((stock_code, stock_price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        else:
+            price_array[index] = (stock_code, stock_price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        price_dict.update(price_array=price_array)
+        price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
+
+    return stock_price, increase, color
+
+
+def search_price_array(price_array, stock_code):
+    i = 0
+    index = -1
+    price = -1.0
+    increase = 0.0
+    color = 'grey'
+    price_time = datetime.datetime.now()
+    while i < len(price_array):
+        if price_array[i][0] == stock_code:
+            price = float(price_array[i][1])
+            increase = float(price_array[i][2])
+            color = str(price_array[i][3])
+            price_time = datetime.datetime.strptime(price_array[i][4], "%Y-%m-%d %H:%M:%S")
+            index = i
+            break
+        i += 1
+    return price, increase, color, price_time,  index
+
+
+# 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
+class FileOperate:
+    '''
+    需要传入文件所在目录，完整文件名。
+    默认为只读，并将json文件转换为字典类型输出
+    若为写入，需向dictData传入字典类型数据
+    默认为utf-8格式
+    '''
+    def __init__(self,filepath,filename,way='r',dictData = None,encoding='utf-8'):
+        self.filepath = filepath
+        self.filename = filename
+        self.way = way
+        self.dictData = dictData
+        self.encoding = encoding
+
+    def operation_file(self):
+        if self.dictData:
+            self.way = 'w'
+        with open(self.filepath + self.filename, self.way, encoding=self.encoding) as f:
+            if self.dictData:
+                #print(self.dictData)
+                f.write(json.dumps(self.dictData, ensure_ascii=False, indent=2))
+            else:
+                if '.json' in self.filename:
+                    data = json.loads(f.read())
+                else:
+                    data = f.read()
+                return data
+
+
+# 从http://qt.gtimg.cn/网站抓取股票价格数据
+def get_stock_price_old(stock_code):
+    stock_object = stock.objects.get(stock_code=stock_code)
     time1 = stock_object.price_time
     time2 = datetime.datetime.now()
     time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
     # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与数据库价格获取时间间隔大于300秒 且 数据库价格获取时间早于当天的16点30分)
-    if time1.date() != time2.date() or (
-            (time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0):
+    if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0):
         price = []
         market = stock_object.market.market_abbreviation
         if market == 'hk':

@@ -22,202 +22,203 @@
             </div>
         </div>
         <div class="card-body">
-                <ul id="statisticsTab" class="nav nav-tabs">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#CNY" data-toggle="tab">人民币</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#HKD" data-toggle="tab">港元</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#USD" data-toggle="tab">美元</a>
-                    </li>
-                </ul>
-                <div id="statisticsTabContent" class="tab-content">
-                    <div class="tab-pane fade show active" id="CNY">
-                        <p></p>
-                        <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">
-                            <ul class="nav">
-                                <li class="breadcrumb-item"><a href="#table_CNY" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
-                                <li class="breadcrumb-item"><a href="#bar_CNY" data-toggle="tab" style="text-decoration:none;" id="bar_link_CNY">柱状图</a></li>
-                                <li class="breadcrumb-item"><a href="#pie_CNY" data-toggle="tab" style="text-decoration:none;" id="pie_link_CNY">饼状图</a></li>
-                            </ul>
-                        </nav>
-                        <div class="tab-content">
-                            <div class="tab-pane fade show active" id="table_CNY">
-                                <p></p>
-                                <div style="display:inline;float:left;">
-                                    市值（{{ currency_CNY }}）：{{ amount_sum_CNY|floatformat:0 }}元
-                                </div>
-                                <div style="display:inline;float:right;">
-                                    港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
-                                </div>
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-condensed table-striped table-hover list_tab">
-                                        <thead class="bg-gradient-secondary text-gray-100">
-                                            <tr>
-                                                <th>股票/代码</th>
-                                                <th>价格（元）</th>
-                                                <th>涨跌幅</th>
-                                                <th>持仓数量（股）</th>
-                                                <th>金额（{{ currency_CNY }}）</th>
-                                                <th>百分比</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for i in content_CNY %}
-                                                <tr>
-                                                    <td>{{ i.0|stringformat:"s" }}</td>
-                                                    <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
-                                                    <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
-                                                    <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
-                                                    <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
-                                                    <td style="text-align: right">{{ i.6 }}</td>
-                                                </tr>
-                                            {% endfor %}
-                                            <tr>
-                                                <td><b>合计</b></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td style="text-align: right"><b>{{ amount_sum_CNY|floatformat:0 }}</b></td>
-                                                <td style="text-align: right"><b>100.00%</b></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+            {{ price_dict.price_array.0 }}
+            <ul id="statisticsTab" class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#CNY" data-toggle="tab">人民币</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#HKD" data-toggle="tab">港元</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#USD" data-toggle="tab">美元</a>
+                </li>
+            </ul>
+            <div id="statisticsTabContent" class="tab-content">
+                <div class="tab-pane fade show active" id="CNY">
+                    <p></p>
+                    <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">
+                        <ul class="nav">
+                            <li class="breadcrumb-item"><a href="#table_CNY" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
+                            <li class="breadcrumb-item"><a href="#bar_CNY" data-toggle="tab" style="text-decoration:none;" id="bar_link_CNY">柱状图</a></li>
+                            <li class="breadcrumb-item"><a href="#pie_CNY" data-toggle="tab" style="text-decoration:none;" id="pie_link_CNY">饼状图</a></li>
+                        </ul>
+                    </nav>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="table_CNY">
+                            <p></p>
+                            <div style="display:inline;float:left;">
+                                市值（{{ currency_CNY }}）：{{ amount_sum_CNY|floatformat:0 }}元
                             </div>
-                            <div class="tab-pane fade" id="bar_CNY">
-                                <div id="bar_area_CNY" style="width:800px; height:500px;"></div><!--数据展现的容器1-->
+                            <div style="display:inline;float:right;">
+                                港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
                             </div>
-                            <div class="tab-pane fade" id="pie_CNY">
-                                <div id="pie_area_CNY" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                    <thead class="bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>股票/代码</th>
+                                            <th>价格（元）</th>
+                                            <th>涨跌幅</th>
+                                            <th>持仓数量（股）</th>
+                                            <th>金额（{{ currency_CNY }}）</th>
+                                            <th>百分比</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in content_CNY %}
+                                            <tr>
+                                                <td>{{ i.0|stringformat:"s" }}</td>
+                                                <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
+                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+                                                <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.6 }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        <tr>
+                                            <td><b>合计</b></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td style="text-align: right"><b>{{ amount_sum_CNY|floatformat:0 }}</b></td>
+                                            <td style="text-align: right"><b>100.00%</b></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                    </div>
-                    <div class="tab-pane fade" id="HKD">
-                        <p></p>
-                        <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">
-                            <ul class="nav">
-                                <li class="breadcrumb-item"><a href="#table_HKD" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
-                                <li class="breadcrumb-item"><a href="#bar_HKD" data-toggle="tab" style="text-decoration:none;" id="bar_link_HKD">柱状图</a></li>
-                                <li class="breadcrumb-item"><a href="#pie_HKD" data-toggle="tab" style="text-decoration:none;" id="pie_link_HKD">饼状图</a></li>
-                            </ul>
-                        </nav>
-                        <div class="tab-content">
-                            <div class="tab-pane fade show active" id="table_HKD">
-                                <p></p>
-                                <div style="display:inline;float:left;">
-                                    市值（{{ currency_HKD }}）：{{ amount_sum_HKD|floatformat:0 }}元
-                                </div>
-                                <div style="display:inline;float:right;">
-                                    港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
-                                </div>
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-condensed table-striped table-hover list_tab">
-                                        <thead class="bg-gradient-secondary text-gray-100">
-                                            <tr>
-                                                <th>股票/代码</th>
-                                                <th>价格（元）</th>
-                                                <th>涨跌幅</th>
-                                                <th>持仓数量（股）</th>
-                                                <th>金额（{{ currency_HKD }}）</th>
-                                                <th>百分比</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for i in content_HKD %}
-                                                <tr>
-                                                    <td>{{ i.0|stringformat:"s" }}</td>
-                                                    <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
-                                                    <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
-                                                    <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
-                                                    <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
-                                                    <td style="text-align: right">{{ i.6 }}</td>
-                                                </tr>
-                                            {% endfor %}
-                                            <tr>
-                                                <td><b>合计</b></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td style="text-align: right"><b>{{ amount_sum_HKD|floatformat:0 }}</b></td>
-                                                <td style="text-align: right"><b>100.00%</b></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="bar_HKD">
-                                <div id="bar_area_HKD" style="width:800px; height:500px;"></div><!--数据展现的容器1-->
-                            </div>
-                            <div class="tab-pane fade" id="pie_HKD">
-                                <div id="pie_area_HKD" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
-                            </div>
+                        <div class="tab-pane fade" id="bar_CNY">
+                            <div id="bar_area_CNY" style="width:800px; height:500px;"></div><!--数据展现的容器1-->
                         </div>
-                    </div>
-                    <div class="tab-pane fade" id="USD">
-                        <p></p>
-                        <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">
-                            <ul class="nav">
-                                <li class="breadcrumb-item"><a href="#table_USD" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
-                                <li class="breadcrumb-item"><a href="#bar_USD" data-toggle="tab" style="text-decoration:none;" id="bar_link_USD">柱状图</a></li>
-                                <li class="breadcrumb-item"><a href="#pie_USD" data-toggle="tab" style="text-decoration:none;" id="pie_link_USD">饼状图</a></li>
-                            </ul>
-                        </nav>
-                        <div class="tab-content">
-                            <div class="tab-pane fade show active" id="table_USD">
-                                <p></p>
-                                <div style="display:inline;float:left;">
-                                    市值（{{ currency_USD }}）：{{ amount_sum_USD|floatformat:0 }}元
-                                </div>
-                                <div style="display:inline;float:right;">
-                                    港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
-                                </div>
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-condensed table-striped table-hover list_tab">
-                                        <thead class="bg-gradient-secondary text-gray-100">
-                                            <tr>
-                                                <th>股票/代码</th>
-                                                <th>价格（元）</th>
-                                                <th>涨跌幅</th>
-                                                <th>持仓数量（股）</th>
-                                                <th>金额（{{ currency_USD }}）</th>
-                                                <th>百分比</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for i in content_USD %}
-                                                <tr>
-                                                    <td>{{ i.0|stringformat:"s" }}</td>
-                                                    <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
-                                                    <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
-                                                    <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
-                                                    <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
-                                                    <td style="text-align: right">{{ i.6 }}</td>
-                                                </tr>
-                                            {% endfor %}
-                                            <tr>
-                                                <td><b>合计</b></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td style="text-align: right"><b>{{ amount_sum_USD|floatformat:0 }}</b></td>
-                                                <td style="text-align: right"><b>100.00%</b></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="bar_USD">
-                                <div id="bar_area_USD" style="width:800px; height:500px;"></div><!--数据展现的容器1-->
-                            </div>
-                            <div class="tab-pane fade" id="pie_USD">
-                                <div id="pie_area_USD" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
-                            </div>
+                        <div class="tab-pane fade" id="pie_CNY">
+                            <div id="pie_area_CNY" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
                         </div>
                     </div>
                 </div>
+                <div class="tab-pane fade" id="HKD">
+                    <p></p>
+                    <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">
+                        <ul class="nav">
+                            <li class="breadcrumb-item"><a href="#table_HKD" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
+                            <li class="breadcrumb-item"><a href="#bar_HKD" data-toggle="tab" style="text-decoration:none;" id="bar_link_HKD">柱状图</a></li>
+                            <li class="breadcrumb-item"><a href="#pie_HKD" data-toggle="tab" style="text-decoration:none;" id="pie_link_HKD">饼状图</a></li>
+                        </ul>
+                    </nav>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="table_HKD">
+                            <p></p>
+                            <div style="display:inline;float:left;">
+                                市值（{{ currency_HKD }}）：{{ amount_sum_HKD|floatformat:0 }}元
+                            </div>
+                            <div style="display:inline;float:right;">
+                                港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                    <thead class="bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>股票/代码</th>
+                                            <th>价格（元）</th>
+                                            <th>涨跌幅</th>
+                                            <th>持仓数量（股）</th>
+                                            <th>金额（{{ currency_HKD }}）</th>
+                                            <th>百分比</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in content_HKD %}
+                                            <tr>
+                                                <td>{{ i.0|stringformat:"s" }}</td>
+                                                <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
+                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+                                                <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.6 }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        <tr>
+                                            <td><b>合计</b></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td style="text-align: right"><b>{{ amount_sum_HKD|floatformat:0 }}</b></td>
+                                            <td style="text-align: right"><b>100.00%</b></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="bar_HKD">
+                            <div id="bar_area_HKD" style="width:800px; height:500px;"></div><!--数据展现的容器1-->
+                        </div>
+                        <div class="tab-pane fade" id="pie_HKD">
+                            <div id="pie_area_HKD" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="USD">
+                    <p></p>
+                    <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">
+                        <ul class="nav">
+                            <li class="breadcrumb-item"><a href="#table_USD" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
+                            <li class="breadcrumb-item"><a href="#bar_USD" data-toggle="tab" style="text-decoration:none;" id="bar_link_USD">柱状图</a></li>
+                            <li class="breadcrumb-item"><a href="#pie_USD" data-toggle="tab" style="text-decoration:none;" id="pie_link_USD">饼状图</a></li>
+                        </ul>
+                    </nav>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="table_USD">
+                            <p></p>
+                            <div style="display:inline;float:left;">
+                                市值（{{ currency_USD }}）：{{ amount_sum_USD|floatformat:0 }}元
+                            </div>
+                            <div style="display:inline;float:right;">
+                                港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                    <thead class="bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>股票/代码</th>
+                                            <th>价格（元）</th>
+                                            <th>涨跌幅</th>
+                                            <th>持仓数量（股）</th>
+                                            <th>金额（{{ currency_USD }}）</th>
+                                            <th>百分比</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in content_USD %}
+                                            <tr>
+                                                <td>{{ i.0|stringformat:"s" }}</td>
+                                                <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
+                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+                                                <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.6 }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        <tr>
+                                            <td><b>合计</b></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td style="text-align: right"><b>{{ amount_sum_USD|floatformat:0 }}</b></td>
+                                            <td style="text-align: right"><b>100.00%</b></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="bar_USD">
+                            <div id="bar_area_USD" style="width:800px; height:500px;"></div><!--数据展现的容器1-->
+                        </div>
+                        <div class="tab-pane fade" id="pie_USD">
+                            <div id="pie_area_USD" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
