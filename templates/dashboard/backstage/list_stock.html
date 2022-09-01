@@ -21,11 +21,8 @@
                             <th>股票名称</th>
                             <th>行业</th>
                             <th>市场</th>
-                            <th>价格</th>
-                            <th>涨幅</th>
                             <th>上次分红日期</th>
                             <th>下次分红日期</th>
-                            <th>价格获取时间</th>
                             <th>分红获取时间</th>
                             <th>修改时间</th>
                             <th>操作</th>
@@ -40,11 +37,8 @@
                                 <td>{{ stock.stock_name }}</td>
                                 <td>{{ stock.industry.industry_name }}</td>
                                 <td>{{ stock.market.market_name }}</td>
-                                <td>{{ stock.price }}</td>
-                                <td>{{ stock.increase }}%</td>
                                 <td>{{ stock.last_dividend_date|date:'Y-m-d' }}</td>
                                 <td>{{ stock.next_dividend_date|date:'Y-m-d' }}</td>
-                                <td>{{ stock.price_time|date:'Y-m-d H:i' }}</td>
                                 <td>{{ stock.dividend_time|date:'Y-m-d H:i' }}</td>
                                 <td>{{ stock.modified_time|date:'Y-m-d H:i' }}</td>
                                 <td>

@@ -46,11 +46,8 @@ class stock(models.Model):
     stock_name = models.CharField(max_length=32, verbose_name='股票名称', db_index=True)
     industry = models.ForeignKey(to="industry", on_delete=models.CASCADE, verbose_name='行业')
     market = models.ForeignKey(to="market", on_delete=models.CASCADE, verbose_name='市场')
-    price = models.DecimalField(default=0.000, max_digits=8, decimal_places=3, verbose_name='价格')
-    increase = models.DecimalField(default=0.00, max_digits=8, decimal_places=2, verbose_name='涨幅')
     last_dividend_date = models.DateField(verbose_name='上次分红日期', null=True, blank=True)
     next_dividend_date = models.DateField(verbose_name='下次分红日期', null=True, blank=True)
-    price_time = models.DateTimeField(default=datetime.datetime(1970, 1, 1, 0, 0, 0), verbose_name='价格获取时间')
     dividend_time = models.DateTimeField(default=datetime.datetime(1970, 1, 1, 0, 0, 0), verbose_name='分红获取时间')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
 
