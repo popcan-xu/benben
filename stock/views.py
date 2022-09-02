@@ -72,11 +72,11 @@ def overview(request):
         value_sum_3 *= rate_USD
         currency_value_array = [int(value_sum_1), int(value_sum_2), int(value_sum_3)]
         # 获得近期交易列表
-        top5_trade_list = trade.objects.all().order_by('-trade_date')[:5]
+        top5_trade_list = trade.objects.all().order_by('-trade_date', '-modified_time')[:5]
         # 获得近期分红列表
-        top5_dividend_list = dividend.objects.all().order_by('-dividend_date')[:5]
+        top5_dividend_list = dividend.objects.all().order_by('-dividend_date', '-modified_time')[:5]
         # 获得近期打新列表
-        top5_subscription_list = subscription.objects.all().order_by('-subscription_date')[:5]
+        top5_subscription_list = subscription.objects.all().order_by('-subscription_date', '-modified_time')[:5]
 
         # 写入overview.json
         overview = {}

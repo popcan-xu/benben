@@ -49,7 +49,7 @@ def get_stock_price(stock_code):
         # 读取price.json
         price_dict = FileOperate(filepath='./templates/dashboard/', filename='price.json').operation_file()
         price_array = price_dict['price_array']
-        stock_price, increase, color, price_time, index = search_price_array(price_array, stock_code)
+        price, increase, color, price_time, index = search_price_array(price_array, stock_code)
     else: # 若json文件不存在，创建json文件
         price_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
         index = -1
@@ -63,7 +63,7 @@ def get_stock_price(stock_code):
     time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
     # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与数据库价格获取时间间隔大于900秒 且 数据库价格获取时间早于当天的16点30分)
     if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0) or index == -1:
-        price = []
+        price_str = []
         market = stock_object.market.market_abbreviation
         if market == 'hk':
             url = 'http://qt.gtimg.cn/q=r_' + market + stock_code  # 在股票代码前面加上'r_'，用于获得实时港股行情
@@ -72,9 +72,9 @@ def get_stock_price(stock_code):
         html = getHTMLText(url)
         x = html.count('~', 1, len(html))  # 获取返回字符串html中分隔符'~'的出现次数
         for i in range(0, x + 1):
-            price.append(html.split('~')[i])  # 将html用'~'分隔后的值输出到列表price中
-        stock_price = float(price[3])
-        increase = float(price[32])
+            price_str.append(html.split('~')[i])  # 将html用'~'分隔后的值输出到列表price中
+        price = float(price_str[3])
+        increase = float(price_str[32])
         if increase > 0:
             color = 'red'
         elif increase < 0:
@@ -83,16 +83,17 @@ def get_stock_price(stock_code):
             color = 'grey'
         # 写入json文件
         if index == -1:
-            price_array.append((stock_code, stock_price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            price_array.append((stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         else:
-            price_array[index] = (stock_code, stock_price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            price_array[index] = (stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         price_dict.update(price_array=price_array)
         price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
 
-    return stock_price, increase, color
+    return price, increase, color
 
 
+# 在二维列表price_array中用查找stock_code所在的位置，返回该位置对应子列表的price、increase、color、price_time、index，若查找失败，返回index=-1
 def search_price_array(price_array, stock_code):
     i = 0
     index = -1
