@@ -18,6 +18,56 @@ django.setup()
 from stock.models import market, stock, trade, position, dividend, subscription
 
 
+# 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
+class FileOperate:
+    '''
+    需要传入文件所在目录，完整文件名。
+    默认为只读，并将json文件转换为字典类型输出
+    若为写入，需向dictData传入字典类型数据
+    默认为utf-8格式
+    '''
+    def __init__(self,filepath,filename,way='r',dictData = None,encoding='utf-8'):
+        self.filepath = filepath
+        self.filename = filename
+        self.way = way
+        self.dictData = dictData
+        self.encoding = encoding
+
+    def operation_file(self):
+        if self.dictData:
+            self.way = 'w'
+        with open(self.filepath + self.filename, self.way, encoding=self.encoding) as f:
+            if self.dictData:
+                #print(self.dictData)
+                f.write(json.dumps(self.dictData, ensure_ascii=False, indent=2))
+            else:
+                if '.json' in self.filename:
+                    data = json.loads(f.read())
+                else:
+                    data = f.read()
+                return data
+
+
+# 在二维列表price_array中用查找stock_code所在的位置，返回该位置对应子列表的price、increase、color、price_time、index，若查找失败，返回index=-1
+def search_price_array(price_array, stock_code):
+    i = 0
+    index = -1
+    price = -1.0
+    increase = 0.0
+    color = 'grey'
+    price_time = datetime.datetime.now()
+    while i < len(price_array):
+        if price_array[i][0] == stock_code:
+            price = float(price_array[i][1])
+            increase = float(price_array[i][2])
+            color = str(price_array[i][3])
+            price_time = datetime.datetime.strptime(price_array[i][4], "%Y-%m-%d %H:%M:%S")
+            index = i
+            break
+        i += 1
+    return price, increase, color, price_time,  index
+
+
 # 获取图表数据队列函数
 def get_chart_array(content, max_rows, name_col, value_col):
     name_array = []
@@ -93,56 +143,6 @@ def get_stock_price(stock_code):
     return price, increase, color
 
 
-# 在二维列表price_array中用查找stock_code所在的位置，返回该位置对应子列表的price、increase、color、price_time、index，若查找失败，返回index=-1
-def search_price_array(price_array, stock_code):
-    i = 0
-    index = -1
-    price = -1.0
-    increase = 0.0
-    color = 'grey'
-    price_time = datetime.datetime.now()
-    while i < len(price_array):
-        if price_array[i][0] == stock_code:
-            price = float(price_array[i][1])
-            increase = float(price_array[i][2])
-            color = str(price_array[i][3])
-            price_time = datetime.datetime.strptime(price_array[i][4], "%Y-%m-%d %H:%M:%S")
-            index = i
-            break
-        i += 1
-    return price, increase, color, price_time,  index
-
-
-# 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
-class FileOperate:
-    '''
-    需要传入文件所在目录，完整文件名。
-    默认为只读，并将json文件转换为字典类型输出
-    若为写入，需向dictData传入字典类型数据
-    默认为utf-8格式
-    '''
-    def __init__(self,filepath,filename,way='r',dictData = None,encoding='utf-8'):
-        self.filepath = filepath
-        self.filename = filename
-        self.way = way
-        self.dictData = dictData
-        self.encoding = encoding
-
-    def operation_file(self):
-        if self.dictData:
-            self.way = 'w'
-        with open(self.filepath + self.filename, self.way, encoding=self.encoding) as f:
-            if self.dictData:
-                #print(self.dictData)
-                f.write(json.dumps(self.dictData, ensure_ascii=False, indent=2))
-            else:
-                if '.json' in self.filename:
-                    data = json.loads(f.read())
-                else:
-                    data = f.read()
-                return data
-
-
 # 从http://qt.gtimg.cn/网站抓取股票价格数据
 def get_stock_price_old(stock_code):
     stock_object = stock.objects.get(stock_code=stock_code)
@@ -174,7 +174,46 @@ def get_stock_price_old(stock_code):
 
 
 # 从https://qq.ip138.com/网站抓取汇率数据
-def get_stock_rate():
+def get_rate():
+    path = pathlib.Path("./templates/dashboard/rate.json")
+    if path.is_file(): # 若json文件存在，从json文件中读取rate_HKD、rate_USD
+        # 读取rate.json
+        rate_dict = FileOperate(filepath='./templates/dashboard/', filename='rate.json').operation_file()
+        rate_HKD = float(rate_dict['rate_HKD'])
+        rate_USD = float(rate_dict['rate_USD'])
+        rate_time = datetime.datetime.strptime(rate_dict['modified_time'], "%Y-%m-%d %H:%M:%S")
+    else: # 若json文件不存在，创建json文件
+        rate_dict = {}
+        rate_dict.update(rate_HKD=1.0)
+        rate_dict.update(rate_USD=1.0)
+        rate_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
+        rate_dict.update(modified_time=rate_time.strftime("%Y-%m-%d %H:%M:%S"))
+        FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
+
+    if rate_time.date() != datetime.datetime.today().date():
+        # 从网络获取港元汇率
+        url_HKD = 'https://qq.ip138.com/hl.asp?from=HKD&to=CNY&q=100'
+        html_HKD = getHTMLText(url_HKD)
+        rate_HKD = getRate(html_HKD)
+        # 网页爬虫抓取结果是否为‘暂无’？
+        if rate_HKD != -1:
+            rate_dict.update(rate_HKD=rate_HKD)
+        # 从网络获取美元汇率
+        url_USD = 'https://qq.ip138.com/hl.asp?from=USD&to=CNY&q=100'
+        html_USD = getHTMLText(url_USD)
+        rate_USD = getRate(html_USD)
+        # 网页爬虫抓取结果是否为‘暂无’？
+        if rate_USD != -1:
+            rate_dict.update(rate_USD=rate_USD)
+
+        rate_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
+
+    return rate_HKD, rate_USD
+
+
+# 从https://qq.ip138.com/网站抓取汇率数据
+def get_rate_old():
     market1 = market.objects.get(market_name='港股')
     market2 = market.objects.get(market_name='美股')
 

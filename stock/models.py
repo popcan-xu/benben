@@ -22,8 +22,6 @@ class market(models.Model):
     market_name = models.CharField(max_length=32, verbose_name='市场名称', unique=True, db_index=True)
     market_abbreviation = models.CharField(max_length=32, verbose_name='市场简称')
     transaction_currency = models.PositiveIntegerField(default=CNY, choices=TRANSACTION_CURRENCY_ITEMS, verbose_name='交易货币')
-    exchange_rate = models.DecimalField(default=1.0000, max_digits=8, decimal_places=4, verbose_name='汇率')
-    modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
 
 
 # 证券账户数据模型

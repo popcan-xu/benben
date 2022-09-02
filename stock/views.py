@@ -21,7 +21,7 @@ def overview(request):
     else: # 若json文件不存在or点击了刷新按钮，重写json文件（文件不存在则创建文件），再从json文件中读取overview页面需要的数据
         current_year = datetime.datetime.now().year
         # 获得汇率数据
-        rate_HKD, rate_USD = get_stock_rate()
+        rate_HKD, rate_USD = get_rate()
         # 获得人民币、港元、美元分红总收益
         dividend_sum_CNY = dividend.objects.filter(dividend_currency=1).aggregate(amount=Sum('dividend_amount'))['amount']
         dividend_sum_HKD = dividend.objects.filter(dividend_currency=2).aggregate(amount=Sum('dividend_amount'))['amount']
@@ -163,7 +163,7 @@ def market_value_old(request):
     price_array_CNY = []
     price_array_HKD = []
     price_array_USD = []
-    rate_HKD, rate_USD = get_stock_rate()
+    rate_HKD, rate_USD = get_rate()
     for k,v in currency_items:
         # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
         stock_dict = position.objects.filter(position_currency=k).values("stock").annotate(
@@ -206,7 +206,7 @@ def market_value(request):
     price_array_CNY = []
     price_array_HKD = []
     price_array_USD = []
-    rate_HKD, rate_USD = get_stock_rate()
+    rate_HKD, rate_USD = get_rate()
     for k,v in currency_items:
         # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
         stock_dict = position.objects.filter(position_currency=k).values("stock").annotate(
@@ -398,7 +398,7 @@ def stats_value(request):
     currency_name = currency_items[currency-1][1]
     condition_id = '11'
     price_array = []
-    rate_HKD, rate_USD = get_stock_rate()
+    rate_HKD, rate_USD = get_rate()
 
     if request.method == 'POST':
         caliber = int(request.POST.get('caliber'))
@@ -437,7 +437,7 @@ def stats_account(request):
     account_list1 = account.objects.all().filter(broker__broker_script='境内券商')
     account_list2 = account.objects.all().filter(broker__broker_script='境外券商')
     account_abbreviation = '银河6811'
-    rate_HKD, rate_USD = get_stock_rate()
+    rate_HKD, rate_USD = get_rate()
     if request.method == 'POST':
         account_abbreviation = request.POST.get('account')
         account_id = account.objects.get(account_abbreviation=account_abbreviation).id
@@ -538,7 +538,7 @@ def stats_trade(request):
 
 # 盈亏统计
 def stats_profit(request):
-    rate_HKD, rate_USD = get_stock_rate()
+    rate_HKD, rate_USD = get_rate()
     profit_array = []
     profit_sum = 0
     value_sum = 0

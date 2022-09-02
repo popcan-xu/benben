@@ -20,8 +20,6 @@
                             <th>市场名称</th>
                             <th>简称</th>
                             <th>交易货币</th>
-                            <th>货币汇率</th>
-                            <th>汇率获取时间</th>
                             <th>操作</th>
                             <th>操作</th>
                         </tr>
@@ -34,8 +32,6 @@
                                 <td>{{ market.market_abbreviation }}</td>
                                 <!-- 用get_属性_display来显示包含choice参数的字段值 // -->
                                 <td>{{ market.get_transaction_currency_display }}</td>
-                                <td>{{ market.exchange_rate }}</td>
-                                <td>{{ market.modified_time|date:'Y-m-d H:i' }}</td>
                                 <td>
                                     <a href="/benben/del_market/{{ market.id|safe }}/" class="btn btn-default btn-sm">
                                         删除
