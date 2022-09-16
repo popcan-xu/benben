@@ -143,38 +143,10 @@ def get_stock_price(stock_code):
     return price, increase, color
 
 
-# 从http://qt.gtimg.cn/网站抓取股票价格数据
-def get_stock_price_old(stock_code):
-    stock_object = stock.objects.get(stock_code=stock_code)
-    time1 = stock_object.price_time
-    time2 = datetime.datetime.now()
-    time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
-    # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与数据库价格获取时间间隔大于300秒 且 数据库价格获取时间早于当天的16点30分)
-    if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0):
-        price = []
-        market = stock_object.market.market_abbreviation
-        if market == 'hk':
-            url = 'http://qt.gtimg.cn/q=r_' + market + stock_code  # 在股票代码前面加上'r_'，用于获得实时港股行情
-        else:
-            url = 'http://qt.gtimg.cn/q=' + market + stock_code
-        html = getHTMLText(url)
-        x = html.count('~', 1, len(html))  # 获取返回字符串html中分隔符'~'的出现次数
-        for i in range(0, x + 1):
-            price.append(html.split('~')[i])  # 将html用'~'分隔后的值输出到列表price中
-        stock_price = price[3]
-        increase = price[32]
-        stock_object.price = float(stock_price)
-        stock_object.increase = float(increase)
-        stock_object.price_time = time2.strftime("%Y-%m-%d %H:%M:%S")
-        stock_object.save()
-    else:
-        stock_price = stock_object.price
-        increase = stock_object.increase
-    return float(stock_price), float(increase)
-
-
 # 从https://qq.ip138.com/网站抓取汇率数据
 def get_rate():
+    rate_HKD = 1.0
+    rate_USD = 1.0
     path = pathlib.Path("./templates/dashboard/rate.json")
     if path.is_file(): # 若json文件存在，从json文件中读取rate_HKD、rate_USD
         # 读取rate.json
@@ -189,73 +161,25 @@ def get_rate():
         rate_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
         rate_dict.update(modified_time=rate_time.strftime("%Y-%m-%d %H:%M:%S"))
         FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
-
+    # 若json文件中的rate_time与当前不为同一天，从https://qq.ip138.com/获取汇率
     if rate_time.date() != datetime.datetime.today().date():
-        # 从网络获取港元汇率
+        # 获取港元汇率
         url_HKD = 'https://qq.ip138.com/hl.asp?from=HKD&to=CNY&q=100'
         html_HKD = getHTMLText(url_HKD)
         rate_HKD = getRate(html_HKD)
         # 网页爬虫抓取结果是否为‘暂无’？
         if rate_HKD != -1:
             rate_dict.update(rate_HKD=rate_HKD)
-        # 从网络获取美元汇率
+        # 获取美元汇率
         url_USD = 'https://qq.ip138.com/hl.asp?from=USD&to=CNY&q=100'
         html_USD = getHTMLText(url_USD)
         rate_USD = getRate(html_USD)
         # 网页爬虫抓取结果是否为‘暂无’？
         if rate_USD != -1:
             rate_dict.update(rate_USD=rate_USD)
-
         rate_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
-
     return rate_HKD, rate_USD
-
-
-# 从https://qq.ip138.com/网站抓取汇率数据
-def get_rate_old():
-    market1 = market.objects.get(market_name='港股')
-    market2 = market.objects.get(market_name='美股')
-
-    HKD_date = market1.modified_time
-    if HKD_date.date() == datetime.datetime.today().date():
-        # 从数据库取出港元汇率
-        rate_HKD = market1.exchange_rate
-    else:
-        # 从网络获取港元汇率
-        url_HKD = 'https://qq.ip138.com/hl.asp?from=HKD&to=CNY&q=100'
-        html_HKD = getHTMLText(url_HKD)
-        rate_HKD = getRate(html_HKD)
-        # 网页爬虫抓取结果是否为‘暂无’？
-        if rate_HKD == -1:
-            rate_HKD = market1.exchange_rate
-        else:
-            market1.exchange_rate = rate_HKD
-            market1.save()
-            market3 = market.objects.get(market_name='深市B股')
-            market3.exchange_rate = rate_HKD
-            market3.save()
-
-    USD_date = market2.modified_time
-    if USD_date.date() == datetime.datetime.today().date():
-        # 从数据库取出美元汇率
-        rate_USD = market2.exchange_rate
-    else:
-        # 从网络获取美元汇率
-        url_USD = 'https://qq.ip138.com/hl.asp?from=USD&to=CNY&q=100'
-        html_USD = getHTMLText(url_USD)
-        rate_USD = getRate(html_USD)
-        # 网页爬虫抓取结果是否为‘暂无’？
-        if rate_USD == -1:
-            rate_USD = market2.exchange_rate
-        else:
-            market2.exchange_rate = rate_USD
-            market2.save()
-            market4 = market.objects.get(market_name='沪市B股')
-            market4.exchange_rate = rate_USD
-            market4.save()
-
-    return float(rate_HKD), float(rate_USD)
 
 
 # 从https://stock.xueqiu.com/网站抓取股票历史分红数据

@@ -736,7 +736,7 @@ def get_stock_profit(stock_code):
     stock_id = stock.objects.all().get(stock_code=stock_code).id
     trade_list = trade.objects.all().filter(stock=stock_id).order_by('trade_date')
     # stock_code = trade_list[0].stock.stock_code
-    price, increase = get_stock_price(stock_code)
+    price, increase, color = get_stock_price(stock_code)
     for rs in trade_list:
         if rs.trade_type == 2:
             trade_quantity = -1 * rs.trade_quantity

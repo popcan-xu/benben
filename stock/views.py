@@ -10,7 +10,7 @@ import pathlib
 
 import json
 
-templates_path = 'dashboard\\'
+templates_path = 'dashboard/'
 
 # 总览
 def overview(request):
@@ -151,48 +151,6 @@ def overview(request):
                     filename='overview.json').operation_file()
 
     return render(request, templates_path + 'overview.html', {'overview':overview})
-
-
-# 持仓市值
-def market_value_old(request):
-    currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
-    price_array_CNY = []
-    price_array_HKD = []
-    price_array_USD = []
-    rate_HKD, rate_USD = get_rate()
-    for k,v in currency_items:
-        # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
-        stock_dict = position.objects.filter(position_currency=k).values("stock").annotate(
-            count=Count("stock")).values('stock__stock_code')
-        for dict in stock_dict:
-            stock_code = dict['stock__stock_code']
-            price, increase = get_stock_price(stock_code)
-            if increase > 0:
-                color = 'red'
-            elif increase < 0:
-                color = 'green'
-            else:
-                color = 'grey'
-            if k == 1:
-                currency_CNY = v
-                price_array_CNY.append((stock_code, price, increase, color))
-            elif k == 2:
-                currency_HKD = v
-                price_array_HKD.append((stock_code, price, increase, color))
-            elif k == 3:
-                currency_USD = v
-                price_array_USD.append((stock_code, price, increase, color))
-            else:
-                pass
-    content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array_CNY, rate_HKD, rate_USD)
-    content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array_HKD, rate_HKD, rate_USD)
-    content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array_USD, rate_HKD, rate_USD)
-
-    return render(request, templates_path + 'market_value.html', locals())
 
 
 # 持仓市值
@@ -410,13 +368,13 @@ def stats_value(request):
             count=Count("stock")).values('stock__stock_code')
         for dict in stock_dict:
             stock_code = dict['stock__stock_code']
-            price, increase = get_stock_price(stock_code)
-            if increase > 0:
-                color = 'red'
-            elif increase < 0:
-                color = 'green'
-            else:
-                color = 'grey'
+            price, increase, color = get_stock_price(stock_code)
+            # if increase > 0:
+            #     color = 'red'
+            # elif increase < 0:
+            #     color = 'green'
+            # else:
+            #     color = 'grey'
             price_array.append((stock_code, price, increase, color))
         if caliber == 1:
             content, amount_sum, name_array, value_array = get_value_stock_content(currency, price_array, rate_HKD, rate_USD)
@@ -447,7 +405,7 @@ def stats_account(request):
             count=Count("stock")).values('stock__stock_code')
         for dict in stock_dict:
             stock_code = dict['stock__stock_code']
-            price, increase = get_stock_price(stock_code)
+            price, increase, color = get_stock_price(stock_code)
             price_array.append((stock_code, price))
         stock_content, amount_sum, name_array, value_array = get_account_stock_content(account_id, price_array, rate_HKD, rate_USD)
     return render(request, templates_path + 'stats\\stats_account.html', locals())
