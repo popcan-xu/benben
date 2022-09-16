@@ -213,7 +213,7 @@ def input_trade(request):
         settlement_currency = request.POST.get('settlement_currency')
         if stock_id.strip() == '':
             error_info = "股票不能为空！"
-            return render(request, templates_path + 'input\\input_trade.html', locals())
+            return render(request, templates_path + 'input/input_trade.html', locals())
         try:
             # 新增一条交易记录
             p = trade.objects.create(
@@ -250,10 +250,10 @@ def input_trade(request):
             return redirect('/benben/list_trade/')
         except Exception as e:
             error_info = "输入信息有错误！"
-            return render(request, templates_path + 'input\\input_trade.html', locals())
+            return render(request, templates_path + 'input/input_trade.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'input\\input_trade.html', locals())
+    return render(request, templates_path + 'input/input_trade.html', locals())
 
 
 # 分红录入
@@ -272,7 +272,7 @@ def input_dividend(request):
         dividend_amount = request.POST.get('dividend_amount')
         dividend_currency = request.POST.get('dividend_currency')
         if stock_id.strip() == '':
-            return render(request, templates_path + 'input\\input_dividend.html', locals())
+            return render(request, templates_path + 'input/input_dividend.html', locals())
         try:
             p = dividend.objects.create(
                 account_id=account_id,
@@ -283,10 +283,10 @@ def input_dividend(request):
             )
             return redirect('/benben/list_dividend/')
         except Exception as e:
-            return render(request, templates_path + 'input\\input_dividend.html', locals())
+            return render(request, templates_path + 'input/input_dividend.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'input\\input_dividend.html', locals())
+    return render(request, templates_path + 'input/input_dividend.html', locals())
 
 
 # 打新录入
@@ -305,7 +305,7 @@ def input_subscription(request):
         buying_price = request.POST.get('buying_price')
         selling_price = request.POST.get('selling_price')
         if account_id.strip() == '':
-            return render(request, templates_path + 'input\\input_subscription.html', locals())
+            return render(request, templates_path + 'input/input_subscription.html', locals())
         try:
             p = subscription.objects.create(
                 account_id=account_id,
@@ -318,10 +318,10 @@ def input_subscription(request):
             )
             return redirect('/benben/list_subscription/')
         except Exception as e:
-            return render(request, templates_path + 'input\\input_subscription.html', locals())
+            return render(request, templates_path + 'input/input_subscription.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'input\\input_subscription.html', locals())
+    return render(request, templates_path + 'input/input_subscription.html', locals())
 
 
 # 仓位统计
@@ -335,7 +335,7 @@ def stats_position(request):
     cols_CNY = range(1, account_num_CNY + 2)
     cols_HKD = range(1, account_num_HKD + 2)
     cols_USD = range(1, account_num_USD + 2)
-    return render(request, templates_path + 'stats\\stats_position.html', locals())
+    return render(request, templates_path + 'stats/stats_position.html', locals())
 
 
 # 市值统计
@@ -387,7 +387,7 @@ def stats_value(request):
         else:
             pass
 
-    return render(request, templates_path + 'stats\\stats_value.html', locals())
+    return render(request, templates_path + 'stats/stats_value.html', locals())
 
 
 # 账户统计
@@ -408,7 +408,7 @@ def stats_account(request):
             price, increase, color = get_stock_price(stock_code)
             price_array.append((stock_code, price))
         stock_content, amount_sum, name_array, value_array = get_account_stock_content(account_id, price_array, rate_HKD, rate_USD)
-    return render(request, templates_path + 'stats\\stats_account.html', locals())
+    return render(request, templates_path + 'stats/stats_account.html', locals())
 
 
 # 分红统计
@@ -447,7 +447,7 @@ def stats_dividend(request):
         else:
             pass
 
-    return render(request, templates_path + 'stats\\stats_dividend.html', locals())
+    return render(request, templates_path + 'stats/stats_dividend.html', locals())
 
 
 # 打新统计
@@ -479,7 +479,7 @@ def stats_subscription(request):
         else:
             pass
 
-    return render(request, templates_path + 'stats\stats_subscription.html', locals())
+    return render(request, templates_path + 'stats/stats_subscription.html', locals())
 
 
 # 交易统计
@@ -491,7 +491,7 @@ def stats_trade(request):
         market = stock.objects.get(stock_code=stock_code).market
         #stock_dividend_dict = get_stock_dividend_history(stock_code_POST)
         trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit(stock_code)
-    return render(request, templates_path + 'stats\\stats_trade.html', locals())
+    return render(request, templates_path + 'stats/stats_trade.html', locals())
 
 
 # 盈亏统计
@@ -518,7 +518,7 @@ def stats_profit(request):
             value_sum += value
             profit_array.append((stock_name, stock_code, profit, value))
         profit_array.sort(key=take_col4, reverse=True)  # 对account_content列表按第3列（金额）降序排序
-    return render(request, templates_path + 'stats\stats_profit.html', locals())
+    return render(request, templates_path + 'stats/stats_profit.html', locals())
 
 
 # 分红金额查询
@@ -546,7 +546,7 @@ def query_dividend_value(request):
         # 由于stock_code为select列表而非文本框text，如果不选择则返回None而非空，所以不能使用stock_code.strip() == ''
         if stock_code is None:
             error_info = '股票不能为空！'
-            return render(request, templates_path + 'stats\\query_dividend_value.html', locals())
+            return render(request, templates_path + 'stats/query_dividend_value.html', locals())
         stock_object = stock.objects.get(stock_code=stock_code)
         stock_id = stock_object.id
         stock_name = stock_object.stock_name
@@ -570,7 +570,7 @@ def query_dividend_value(request):
             amount_sum += i.dividend_amount
     # 根据dividend_currency的值从dividend_currency_items中生成dividend_currency_name
     dividend_currency_name = dividend_currency_items[dividend_currency-1][1]
-    return render(request, templates_path + 'query\\query_dividend_value.html', locals())
+    return render(request, templates_path + 'query/query_dividend_value.html', locals())
 
 
 # 分红日期查询
@@ -603,7 +603,7 @@ def query_dividend_date(request):
     #     last_dividend_date_array.append(last_dividend_date)
     # dividend_date_array = list(zip(stock_name_array, stock_code_array, last_dividend_date_array, next_dividend_date_array))
 
-    return render(request, templates_path + 'query\\query_dividend_date.html', locals())
+    return render(request, templates_path + 'query/query_dividend_date.html', locals())
 
 
 # 分红历史查询
@@ -613,7 +613,7 @@ def query_dividend_history(request):
         stock_code = request.POST.get('stock_code')
         stock_dividend_dict = get_stock_dividend_history(stock_code)
         stock_name = stock.objects.get(stock_code=stock_code).stock_name
-    return render(request, templates_path + 'query\\query_dividend_history.html', locals())
+    return render(request, templates_path + 'query/query_dividend_history.html', locals())
 
 
 # 券商表的增删改查
@@ -623,7 +623,7 @@ def add_broker(request):
         broker_script = request.POST.get('broker_script')
         if broker_name.strip() == '':
             error_info = '券商名称不能为空！'
-            return render(request, templates_path + 'backstage\\add_broker.html', locals())
+            return render(request, templates_path + 'backstage/add_broker.html', locals())
         try:
             p = broker.objects.create(
                 broker_name=broker_name,
@@ -632,10 +632,10 @@ def add_broker(request):
             return redirect('/benben/list_broker/')
         except Exception as e:
             error_info = '输入券商名称重复或信息有错误！'
-            return render(request, templates_path + 'backstage\\add_broker.html', locals())
+            return render(request, templates_path + 'backstage/add_broker.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage\\add_broker.html', locals())
+    return render(request, templates_path + 'backstage/add_broker.html', locals())
 
 
 def del_broker(request, broker_id):
@@ -656,18 +656,18 @@ def edit_broker(request, broker_id):
             broker_object.save()
         except Exception as e:
             error_info = '输入券商名称重复或信息有错误！'
-            return render(request, templates_path + 'backstage\edit_broker.html', locals())
+            return render(request, templates_path + 'backstage/edit_broker.html', locals())
         finally:
             pass
         return redirect('/benben/list_broker/')
     else:
         broker_object = broker.objects.get(id=broker_id)
-        return render(request, templates_path + 'backstage\edit_broker.html', locals())
+        return render(request, templates_path + 'backstage/edit_broker.html', locals())
 
 
 def list_broker(request):
     broker_list = broker.objects.all()
-    return render(request, templates_path + 'backstage\\list_broker.html', locals())
+    return render(request, templates_path + 'backstage/list_broker.html', locals())
 
 
 # 市场表的增删改查
@@ -683,7 +683,7 @@ def add_market(request):
         transaction_currency = request.POST.get('transaction_currency')
         if market_name.strip() == '':
             error_info = '市场名称不能为空！'
-            return render(request, templates_path + 'backstage\\add_market.html', locals())
+            return render(request, templates_path + 'backstage/add_market.html', locals())
         try:
             p = market.objects.create(
                 market_name=market_name,
@@ -693,10 +693,10 @@ def add_market(request):
             return redirect('/benben/list_market/')
         except Exception as e:
             error_info = '输入市场名称重复或信息有错误！'
-            return render(request, templates_path + 'backstage\\add_market.html', locals())
+            return render(request, templates_path + 'backstage/add_market.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage\\add_market.html', locals())
+    return render(request, templates_path + 'backstage/add_market.html', locals())
 
 
 def del_market(request, market_id):
@@ -724,18 +724,18 @@ def edit_market(request, market_id):
             market_object.save()
         except Exception as e:
             error_info = '输入市场名称重复或信息有错误！'
-            return render(request, templates_path + 'backstage\edit_market.html', locals())
+            return render(request, templates_path + 'backstage/edit_market.html', locals())
         finally:
             pass
         return redirect('/benben/list_market/')
     else:
         market_object = market.objects.get(id=market_id)
-        return render(request, templates_path + 'backstage\edit_market.html', locals())
+        return render(request, templates_path + 'backstage/edit_market.html', locals())
 
 
 def list_market(request):
     market_list = market.objects.all()
-    return render(request, templates_path + 'backstage\\list_market.html', locals())
+    return render(request, templates_path + 'backstage/list_market.html', locals())
 
 
 # 账户表的增删改查
@@ -747,7 +747,7 @@ def add_account(request):
         account_abbreviation = request.POST.get('account_abbreviation')
         if account_number.strip() == '':
             error_info = '账号不能为空！'
-            return render(request, templates_path + 'backstage\\add_account.html', locals())
+            return render(request, templates_path + 'backstage/add_account.html', locals())
         try:
             p = account.objects.create(
                 account_number=account_number,
@@ -757,10 +757,10 @@ def add_account(request):
             return redirect('/benben/list_account/')
         except Exception as e:
             error_info = '输入账号重复或信息有错误！'
-            return render(request, templates_path + 'backstage\\add_account.html', locals())
+            return render(request, templates_path + 'backstage/add_account.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage\\add_account.html', locals())
+    return render(request, templates_path + 'backstage/add_account.html', locals())
 
 
 def del_account(request, account_id):
@@ -784,18 +784,18 @@ def edit_account(request, account_id):
             account_object.save()
         except Exception as e:
             error_info = '输入账号重复或信息有错误！'
-            return render(request, templates_path + 'backstage\edit_account.html', locals())
+            return render(request, templates_path + 'backstage/edit_account.html', locals())
         finally:
             pass
         return redirect('/benben/list_account/')
     else:
         account_object = account.objects.get(id=account_id)
-        return render(request, templates_path + 'backstage\edit_account.html', locals())
+        return render(request, templates_path + 'backstage/edit_account.html', locals())
 
 
 def list_account(request):
     account_list = account.objects.all()
-    return render(request, templates_path + 'backstage\\list_account.html', locals())
+    return render(request, templates_path + 'backstage/list_account.html', locals())
 
 
 # 行业表的增删改查
@@ -806,7 +806,7 @@ def add_industry(request):
         industry_abbreviation = request.POST.get('industry_abbreviation')
         if industry_code.strip() == '':
             error_info = '行业代码不能为空！'
-            return render(request, templates_path + 'backstage\\add_industry.html', locals())
+            return render(request, templates_path + 'backstage/add_industry.html', locals())
         try:
             p = industry.objects.create(
                 industry_code=industry_code,
@@ -816,10 +816,10 @@ def add_industry(request):
             return redirect('/benben/list_industry/')
         except Exception as e:
             error_info = '输入行业代码重复或信息有错误！'
-            return render(request, templates_path + 'backstage\\add_industry.html', locals())
+            return render(request, templates_path + 'backstage/add_industry.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage\\add_industry.html', locals())
+    return render(request, templates_path + 'backstage/add_industry.html', locals())
 
 
 def del_industry(request, industry_id):
@@ -842,18 +842,18 @@ def edit_industry(request, industry_id):
             industry_object.save()
         except Exception as e:
             error_info = '输入行业代码重复或信息有错误！'
-            return render(request, templates_path + 'backstage\\edit_industry.html', locals())
+            return render(request, templates_path + 'backstage/edit_industry.html', locals())
         finally:
             pass
         return redirect('/benben/list_industry/')
     else:
         industry_object = industry.objects.get(id=industry_id)
-        return render(request, templates_path + 'backstage\\edit_industry.html', locals())
+        return render(request, templates_path + 'backstage/edit_industry.html', locals())
 
 
 def list_industry(request):
     industry_list = industry.objects.all()
-    return render(request,  templates_path + 'backstage\\list_industry.html', locals())
+    return render(request,  templates_path + 'backstage/list_industry.html', locals())
 
 
 # 股票表的增删改查
@@ -867,7 +867,7 @@ def add_stock(request):
         market_id = request.POST.get('market_id')
         if stock_code.strip() == '':
             error_info = '股票代码不能为空！'
-            return render(request, templates_path + 'backstage\\add_stock.html', locals())
+            return render(request, templates_path + 'backstage/add_stock.html', locals())
         try:
             p = stock.objects.create(
                 stock_code=stock_code,
@@ -878,10 +878,10 @@ def add_stock(request):
             return redirect('/benben/list_stock/')
         except Exception as e:
             error_info = '输入股票代码重复或信息有错误！'
-            return render(request, templates_path + 'backstage\\add_stock.html', locals())
+            return render(request, templates_path + 'backstage/add_stock.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage\\add_stock.html', locals())
+    return render(request, templates_path + 'backstage/add_stock.html', locals())
 
 
 def del_stock(request, stock_id):
@@ -908,18 +908,18 @@ def edit_stock(request, stock_id):
             stock_object.save()
         except Exception as e:
             error_info = '输入股票代码重复或信息有错误！'
-            return render(request, templates_path + 'backstage\\edit_stock.html', locals())
+            return render(request, templates_path + 'backstage/edit_stock.html', locals())
         finally:
             pass
         return redirect('/benben/list_stock/')
     else:
         stock_object = stock.objects.get(id=stock_id)
-        return render(request, templates_path + 'backstage\\edit_stock.html', locals())
+        return render(request, templates_path + 'backstage/edit_stock.html', locals())
 
 
 def list_stock(request):
     stock_list = stock.objects.all()
-    return render(request,  templates_path + 'backstage\\list_stock.html', locals())
+    return render(request,  templates_path + 'backstage/list_stock.html', locals())
 
 
 # 持仓表增删改查
@@ -938,7 +938,7 @@ def add_position(request):
         position_currency = request.POST.get('position_currency')
         if stock_id.strip() == '':
             error_info = '股票不能为空！'
-            return render(request, templates_path + 'backstage\\add_position.html', locals())
+            return render(request, templates_path + 'backstage/add_position.html', locals())
         try:
             p = position.objects.create(
                 account_id=account_id,
@@ -949,10 +949,10 @@ def add_position(request):
             return redirect('/benben/list_position/')
         except Exception as e:
             error_info = '输入信息有错误！'
-            return render(request, templates_path + 'backstage\\add_position.html', locals())
+            return render(request, templates_path + 'backstage/add_position.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage\\add_position.html', locals())
+    return render(request, templates_path + 'backstage/add_position.html', locals())
 
 
 def del_position(request, position_id):
@@ -984,18 +984,18 @@ def edit_position(request, position_id):
             position_object.save()
         except Exception as e:
             error_info = '输入信息有错误！'
-            return render(request, templates_path + 'backstage\\edit_position.html', locals())
+            return render(request, templates_path + 'backstage/edit_position.html', locals())
         finally:
             pass
         return redirect('/benben/list_position/')
     else:
         position_object = position.objects.get(id=position_id)
-        return render(request, templates_path + 'backstage\\edit_position.html', locals())
+        return render(request, templates_path + 'backstage/edit_position.html', locals())
 
 
 def list_position(request):
     position_list = position.objects.all()
-    return render(request,  templates_path + 'backstage\\list_position.html', locals())
+    return render(request,  templates_path + 'backstage/list_position.html', locals())
 
 
 # 交易表增删改查
@@ -1021,7 +1021,7 @@ def add_trade(request):
         settlement_currency = request.POST.get('settlement_currency')
         if stock_id.strip() == '':
             error_info = "股票不能为空！"
-            return render(request, templates_path + 'backstage\\add_trade.html', locals())
+            return render(request, templates_path + 'backstage/add_trade.html', locals())
         try:
             p = trade.objects.create(
                 account_id=account_id,
@@ -1037,10 +1037,10 @@ def add_trade(request):
         except Exception as e:
             # print(str(e))
             error_info = "输入信息有错误！"
-            return render(request, templates_path + 'backstage\\add_trade.html', locals())
+            return render(request, templates_path + 'backstage/add_trade.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage\\add_trade.html', locals())
+    return render(request, templates_path + 'backstage/add_trade.html', locals())
 
 
 def del_trade(request, trade_id):
@@ -1082,18 +1082,18 @@ def edit_trade(request, trade_id):
             trade_object.save()
         except Exception as e:
             error_info = "输入信息有错误！"
-            return render(request, templates_path + 'backstage\\edit_trade.html', locals())
+            return render(request, templates_path + 'backstage/edit_trade.html', locals())
         finally:
             pass
         return redirect('/benben/list_trade/')
     else:
         trade_object = trade.objects.get(id=trade_id)
-        return render(request, templates_path + 'backstage\\edit_trade.html', locals())
+        return render(request, templates_path + 'backstage/edit_trade.html', locals())
 
 
 def list_trade(request):
     trade_list = trade.objects.all()
-    return render(request, templates_path + 'backstage\\list_trade.html', locals())
+    return render(request, templates_path + 'backstage/list_trade.html', locals())
 
 
 # 分红表增删改查
@@ -1113,7 +1113,7 @@ def add_dividend(request):
         dividend_currency = request.POST.get('dividend_currency')
         if stock_id.strip() == '':
             error_info = '股票不能为空！'
-            return render(request, templates_path + 'backstage\\add_dividend.html', locals())
+            return render(request, templates_path + 'backstage/add_dividend.html', locals())
         try:
             p = dividend.objects.create(
                 account_id=account_id,
@@ -1125,10 +1125,10 @@ def add_dividend(request):
             return redirect('/benben/list_dividend/')
         except Exception as e:
             error_info = '输入信息有误！'
-            return render(request, templates_path + 'backstage\\add_dividend.html', locals())
+            return render(request, templates_path + 'backstage/add_dividend.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage\\add_dividend.html', locals())
+    return render(request, templates_path + 'backstage/add_dividend.html', locals())
 
 
 def del_dividend(request, dividend_id):
@@ -1162,18 +1162,18 @@ def edit_dividend(request, dividend_id):
             dividend_object.save()
         except Exception as e:
             error_info = '输入信息有错误！'
-            return render(request, templates_path + 'backstage\\edit_dividend.html', locals())
+            return render(request, templates_path + 'backstage/edit_dividend.html', locals())
         finally:
             pass
         return redirect('/benben/list_dividend/')
     else:
         dividend_object = dividend.objects.get(id=dividend_id)
-        return render(request, templates_path + 'backstage\\edit_dividend.html', locals())
+        return render(request, templates_path + 'backstage/edit_dividend.html', locals())
 
 
 def list_dividend(request):
     dividend_list = dividend.objects.all()
-    return render(request,  templates_path + 'backstage\\list_dividend.html', locals())
+    return render(request,  templates_path + 'backstage/list_dividend.html', locals())
 
 
 # 打新表增删改查
@@ -1193,7 +1193,7 @@ def add_subscription(request):
         selling_price = request.POST.get('selling_price')
         if account_id.strip() == '':
             error_info = '证券账户不能为空！'
-            return render(request, templates_path + 'backstage\\add_subscription.html', locals())
+            return render(request, templates_path + 'backstage/add_subscription.html', locals())
         try:
             p = subscription.objects.create(
                 account_id=account_id,
@@ -1207,10 +1207,10 @@ def add_subscription(request):
             return redirect('/benben/list_subscription/')
         except Exception as e:
             error_info = '输入信息有错误！'
-            return render(request, templates_path + 'backstage\\add_subscription.html', locals())
+            return render(request, templates_path + 'backstage/add_subscription.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage\\add_subscription.html', locals())
+    return render(request, templates_path + 'backstage/add_subscription.html', locals())
 
 
 def del_subscription(request, subscription_id):
@@ -1246,18 +1246,18 @@ def edit_subscription(request, subscription_id):
             subscription_object.save()
         except Exception as e:
             error_info = '输入信息有错误！'
-            return render(request, templates_path + 'backstage\edit_subscription.html', locals())
+            return render(request, templates_path + 'backstage/edit_subscription.html', locals())
         finally:
             pass
         return redirect('/benben/list_subscription/')
     else:
         subscription_object = subscription.objects.get(id=subscription_id)
-        return render(request, templates_path + 'backstage\edit_subscription.html', locals())
+        return render(request, templates_path + 'backstage/edit_subscription.html', locals())
 
 
 def list_subscription(request):
     subscription_list = subscription.objects.all()
-    return render(request,  templates_path + 'backstage\\list_subscription.html', locals())
+    return render(request,  templates_path + 'backstage/list_subscription.html', locals())
 
 
 # 分红历史表增删改查
@@ -1273,7 +1273,7 @@ def add_dividend_history(request):
         dividend_date = request.POST.get('dividend_date')
         if stock_id.strip() == '':
             error_info = "股票不能为空！"
-            return render(request, templates_path + 'backstage\\add_dividend_history.html', locals())
+            return render(request, templates_path + 'backstage/add_dividend_history.html', locals())
         try:
             p = dividend_history.objects.create(
                 stock_id=stock_id,
@@ -1287,10 +1287,10 @@ def add_dividend_history(request):
             return redirect('/benben/list_dividend_history/')
         except Exception as e:
             error_info = "输入信息有错误！"
-            return render(request, templates_path + 'backstage\\add_dividend_history.html', locals())
+            return render(request, templates_path + 'backstage/add_dividend_history.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage\\add_dividend_history.html', locals())
+    return render(request, templates_path + 'backstage/add_dividend_history.html', locals())
 
 
 def del_dividend_history(request, dividend_history_id):
@@ -1322,18 +1322,18 @@ def edit_dividend_history(request, dividend_history_id):
             dividend_history_object.save()
         except Exception as e:
             error_info = "输入信息有错误！"
-            return render(request, templates_path + 'backstage\\edit_dividend_history.html', locals())
+            return render(request, templates_path + 'backstage/edit_dividend_history.html', locals())
         finally:
             pass
         return redirect('/benben/list_dividend_history/')
     else:
         dividend_history_object = dividend_history.objects.get(id=dividend_history_id)
-        return render(request, templates_path + 'backstage\\edit_dividend_history.html', locals())
+        return render(request, templates_path + 'backstage/edit_dividend_history.html', locals())
 
 
 def list_dividend_history(request):
     dividend_history_list = dividend_history.objects.all()
-    return render(request,  templates_path + 'backstage\\list_dividend_history.html', locals())
+    return render(request,  templates_path + 'backstage/list_dividend_history.html', locals())
 
 
 # 从网站中抓取数据导入数据库
@@ -1399,7 +1399,7 @@ def capture_dividend_history(request):
                 print('错误明细是', e.__class__.__name__, e)
             print('插入' + '股票（' + stock_code + '）的历史分红记录' + str(count) + '条！')
 
-    return render(request, templates_path + 'capture\\capture_dividend_history.html', locals())
+    return render(request, templates_path + 'capture/capture_dividend_history.html', locals())
 
 
 # 从excel表读取数据导入数据库
@@ -1410,20 +1410,20 @@ def batch_import(request):
             account_abbreviation = request.POST.get('account_abbreviation')
             if not account_abbreviation is None:
                 print(form_name, account_abbreviation)
-                # count = excel2trade('D:\\gp\\GP_操作.xlsm', account_abbreviation, -1, -1)
+                # count = excel2trade('D:/gp/GP_操作.xlsm', account_abbreviation, -1, -1)
                 # messages.success(request, account_abbreviation + "成功插入" + str(count) + "条记录！")
         elif form_name == '打新':
             subscription_type = request.POST.get('subscription_type')
             print(form_name, subscription_type)
-            # excel2subscription('D:\\gp\\GP_操作.xlsm', '新股', -1, -1)
-            # excel2subscription('D:\\gp\\GP_操作.xlsm', '新债', -1, -1)
+            # excel2subscription('D:/gp/GP_操作.xlsm', '新股', -1, -1)
+            # excel2subscription('D:/gp/GP_操作.xlsm', '新债', -1, -1)
         elif form_name == '分红':
             account_type = request.POST.get('account_type')
             print(form_name, account_type)
-            # excel2dividend('D:\\gp\\GP_操作.xlsm', '分红', -1, -1)
+            # excel2dividend('D:/gp/GP_操作.xlsm', '分红', -1, -1)
         else:
             pass
-    return render(request, templates_path + 'other\\batch_import.html')  # 这里用'/'，‘//’或者‘\\’代替'\'，防止'\b'被转义
+    return render(request, templates_path + 'other/batch_import.html')  # 这里用'/'，‘//’或者‘/’代替'\'，防止'\b'被转义
 
 
 # 关于
