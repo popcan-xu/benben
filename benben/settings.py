@@ -79,6 +79,8 @@ TEMPLATES = [
 
 STATIC_URL = '/static/'
 
+STATIC_ROOT = os.path.join(BASE_DIR, 'collect_static')
+
 # 不加这一段，无法通过相对路径访问本地的css文件
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR,'static'),
@@ -93,8 +95,8 @@ WSGI_APPLICATION = 'benben.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        #'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        'NAME': os.path.join('Z:\GP', 'benben.db'),
+        'NAME': os.path.join(BASE_DIR, 'database/benben.db'),
+        # 'NAME': os.path.join('Z:\GP', 'benben.db'),
     }
 }
 
