@@ -95,8 +95,8 @@ WSGI_APPLICATION = 'benben.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'database/benben.db'),
-        # 'NAME': os.path.join('Z:\GP', 'benben.db'),
+        # 'NAME': os.path.join(BASE_DIR, 'benben.db'),
+        'NAME': os.path.join('C:\GP', 'benben.db'),
     }
 }
 

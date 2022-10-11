@@ -8,6 +8,8 @@ import datetime, time
 import pathlib
 import requests
 
+# import pysnowball as ball
+
 # from lxml import etree
 # from lxml import html
 # etree = html.etree
@@ -91,9 +93,9 @@ def get_chart_array(content, max_rows, name_col, value_col):
     return (name_array, value_array)
 
 
-# 从http://qt.gtimg.cn/网站抓取股票价格数据
+# 抓取股票实时行情
 def get_stock_price(stock_code):
-    stock_object = stock.objects.get(stock_code=stock_code)
+    # stock_object = stock.objects.get(stock_code=stock_code)
     path = pathlib.Path("./templates/dashboard/price.json")
     if path.is_file(): # 若json文件存在，从json文件中读取price、increase、color、price_time、index
         # 读取price.json
@@ -113,24 +115,17 @@ def get_stock_price(stock_code):
     time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
     # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与数据库价格获取时间间隔大于900秒 且 数据库价格获取时间早于当天的16点30分)
     if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0) or index == -1:
-        price_str = []
-        market = stock_object.market.market_abbreviation
-        if market == 'hk':
-            url = 'http://qt.gtimg.cn/q=r_' + market + stock_code  # 在股票代码前面加上'r_'，用于获得实时港股行情
-        else:
-            url = 'http://qt.gtimg.cn/q=' + market + stock_code
-        html = getHTMLText(url)
-        x = html.count('~', 1, len(html))  # 获取返回字符串html中分隔符'~'的出现次数
-        for i in range(0, x + 1):
-            price_str.append(html.split('~')[i])  # 将html用'~'分隔后的值输出到列表price中
-        price = float(price_str[3])
-        increase = float(price_str[32])
-        if increase > 0:
-            color = 'red'
-        elif increase < 0:
-            color = 'green'
-        else:
-            color = 'grey'
+    # 用于调试
+    # if (time2 - time1).total_seconds() >= 0:
+        # 1.从雪球网抓取实时行情
+        price, increase, color = get_quote_snowball(stock_code)
+
+        # 2.通过pysnowball API抓取雪球网实时行情
+        # price, increase, color = get_quote_pysnowball(stock_code)
+
+        # 3.从http://qt.gtimg.cn/抓取实时行情
+        # price, increase, color = get_quote_gtimg(stock_code)
+
         # 写入json文件
         if index == -1:
             price_array.append((stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
@@ -140,6 +135,72 @@ def get_stock_price(stock_code):
         price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
 
+    return price, increase, color
+
+
+# 从雪球抓取股票实时行情
+def get_quote_snowball(stock_code):
+    stock_object = stock.objects.get(stock_code=stock_code)
+    market = stock_object.market.market_abbreviation
+    if market == 'hk':
+        code = stock_code
+    else:
+        code = market.upper() + stock_code
+    url = 'https://stock.xueqiu.com/v5/stock/realtime/quotec.json?symbol=' + code
+    quote_json = json.loads(getHTMLText(url)) # 将getHTMLText()返回的字符串转换为json格式的list
+    price = quote_json['data'][0]['current']
+    increase = quote_json['data'][0]['percent']
+    if increase > 0:
+        color = 'red'
+    elif increase < 0:
+        color = 'green'
+    else:
+        color = 'grey'
+    return price, increase, color
+
+
+# 通过pysnowball API抓取雪球网实时行情
+# def get_quote_pysnowball(stock_code):
+#     stock_object = stock.objects.get(stock_code=stock_code)
+#     market = stock_object.market.market_abbreviation
+#     ball.set_token('xq_a_token=a8d434ddd975f5752965fa782596bd0b5b008376;')
+#     if market == 'hk':
+#         code = stock_code
+#     else:
+#         code = market.upper() + stock_code
+#     quote_json = ball.quotec(code)
+#     price = quote_json['data'][0]['current']
+#     increase = quote_json['data'][0]['percent']
+#     if increase > 0:
+#         color = 'red'
+#     elif increase < 0:
+#         color = 'green'
+#     else:
+#         color = 'grey'
+#     return price, increase, color
+
+
+# 从http://qt.gtimg.cn/抓取实时行情
+def get_quote_gtimg(stock_code):
+    price_str = []
+    stock_object = stock.objects.get(stock_code=stock_code)
+    market = stock_object.market.market_abbreviation
+    if market == 'hk':
+        url = 'http://qt.gtimg.cn/q=r_' + market + stock_code  # 在股票代码前面加上'r_'，用于获得实时港股行情
+    else:
+        url = 'http://qt.gtimg.cn/q=' + market + stock_code
+    html = getHTMLText(url)
+    x = html.count('~', 1, len(html))  # 获取返回字符串html中分隔符'~'的出现次数
+    for i in range(0, x + 1):
+        price_str.append(html.split('~')[i])  # 将html用'~'分隔后的值输出到列表price中
+    price = float(price_str[3])
+    increase = float(price_str[32])
+    if increase > 0:
+        color = 'red'
+    elif increase < 0:
+        color = 'green'
+    else:
+        color = 'grey'
     return price, increase, color
 
 
@@ -454,7 +515,11 @@ def get_dividend_date(stock_dividend_dict):
 def getHTMLText(url):
     try:
         kv = {'user-agent': 'Mozilla/5.0'}
-        r = requests.get(url, headers=kv, timeout=30)
+        # start = time.time()
+        s = requests.Session()
+        r = s.get(url, headers=kv, timeout=30)
+        # r = requests.get(url, headers=kv, timeout=30)
+        # print(url, f'it took {time.time() - start} seconds to process the request')
         r.raise_for_status()
         r.encoding = r.apparent_encoding
         # r.encoding = 'gb2312'
@@ -462,7 +527,7 @@ def getHTMLText(url):
         # r.encoding = 'utf-8'
         return r.text
     except:
-        # print('获取网页失败')
+        print('获取网页失败')
         return '获取网页失败'
 
 
