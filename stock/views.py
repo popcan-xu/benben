@@ -42,16 +42,17 @@ def overview(request):
         # 获得总市值、持仓股票一览数据、持仓前五占比数据
         price_array = []  # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
         stock_dict = position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
+
+        # for dict in stock_dict:
+        #     stock_code = dict['stock__stock_code']
+        #     price, increase, color = get_stock_price(stock_code)
+        #     price_array.append((stock_code, price, increase, color))
+        stock_code_array = []
         for dict in stock_dict:
             stock_code = dict['stock__stock_code']
-            price, increase, color = get_stock_price(stock_code)
-            # if increase > 0:
-            #     color = 'red'
-            # elif increase < 0:
-            #     color = 'green'
-            # else:
-            #     color = 'grey'
-            price_array.append((stock_code, price, increase, color))
+            stock_code_array.append(stock_code)
+        price_array = get_stock_array_price(stock_code_array)
+
         # position_currency=0时，get_value_stock_content返回人民币、港元、美元计价的所有股票的人民币市值汇总
         content, value_sum, name_array, value_array = get_value_stock_content(0, price_array, rate_HKD, rate_USD)
         # 计算当年分红占总市值的百分比
@@ -169,18 +170,21 @@ def market_value(request):
         # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
         stock_dict = position.objects.filter(position_currency=k).values("stock").annotate(
             count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
+        stock_code_array = []
         for dict in stock_dict:
             stock_code = dict['stock__stock_code']
-            price, increase, color = get_stock_price(stock_code)
+            stock_code_array.append(stock_code)
+        price_array = get_stock_array_price(stock_code_array)
+        for i in price_array:
             if k == 1:
                 currency_CNY = v
-                price_array_CNY.append((stock_code, price, increase, color))
+                price_array_CNY.append(i)
             elif k == 2:
                 currency_HKD = v
-                price_array_HKD.append((stock_code, price, increase, color))
+                price_array_HKD.append(i)
             elif k == 3:
                 currency_USD = v
-                price_array_USD.append((stock_code, price, increase, color))
+                price_array_USD.append(i)
             else:
                 pass
     content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array_CNY, rate_HKD, rate_USD)
@@ -366,16 +370,15 @@ def stats_value(request):
         # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
         stock_dict = position.objects.filter(position_currency=currency).values("stock").annotate(
             count=Count("stock")).values('stock__stock_code')
+        # for dict in stock_dict:
+        #     stock_code = dict['stock__stock_code']
+        #     price, increase, color = get_stock_price(stock_code)
+        #     price_array.append((stock_code, price, increase, color))
+        stock_code_array = []
         for dict in stock_dict:
             stock_code = dict['stock__stock_code']
-            price, increase, color = get_stock_price(stock_code)
-            # if increase > 0:
-            #     color = 'red'
-            # elif increase < 0:
-            #     color = 'green'
-            # else:
-            #     color = 'grey'
-            price_array.append((stock_code, price, increase, color))
+            stock_code_array.append(stock_code)
+        price_array = get_stock_array_price(stock_code_array)
         if caliber == 1:
             content, amount_sum, name_array, value_array = get_value_stock_content(currency, price_array, rate_HKD, rate_USD)
         elif caliber == 2:
@@ -403,10 +406,15 @@ def stats_account(request):
         # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
         stock_dict = position.objects.filter(account=account_id).values("stock").annotate(
             count=Count("stock")).values('stock__stock_code')
+        # for dict in stock_dict:
+        #     stock_code = dict['stock__stock_code']
+        #     price, increase, color = get_stock_price(stock_code)
+        #     price_array.append((stock_code, price))
+        stock_code_array = []
         for dict in stock_dict:
             stock_code = dict['stock__stock_code']
-            price, increase, color = get_stock_price(stock_code)
-            price_array.append((stock_code, price))
+            stock_code_array.append(stock_code)
+        price_array = get_stock_array_price(stock_code_array)
         stock_content, amount_sum, name_array, value_array = get_account_stock_content(account_id, price_array, rate_HKD, rate_USD)
     return render(request, templates_path + 'stats/stats_account.html', locals())
 

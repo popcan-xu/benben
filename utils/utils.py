@@ -93,18 +93,64 @@ def get_chart_array(content, max_rows, name_col, value_col):
     return (name_array, value_array)
 
 
-# 抓取股票实时行情
-def get_stock_price(stock_code):
+# 抓取单一股票实时行情
+# def get_stock_price(stock_code):
+#     # stock_object = stock.objects.get(stock_code=stock_code)
+#     path = pathlib.Path("./templates/dashboard/price.json")
+#     if path.is_file(): # 若json文件存在，从json文件中读取price、increase、color、price_time、index
+#         # 读取price.json
+#         price_dict = FileOperate(filepath='./templates/dashboard/', filename='price.json').operation_file()
+#         price_array = price_dict['price_array']
+#         price, increase, color, price_time, index = search_price_array(price_array, stock_code)
+#     else: # 若json文件不存在，创建json文件
+#         price_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
+#         index = -1
+#         price_array = []
+#         price_dict = {}
+#         price_dict.update(price_array=price_array)
+#         price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+#         FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
+#     time1 = price_time
+#     time2 = datetime.datetime.now()
+#     time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
+#     # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与数据库价格获取时间间隔大于900秒 且 数据库价格获取时间早于当天的16点30分)
+#     # if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0) or index == -1:
+#     # 用于调试
+#     if (time2 - time1).total_seconds() >= 0:
+#         # 1.从雪球网抓取实时行情
+#         price, increase, color = get_quote_snowball(stock_code)
+#
+#         # 2.通过pysnowball API抓取雪球网实时行情
+#         # price, increase, color = get_quote_pysnowball(stock_code)
+#
+#         # 3.从http://qt.gtimg.cn/抓取实时行情
+#         # price, increase, color = get_quote_gtimg(stock_code)
+#
+#         # 写入json文件
+#         if index == -1:
+#             price_array.append((stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+#         else:
+#             price_array[index] = (stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+#         price_dict.update(price_array=price_array)
+#         price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+#         FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
+#
+#     return price, increase, color
+
+
+# 抓取股票列表实时行情
+def get_stock_array_price(stock_code_array):
     # stock_object = stock.objects.get(stock_code=stock_code)
     path = pathlib.Path("./templates/dashboard/price.json")
     if path.is_file(): # 若json文件存在，从json文件中读取price、increase、color、price_time、index
         # 读取price.json
         price_dict = FileOperate(filepath='./templates/dashboard/', filename='price.json').operation_file()
         price_array = price_dict['price_array']
-        price, increase, color, price_time, index = search_price_array(price_array, stock_code)
+        price_time = datetime.datetime.strptime(price_dict['modified_time'], "%Y-%m-%d %H:%M:%S")
+        # price, increase, color, price_time, index = search_price_array(price_array, stock_code)
     else: # 若json文件不存在，创建json文件
         price_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
-        index = -1
+        # index = -1
         price_array = []
         price_dict = {}
         price_dict.update(price_array=price_array)
@@ -113,12 +159,14 @@ def get_stock_price(stock_code):
     time1 = price_time
     time2 = datetime.datetime.now()
     time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
-    # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与数据库价格获取时间间隔大于900秒 且 数据库价格获取时间早于当天的16点30分)
-    if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0) or index == -1:
-    # 用于调试
-    # if (time2 - time1).total_seconds() >= 0:
+    # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与price.json文件价格获取时间间隔大于60秒 且 price.json文件价格获取时间早于当天的16点30分)
+    # if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 60 and (time1 - time3).total_seconds() <= 0) or index == -1:
+    if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 60 and (time1 - time3).total_seconds() <= 0):
+    # if (time2 - time1).total_seconds() >= 0: # 用于调试
+        price_array = get_quote_array_snowball(stock_code_array)
+
         # 1.从雪球网抓取实时行情
-        price, increase, color = get_quote_snowball(stock_code)
+        # price, increase, color = get_quote_snowball(stock_code)
 
         # 2.通过pysnowball API抓取雪球网实时行情
         # price, increase, color = get_quote_pysnowball(stock_code)
@@ -127,36 +175,74 @@ def get_stock_price(stock_code):
         # price, increase, color = get_quote_gtimg(stock_code)
 
         # 写入json文件
-        if index == -1:
-            price_array.append((stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        else:
-            price_array[index] = (stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        # if index == -1:
+        #     price_array.append((stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        # else:
+        #     price_array[index] = (stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         price_dict.update(price_array=price_array)
         price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
 
-    return price, increase, color
+    return price_array
 
 
-# 从雪球抓取股票实时行情
-def get_quote_snowball(stock_code):
-    stock_object = stock.objects.get(stock_code=stock_code)
-    market = stock_object.market.market_abbreviation
-    if market == 'hk':
-        code = stock_code
-    else:
-        code = market.upper() + stock_code
-    url = 'https://stock.xueqiu.com/v5/stock/realtime/quotec.json?symbol=' + code
+# 从雪球抓取单一股票实时行情
+# def get_quote_snowball(stock_code):
+#     stock_object = stock.objects.get(stock_code=stock_code)
+#     market = stock_object.market.market_abbreviation
+#     if market == 'hk':
+#         code = stock_code
+#     else:
+#         code = market.upper() + stock_code
+#     url = 'https://stock.xueqiu.com/v5/stock/realtime/quotec.json?symbol=' + code
+#     quote_json = json.loads(getHTMLText(url)) # 将getHTMLText()返回的字符串转换为json格式的list
+#     price = quote_json['data'][0]['current']
+#     increase = quote_json['data'][0]['percent']
+#     if increase > 0:
+#         color = 'red'
+#     elif increase < 0:
+#         color = 'green'
+#     else:
+#         color = 'grey'
+#     return price, increase, color
+
+
+# 从雪球抓取股票列表实时行情
+def get_quote_array_snowball(stock_code_array):
+    code_array = []
+    quote_array = []
+    code_str = ''
+    for i in stock_code_array:
+        stock_object = stock.objects.get(stock_code=i)
+        market = stock_object.market.market_abbreviation
+        if market == 'hk':
+            code = i
+        else:
+            code = market.upper() + i
+        code_array.append(code)
+        code_str = ','.join(code_array)
+    url = 'https://stock.xueqiu.com/v5/stock/realtime/quotec.json?symbol=' + code_str
     quote_json = json.loads(getHTMLText(url)) # 将getHTMLText()返回的字符串转换为json格式的list
-    price = quote_json['data'][0]['current']
-    increase = quote_json['data'][0]['percent']
-    if increase > 0:
-        color = 'red'
-    elif increase < 0:
-        color = 'green'
-    else:
-        color = 'grey'
-    return price, increase, color
+    data = quote_json['data']
+    for i in data:
+        stock_code = i['symbol']
+        price = i['current']
+        increase = i['percent']
+        if increase > 0:
+            color = 'red'
+        elif increase < 0:
+            color = 'green'
+        else:
+            color = 'grey'
+        quote_array.append((remove_prefix(stock_code), price, increase, color))
+    return quote_array
+
+
+# 格式化股票代码（去掉前缀SH、SZ）
+def remove_prefix(stock_code):
+    stock_code = stock_code.replace('SH', '')
+    stock_code = stock_code.replace('SZ', '')
+    return stock_code
 
 
 # 通过pysnowball API抓取雪球网实时行情
@@ -515,11 +601,12 @@ def get_dividend_date(stock_dividend_dict):
 def getHTMLText(url):
     try:
         kv = {'user-agent': 'Mozilla/5.0'}
-        # start = time.time()
+        # start = time.time() # 用于调试性能
         s = requests.Session()
         r = s.get(url, headers=kv, timeout=30)
         # r = requests.get(url, headers=kv, timeout=30)
-        # print(url, f'it took {time.time() - start} seconds to process the request')
+        # print(url) # 用于调试性能
+        # print(f'it took {time.time() - start} seconds to process the request') # 用于调试性能
         r.raise_for_status()
         r.encoding = r.apparent_encoding
         # r.encoding = 'gb2312'
