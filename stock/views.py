@@ -156,41 +156,21 @@ def overview(request):
 
 # 持仓市值
 def market_value(request):
-    currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
-    #price_array = []
-    price_array_CNY = []
-    price_array_HKD = []
-    price_array_USD = []
+    currency_CNY = '人民币'
+    currency_HKD = '港元'
+    currency_USD = '美元'
     rate_HKD, rate_USD = get_rate()
-    for k,v in currency_items:
-        # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
-        stock_dict = position.objects.filter(position_currency=k).values("stock").annotate(
-            count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
-        stock_code_array = []
-        for dict in stock_dict:
-            stock_code = dict['stock__stock_code']
-            stock_code_array.append(stock_code)
-        price_array = get_stock_array_price(stock_code_array)
-        for i in price_array:
-            if k == 1:
-                currency_CNY = v
-                price_array_CNY.append(i)
-            elif k == 2:
-                currency_HKD = v
-                price_array_HKD.append(i)
-            elif k == 3:
-                currency_USD = v
-                price_array_USD.append(i)
-            else:
-                pass
-    content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array_CNY, rate_HKD, rate_USD)
-    content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array_HKD, rate_HKD, rate_USD)
-    content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array_USD, rate_HKD, rate_USD)
-
+    # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
+    stock_dict = position.objects.values("stock").annotate(
+        count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
+    stock_code_array = []
+    for dict in stock_dict:
+        stock_code = dict['stock__stock_code']
+        stock_code_array.append(stock_code)
+    price_array = get_stock_array_price(stock_code_array)
+    content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD, rate_USD)
+    content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array, rate_HKD, rate_USD)
+    content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array, rate_HKD, rate_USD)
     return render(request, templates_path + 'market_value.html', locals())
 
 

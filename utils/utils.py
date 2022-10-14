@@ -54,20 +54,22 @@ class FileOperate:
 def search_price_array(price_array, stock_code):
     i = 0
     index = -1
-    price = -1.0
-    increase = 0.0
-    color = 'grey'
-    price_time = datetime.datetime.now()
+    # price = -1.0
+    # increase = 0.0
+    # color = 'grey'
+    # price_time = datetime.datetime.now()
     while i < len(price_array):
         if price_array[i][0] == stock_code:
-            price = float(price_array[i][1])
-            increase = float(price_array[i][2])
-            color = str(price_array[i][3])
-            price_time = datetime.datetime.strptime(price_array[i][4], "%Y-%m-%d %H:%M:%S")
+            # price = float(price_array[i][1])
+            # increase = float(price_array[i][2])
+            # color = str(price_array[i][3])
+            # price_time = datetime.datetime.strptime(price_array[i][4], "%Y-%m-%d %H:%M:%S")
             index = i
             break
         i += 1
-    return price, increase, color, price_time,  index
+    # return price, increase, color, price_time,  index
+    # return price, increase, color, index
+    return index
 
 
 # 获取图表数据队列函数
@@ -159,12 +161,10 @@ def get_stock_array_price(stock_code_array):
     time1 = price_time
     time2 = datetime.datetime.now()
     time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
+    price_array_current = price_array
     # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与price.json文件价格获取时间间隔大于60秒 且 price.json文件价格获取时间早于当天的16点30分)
-    # if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 60 and (time1 - time3).total_seconds() <= 0) or index == -1:
     if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 60 and (time1 - time3).total_seconds() <= 0):
     # if (time2 - time1).total_seconds() >= 0: # 用于调试
-        price_array = get_quote_array_snowball(stock_code_array)
-
         # 1.从雪球网抓取实时行情
         # price, increase, color = get_quote_snowball(stock_code)
 
@@ -174,7 +174,21 @@ def get_stock_array_price(stock_code_array):
         # 3.从http://qt.gtimg.cn/抓取实时行情
         # price, increase, color = get_quote_gtimg(stock_code)
 
+        price_array_current = get_quote_array_snowball(stock_code_array)
         # 写入json文件
+        # 从price_array_current中依次取出每组元素，与price_array对比，不存在则追加，存在则覆盖
+        for i in price_array_current:
+            stock_code = str(i[0])
+            price = float(i[1])
+            increase = float(i[2])
+            color = str(i[3])
+            # 在price_array中用查找stock_code所在的位置，返回该位置对应子列表的index，若查找失败，返回index=-1
+            index = search_price_array(price_array, stock_code)
+            if index == -1:
+                price_array.append((stock_code, price, increase, color))
+            else:
+                price_array[index] = (stock_code, price, increase, color)
+
         # if index == -1:
         #     price_array.append((stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         # else:
@@ -183,7 +197,7 @@ def get_stock_array_price(stock_code_array):
         price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
 
-    return price_array
+    return price_array_current
 
 
 # 从雪球抓取单一股票实时行情
