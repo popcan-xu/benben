@@ -471,15 +471,23 @@ def stats_subscription(request):
 
 
 # 交易统计
-def stats_trade(request):
-    stock_list = stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
-    if request.method == 'POST':
-        stock_code = request.POST.get('stock_code')
-        stock_name = stock.objects.get(stock_code=stock_code).stock_name
-        market = stock.objects.get(stock_code=stock_code).market
-        #stock_dividend_dict = get_stock_dividend_history(stock_code_POST)
-        trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit(stock_code)
-    return render(request, templates_path + 'stats/stats_trade.html', locals())
+# def stats_trade(request):
+#     stock_list = stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
+#     if request.method == 'POST':
+#         stock_code = request.POST.get('stock_code')
+#         stock_name = stock.objects.get(stock_code=stock_code).stock_name
+#         market = stock.objects.get(stock_code=stock_code).market
+#
+#         # 持仓股票代码列表，通过.filter(position__stock_id__isnull = False)，过滤出在position表中存在的stock_id所对应的stock表记录，
+#         # 用values_list（“字段名”,flat=True）实现取单个字段值并存放在List中
+#         holding_stock_code_list = list(
+#             stock.objects.filter(position__stock_id__isnull=False).distinct().values_list("stock_code", flat=True))
+#         if stock_code in holding_stock_code_list:
+#             trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin, cost_sum = get_holding_stock_profit(
+#                 stock_code)
+#         else:
+#             trade_array, amount_sum, quantity_sum, profit, profit_margin, cost_sum = get_cleared_stock_profit(stock_code)
+#     return render(request, templates_path + 'stats/stats_trade.html', locals())
 
 
 # 盈亏统计
@@ -495,7 +503,8 @@ def stats_profit(request):
         stock_name = rs.stock_name
         transaction_currency = rs.market.transaction_currency
         trade_list = trade.objects.all().filter(stock=stock_id)
-        if trade_list.exists() and stock_code != '-1' and stock_code != '155406':
+        if trade_list.exists() and stock_code != '-1' and stock_code != '155406' and stock_code != '01700' \
+                and stock_code != '02868' and stock_code != '112292' and stock_code != '150176': # 19恒大01、华地国际控股、首创置业、16冀中01、H股B（已退市）
             trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit(
                 stock_code)
             if transaction_currency == 2:
@@ -507,6 +516,27 @@ def stats_profit(request):
             profit_array.append((stock_name, stock_code, profit, value))
         profit_array.sort(key=take_col4, reverse=True)  # 对account_content列表按第3列（金额）降序排序
     return render(request, templates_path + 'stats/stats_profit.html', locals())
+
+
+# 交易查询
+def query_trade(request):
+    stock_list = stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
+    holding_stock_list = stock.objects.filter(position__stock_id__isnull=False).distinct().values('stock_name', 'stock_code').order_by('stock_code')
+    cleared_stock_list = stock.objects.filter(position__stock_id__isnull=True, trade__stock_id__isnull=False).distinct().values('stock_name', 'stock_code').order_by('stock_code')
+    if request.method == 'POST':
+        form_type = request.POST.get("form_type")
+        form = None
+        if form_type == 'holding_stock':
+            stock_code = request.POST.get('stock_code')
+            stock_name = stock.objects.get(stock_code=stock_code).stock_name
+            market = stock.objects.get(stock_code=stock_code).market
+            trade_array_1, amount_sum_1, value_1, quantity_sum_1, price_avg_1, price_1, profit_1, profit_margin_1, cost_sum_1 = get_holding_stock_profit(stock_code)
+        elif form_type == 'cleared_stock':
+            stock_code = request.POST.get('stock_code')
+            stock_name = stock.objects.get(stock_code=stock_code).stock_name
+            market = stock.objects.get(stock_code=stock_code).market
+            trade_array_2, profit_2, profit_margin_2, cost_sum_2 = get_cleared_stock_profit(stock_code)
+    return render(request, templates_path + 'query/query_trade.html', locals())
 
 
 # 分红金额查询

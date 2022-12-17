@@ -50,25 +50,15 @@ class FileOperate:
                 return data
 
 
-# 在二维列表price_array中用查找stock_code所在的位置，返回该位置对应子列表的price、increase、color、price_time、index，若查找失败，返回index=-1
+# 在二维列表price_array中用查找stock_code所在的位置，返回该位置对应子列表的index，若查找失败，返回index=-1
 def search_price_array(price_array, stock_code):
     i = 0
     index = -1
-    # price = -1.0
-    # increase = 0.0
-    # color = 'grey'
-    # price_time = datetime.datetime.now()
     while i < len(price_array):
         if price_array[i][0] == stock_code:
-            # price = float(price_array[i][1])
-            # increase = float(price_array[i][2])
-            # color = str(price_array[i][3])
-            # price_time = datetime.datetime.strptime(price_array[i][4], "%Y-%m-%d %H:%M:%S")
             index = i
             break
         i += 1
-    # return price, increase, color, price_time,  index
-    # return price, increase, color, index
     return index
 
 
@@ -96,48 +86,53 @@ def get_chart_array(content, max_rows, name_col, value_col):
 
 
 # 抓取单一股票实时行情
-# def get_stock_price(stock_code):
-#     # stock_object = stock.objects.get(stock_code=stock_code)
-#     path = pathlib.Path("./templates/dashboard/price.json")
-#     if path.is_file(): # 若json文件存在，从json文件中读取price、increase、color、price_time、index
-#         # 读取price.json
-#         price_dict = FileOperate(filepath='./templates/dashboard/', filename='price.json').operation_file()
-#         price_array = price_dict['price_array']
-#         price, increase, color, price_time, index = search_price_array(price_array, stock_code)
-#     else: # 若json文件不存在，创建json文件
-#         price_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
-#         index = -1
-#         price_array = []
-#         price_dict = {}
-#         price_dict.update(price_array=price_array)
-#         price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-#         FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
-#     time1 = price_time
-#     time2 = datetime.datetime.now()
-#     time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
-#     # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与数据库价格获取时间间隔大于900秒 且 数据库价格获取时间早于当天的16点30分)
-#     # if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0) or index == -1:
-#     # 用于调试
-#     if (time2 - time1).total_seconds() >= 0:
-#         # 1.从雪球网抓取实时行情
-#         price, increase, color = get_quote_snowball(stock_code)
-#
-#         # 2.通过pysnowball API抓取雪球网实时行情
-#         # price, increase, color = get_quote_pysnowball(stock_code)
-#
-#         # 3.从http://qt.gtimg.cn/抓取实时行情
-#         # price, increase, color = get_quote_gtimg(stock_code)
-#
-#         # 写入json文件
-#         if index == -1:
-#             price_array.append((stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-#         else:
-#             price_array[index] = (stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-#         price_dict.update(price_array=price_array)
-#         price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-#         FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
-#
-#     return price, increase, color
+def get_stock_price(stock_code):
+    # stock_object = stock.objects.get(stock_code=stock_code)
+    path = pathlib.Path("./templates/dashboard/price.json")
+    if path.is_file(): # 若json文件存在，从json文件中读取price、increase、color、price_time、index
+        # 读取price.json
+        price_dict = FileOperate(filepath='./templates/dashboard/', filename='price.json').operation_file()
+        price_array = price_dict['price_array']
+        price_time = datetime.datetime.strptime(price_dict['modified_time'], "%Y-%m-%d %H:%M:%S")
+        # price, increase, color, price_time, index = search_price_array(price_array, stock_code)
+        index = search_price_array(price_array, stock_code)
+        if index != -1:
+            price = float(price_array[index][1])
+            increase = float(price_array[index][2])
+            color = str(price_array[index][3])
+    else: # 若json文件不存在，创建json文件
+        price_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
+        index = -1
+        price_array = []
+        price_dict = {}
+        price_dict.update(price_array=price_array)
+        price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
+    time1 = price_time
+    time2 = datetime.datetime.now()
+    time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
+    # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与数据库价格获取时间间隔大于900秒 且 数据库价格获取时间早于当天的16点30分)
+    if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0) or index == -1:
+    # if (time2 - time1).total_seconds() >= 0: # 用于调试
+        # 1.从雪球网抓取实时行情
+        price, increase, color = get_quote_snowball(stock_code)
+
+        # 2.通过pysnowball API抓取雪球网实时行情
+        # price, increase, color = get_quote_pysnowball(stock_code)
+
+        # 3.从http://qt.gtimg.cn/抓取实时行情
+        # price, increase, color = get_quote_gtimg(stock_code)
+
+        # 写入json文件
+        if index == -1:
+            price_array.append((stock_code, price, increase, color))
+        else:
+            price_array[index] = (stock_code, price, increase, color)
+        price_dict.update(price_array=price_array)
+        price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
+
+    return price, increase, color
 
 
 # 抓取股票列表实时行情
@@ -201,24 +196,24 @@ def get_stock_array_price(stock_code_array):
 
 
 # 从雪球抓取单一股票实时行情
-# def get_quote_snowball(stock_code):
-#     stock_object = stock.objects.get(stock_code=stock_code)
-#     market = stock_object.market.market_abbreviation
-#     if market == 'hk':
-#         code = stock_code
-#     else:
-#         code = market.upper() + stock_code
-#     url = 'https://stock.xueqiu.com/v5/stock/realtime/quotec.json?symbol=' + code
-#     quote_json = json.loads(getHTMLText(url)) # 将getHTMLText()返回的字符串转换为json格式的list
-#     price = quote_json['data'][0]['current']
-#     increase = quote_json['data'][0]['percent']
-#     if increase > 0:
-#         color = 'red'
-#     elif increase < 0:
-#         color = 'green'
-#     else:
-#         color = 'grey'
-#     return price, increase, color
+def get_quote_snowball(stock_code):
+    stock_object = stock.objects.get(stock_code=stock_code)
+    market = stock_object.market.market_abbreviation
+    if market == 'hk':
+        code = stock_code
+    else:
+        code = market.upper() + stock_code
+    url = 'https://stock.xueqiu.com/v5/stock/realtime/quotec.json?symbol=' + code
+    quote_json = json.loads(getHTMLText(url)) # 将getHTMLText()返回的字符串转换为json格式的list
+    price = quote_json['data'][0]['current']
+    increase = quote_json['data'][0]['percent']
+    if increase > 0:
+        color = 'red'
+    elif increase < 0:
+        color = 'green'
+    else:
+        color = 'grey'
+    return price, increase, color
 
 
 # 从雪球抓取股票列表实时行情

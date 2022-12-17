@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">交易查询</h6>
+        </div>
+        <div class="card-body">
+            <ul id="statisticsTab" class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#holding_stock" data-toggle="tab">持仓股票</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#cleared_stock" data-toggle="tab">已清仓股票</a>
+                </li>
+            </ul>
+            <div id="statisticsTabContent" class="tab-content">
+                <div class="tab-pane fade show active" id="holding_stock">
+                    <p></p>
+                    <div class="h jumbotron bg-gray-100">
+                        <form id="form_holding_stock" action="" method="post" class="form-horizontal" role="form" name="form_type">
+                            {% csrf_token %}
+                            <input type="hidden" id="form_type" name="form_type" value="holding_stock">
+                            <div class="row align-items-center h-100">
+                                <div class="col-md-11">
+                                    <div class="row form-group">
+                                        <div class="col-md-1 text-right">
+                                            <label for="stock_code" class="control-label">股票：</label>
+                                        </div>
+                                        <div class="col-md-11">
+                                            <select class="form-control control-inline" name="stock_code" id="stock_code">
+                                                <option disabled selected value="">请选择股票...</option>
+                                                {% for stock in holding_stock_list %}
+                                                    {% if stock.stock_code == stock_code %}
+                                                        <option value="{{ stock.stock_code }}" selected>{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                                    {% else %}
+                                                        <option value="{{ stock.stock_code }}">{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="form-group" style="text-align:center">
+                                        <div class="col-md-12">
+                                            <input type="submit" class="btn btn-primary" value="查询">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <hr class="sidebar-divider">
+                    {{ error_info }}
+                    <div class="h jumbotron bg-gray-100">
+                        {% if trade_array_1 %}
+                            <div class="row col-md-12">
+                                <div class="col-md-4">
+                                    市值：{{ value_1|floatformat:0 }}元
+                                </div>
+                                <div class="col-md-4">
+                                    当前价格：{{ price_1|floatformat:3 }}元
+                                </div>
+                                <div class="col-md-4">
+                                    账面利润：{{ profit_1|floatformat:0 }}元
+                                </div>
+                            </div>
+                            <div class="row col-md-12">
+                                <div class="col-md-4">
+                                    成本：{{ cost_sum_1|floatformat:0 }}元
+                                </div>
+                                <div class="col-md-4">
+                                    成本均价：{{ price_avg_1|floatformat:3 }}元
+                                </div>
+                                <div class="col-md-4">
+                                    账面利润率：{{ profit_margin_1|floatformat:2 }}%
+                                </div>
+                            </div>
+                        {% endif %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                <thead class="thead bg-gradient-secondary text-gray-100">
+                                    <tr>
+                                        <th>交易日期</th>
+                                        <th>账户</th>
+                                        <th>股票/代码</th>
+                                        <th>价格（{{ market.get_transaction_currency_display }}）</th>
+                                        <th>数量</th>
+                                        <th>交易金额</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for trade in trade_array_1 %}
+                                    <tr>
+                                        <td>{{ trade.0|date:'Y-m-d' }}</td>
+                                        <td>{{ trade.1 }}</td>
+                                        <td>{{ trade.2 }}（{{ trade.3 }}）</td>
+                                        <td style="text-align: right">{{ trade.4|floatformat:3 }}</td>
+                                        <td style="text-align: right">{{ trade.5|floatformat:0 }}</td>
+                                        <td style="text-align: right">{{ trade.6|floatformat:0 }}</td>
+                                    </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="6">无相关记录！</td>
+                                        </tr>
+                                    {% endfor %}
+                                    <tr>
+                                        <td colspan="3"><b>小计</b></td>
+                                        <td style="text-align: right"><b>{{ price_avg|floatformat:3 }}</b></td>
+                                        <td style="text-align: right"><b>{{ quantity_sum|floatformat:0 }}</b></td>
+                                        <td style="text-align: right"><b>{{ amount_sum|floatformat:0 }}</b></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="cleared_stock">
+                    <p></p>
+                    <div class="h jumbotron bg-gray-100">
+                        <form id="form_cleared_stock" action="" method="post" class="form-horizontal" role="form" name="form_type">
+                            {% csrf_token %}
+                            <input type="hidden" id="form_type" name="form_type" value="cleared_stock">
+                            <div class="row align-items-center h-100">
+                                <div class="col-md-11">
+                                    <div class="row form-group">
+                                        <div class="col-md-1 text-right">
+                                            <label for="stock_code" class="control-label">股票：</label>
+                                        </div>
+                                        <div class="col-md-11">
+                                            <select class="form-control control-inline" name="stock_code" id="stock_code">
+                                                <option disabled selected value="">请选择股票...</option>
+                                                {% for stock in cleared_stock_list %}
+                                                    {% if stock.stock_code == stock_code %}
+                                                        <option value="{{ stock.stock_code }}" selected>{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                                    {% else %}
+                                                        <option value="{{ stock.stock_code }}">{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="form-group" style="text-align:center">
+                                        <div class="col-md-12">
+                                            <input type="submit" class="btn btn-primary" value="查询">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <hr class="sidebar-divider">
+                    {{ error_info }}
+                    <div class="h jumbotron bg-gray-100">
+                        {% if trade_array_2 %}
+                            <div class="row col-md-12">
+                                <div class="col-md-4">
+                                    成本：{{ cost_sum_2|floatformat:0 }}元
+                                </div>
+                                <div class="col-md-4">
+                                    利润：{{ profit_2|floatformat:0 }}元
+                                </div>
+                                <div class="col-md-4">
+                                    利润率：{{ profit_margin_2|floatformat:2 }}%
+                                </div>
+                            </div>
+                        {% endif %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                <thead class="thead bg-gradient-secondary text-gray-100">
+                                    <tr>
+                                        <th>交易日期</th>
+                                        <th>账户</th>
+                                        <th>股票/代码</th>
+                                        <th>价格（{{ market.get_transaction_currency_display }}）</th>
+                                        <th>数量</th>
+                                        <th>交易金额</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for trade in trade_array_2 %}
+                                    <tr>
+                                        <td>{{ trade.0|date:'Y-m-d' }}</td>
+                                        <td>{{ trade.1 }}</td>
+                                        <td>{{ trade.2 }}（{{ trade.3 }}）</td>
+                                        <td style="text-align: right">{{ trade.4|floatformat:3 }}</td>
+                                        <td style="text-align: right">{{ trade.5|floatformat:0 }}</td>
+                                        <td style="text-align: right">{{ trade.6|floatformat:0 }}</td>
+                                    </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="6">无相关记录！</td>
+                                        </tr>
+                                    {% endfor %}
+                                    <tr>
+                                        <td colspan="3"><b>小计</b></td>
+                                        <td style="text-align: right"><b>{{ price_avg|floatformat:3 }}</b></td>
+                                        <td style="text-align: right"><b>{{ quantity_sum|floatformat:0 }}</b></td>
+                                        <td style="text-align: right"><b>{{ amount_sum|floatformat:0 }}</b></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- 用于tab选项卡切换后 刷新后保持当前选项卡页面 -->
+<script>
+    $(document).ready(function () {
+        $('.nav-tabs a').click(function (e) {
+            e.preventDefault()
+            $(this).tab('show')
+        })
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            sessionStorage.selectTab = $(e.target).attr('href');
+        });
+        var selectedTab = sessionStorage.selectTab;
+        if (selectedTab) {
+            $('.nav-tabs a[href="' + selectedTab + '"]').tab('show')
+        }
+    })
+</script>
+
+{% endblock %}
