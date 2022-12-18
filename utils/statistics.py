@@ -734,14 +734,8 @@ def get_holding_stock_profit(stock_code):
     quantity_sum = 0
     cost_sum = 0
     trade_array = []
-    # stock_code_array = []
     stock_id = stock.objects.all().get(stock_code=stock_code).id
     trade_list = trade.objects.all().filter(stock=stock_id).order_by('trade_date')
-    # stock_code = trade_list[0].stock.stock_code
-    # 将单一股票代码转换为代码列表，调用get_stock_array_price获得实时价格
-    # stock_code_array.append(stock_code)
-    # price_array = get_stock_array_price(stock_code.split(","))
-    # price = float(price_array[0][1])
     price, increase, color = get_stock_price(stock_code)
     for rs in trade_list:
         if rs.trade_type == 2:
@@ -766,25 +760,20 @@ def get_holding_stock_profit(stock_code):
         price_avg = 0  # 负无穷大
     else:
         price_avg = amount_sum / quantity_sum
-    # profit = (price - float(price_avg)) * quantity_sum
     profit = price * quantity_sum - float(amount_sum)
     if amount_sum > 0:
         profit_margin = profit / float(cost_sum) * 100
     else:
         profit_margin = 9999.99  # 正无穷大
-    # trade_array.sort(key=take_col1, reverse=True)
     return trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin, cost_sum
 
 
 def get_cleared_stock_profit(stock_code):
     amount_sum = 0
-    quantity_sum = 0
     cost_sum = 0
     trade_array = []
-    # stock_code_array = []
     stock_id = stock.objects.all().get(stock_code=stock_code).id
     trade_list = trade.objects.all().filter(stock=stock_id).order_by('trade_date')
-    # price, increase, color = get_stock_price(stock_code)
     for rs in trade_list:
         if rs.trade_type == 2:
             trade_quantity = -1 * rs.trade_quantity
@@ -802,20 +791,9 @@ def get_cleared_stock_profit(stock_code):
             trade_amount
         ))
         amount_sum += trade_amount
-        quantity_sum += trade_quantity
-    # value = price * quantity_sum
-    # if quantity_sum == 0:
-    #     price_avg = 0  # 负无穷大
-    # else:
-    #     price_avg = amount_sum / quantity_sum
-    # profit = (price - float(price_avg)) * quantity_sum
-    # profit = price * quantity_sum - float(amount_sum)
     profit = - float(amount_sum)
-    # if amount_sum > 0:
-    #     profit_margin = profit / float(amount_sum) * 100
-    # else:
-    #     profit_margin = 9999.99  # 正无穷大
-    profit_margin = profit / float(cost_sum) * 100
-    # trade_array.sort(key=take_col1, reverse=True)
-    # return trade_array, amount_sum, quantity_sum, profit, profit_margin, cost_sum
+    if amount_sum > 0 and cost_sum != 0:
+        profit_margin = profit / float(amount_sum) * 100
+    else:
+        profit_margin = 9999.99  # 正无穷大
     return trade_array, profit, profit_margin, cost_sum

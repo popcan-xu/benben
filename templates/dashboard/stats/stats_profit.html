@@ -8,35 +8,87 @@
             <h6 class="m-0 font-weight-bold text-primary">盈亏统计</h6>
         </div>
         <div class="card-body">
-            <div style="height:25px">
-                <div style="display:inline;float:right;">
-                    港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+            <ul id="statisticsTab" class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#cleared" data-toggle="tab">已清仓股票</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#holding" data-toggle="tab">持仓股票</a>
+                </li>
+            </ul>
+            <div id="statisticsTabContent" class="tab-content">
+                <div class="tab-pane fade show active" id="cleared">
+                    <p></p>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="table_cleared">
+                            <p></p>
+                            <div style="display:inline;float:right;">
+                                港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                    <thead class="thead bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>股票/代码</th>
+                                            <th>盈亏金额（人民币）</th>
+{#                                            <th>持仓金额（人民币）</th>#}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for rs in cleared_profit_array %}
+                                        <tr>
+                                            <td>{{ rs.0 }}（{{ rs.1 }}）</td>
+                                            <td style="text-align: right">{{ rs.2|floatformat:0 }}</td>
+{#                                            <td style="text-align: right">{{ rs.3|floatformat:0 }}</td>#}
+                                        </tr>
+                                        {% endfor %}
+                                        <tr>
+                                            <td><b>合计</b></td>
+                                            <td style="text-align: right"><b>{{ cleared_profit_sum|floatformat:0 }}</b></td>
+{#                                            <td style="text-align: right"><b>{{ cleared_value_sum|floatformat:0 }}</b></td>#}
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
-                    <thead class="thead bg-gradient-secondary text-gray-100">
-                        <tr>
-                            <th>股票/代码</th>
-                            <th>账面盈亏金额（人民币）</th>
-                            <th>持仓金额（人民币）</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for rs in profit_array %}
-                        <tr>
-                            <td>{{ rs.0 }}（{{ rs.1 }}）</td>
-                            <td style="text-align: right">{{ rs.2|floatformat:0 }}</td>
-                            <td style="text-align: right">{{ rs.3|floatformat:0 }}</td>
-                        </tr>
-                        {% endfor %}
-                        <tr>
-                            <td><b>合计</b></td>
-                            <td style="text-align: right"><b>{{ profit_sum|floatformat:0 }}</b></td>
-                            <td style="text-align: right"><b>{{ value_sum|floatformat:0 }}</b></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="tab-pane fade" id="holding">
+                    <p></p>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="table_holding">
+                            <p></p>
+                            <div style="display:inline;float:right;">
+                                港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                    <thead class="thead bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>股票/代码</th>
+                                            <th>持仓金额（人民币）</th>
+                                            <th>账面盈亏金额（人民币）</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for rs in holding_profit_array %}
+                                        <tr>
+                                            <td>{{ rs.0 }}（{{ rs.1 }}）</td>
+                                            <td style="text-align: right">{{ rs.3|floatformat:0 }}</td>
+                                            <td style="text-align: right">{{ rs.2|floatformat:0 }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                        <tr>
+                                            <td><b>合计</b></td>
+                                            <td style="text-align: right"><b>{{ holding_value_sum|floatformat:0 }}</b></td>
+                                            <td style="text-align: right"><b>{{ holding_profit_sum|floatformat:0 }}</b></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

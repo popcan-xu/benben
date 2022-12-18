@@ -493,28 +493,45 @@ def stats_subscription(request):
 # 盈亏统计
 def stats_profit(request):
     rate_HKD, rate_USD = get_rate()
-    profit_array = []
-    profit_sum = 0
-    value_sum = 0
-    stock_list = stock.objects.all().order_by('stock_code')
-    for rs in stock_list:
+    holding_profit_array = []
+    cleared_profit_array = []
+    holding_profit_sum = 0
+    cleared_profit_sum = 0
+    holding_value_sum = 0
+    holding_stock_list = stock.objects.filter(position__stock_id__isnull=False).distinct().order_by('stock_code')
+    cleared_stock_list = stock.objects.filter(position__stock_id__isnull=True, trade__stock_id__isnull=False).distinct().order_by('stock_code')
+    for rs in holding_stock_list:
         stock_id = rs.id
         stock_code = rs.stock_code
         stock_name = rs.stock_name
         transaction_currency = rs.market.transaction_currency
         trade_list = trade.objects.all().filter(stock=stock_id)
-        if trade_list.exists() and stock_code != '-1' and stock_code != '155406' and stock_code != '01700' \
-                and stock_code != '02868' and stock_code != '112292' and stock_code != '150176': # 19恒大01、华地国际控股、首创置业、16冀中01、H股B（已退市）
-            trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin = get_stock_profit(
-                stock_code)
+        trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin, cost_sum = get_holding_stock_profit(
+            stock_code)
+        if transaction_currency == 2:
+            profit *= rate_HKD
+            value *= rate_HKD
+        elif transaction_currency == 3:
+            profit *= rate_USD
+            value *= rate_USD
+        holding_profit_sum += profit
+        holding_value_sum += value
+        holding_profit_array.append((stock_name, stock_code, profit, value))
+    holding_profit_array.sort(key=take_col4, reverse=True)  # 对account_content列表按第3列（金额）降序排序
+    for rs in cleared_stock_list:
+        stock_id = rs.id
+        stock_code = rs.stock_code
+        stock_name = rs.stock_name
+        transaction_currency = rs.market.transaction_currency
+        trade_list = trade.objects.all().filter(stock=stock_id)
+        if trade_list.exists() and stock_code != '-1':
+            trade_array, profit, profit_margin, cost_sum = get_cleared_stock_profit(stock_code)
             if transaction_currency == 2:
                 profit *= rate_HKD
             elif transaction_currency == 3:
                 profit *= rate_USD
-            profit_sum += profit
-            value_sum += value
-            profit_array.append((stock_name, stock_code, profit, value))
-        profit_array.sort(key=take_col4, reverse=True)  # 对account_content列表按第3列（金额）降序排序
+            cleared_profit_sum += profit
+            cleared_profit_array.append((stock_name, stock_code, profit))
     return render(request, templates_path + 'stats/stats_profit.html', locals())
 
 
