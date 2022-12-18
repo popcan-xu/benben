@@ -470,26 +470,6 @@ def stats_subscription(request):
     return render(request, templates_path + 'stats/stats_subscription.html', locals())
 
 
-# 交易统计
-# def stats_trade(request):
-#     stock_list = stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
-#     if request.method == 'POST':
-#         stock_code = request.POST.get('stock_code')
-#         stock_name = stock.objects.get(stock_code=stock_code).stock_name
-#         market = stock.objects.get(stock_code=stock_code).market
-#
-#         # 持仓股票代码列表，通过.filter(position__stock_id__isnull = False)，过滤出在position表中存在的stock_id所对应的stock表记录，
-#         # 用values_list（“字段名”,flat=True）实现取单个字段值并存放在List中
-#         holding_stock_code_list = list(
-#             stock.objects.filter(position__stock_id__isnull=False).distinct().values_list("stock_code", flat=True))
-#         if stock_code in holding_stock_code_list:
-#             trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin, cost_sum = get_holding_stock_profit(
-#                 stock_code)
-#         else:
-#             trade_array, amount_sum, quantity_sum, profit, profit_margin, cost_sum = get_cleared_stock_profit(stock_code)
-#     return render(request, templates_path + 'stats/stats_trade.html', locals())
-
-
 # 盈亏统计
 def stats_profit(request):
     rate_HKD, rate_USD = get_rate()
