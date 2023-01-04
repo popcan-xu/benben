@@ -197,6 +197,55 @@ def get_value_industry_content(position_currency, price_array, HKD_rate, USD_rat
     return industry_table_content, amount_sum, json.dumps(name_array), value_array
 
 
+def get_value_market_sum(price_array, HKD_rate, USD_rate):
+    market_chart_array = []
+    amount_array = []
+    percent_array = []
+    amount_sum = 0.0
+    # 对position表分组查询，按stock、industry跨表字段分组，返回每个分组的id（通过双下划线取得多级关联表的字段值）和每个分组的quantity个数
+    market_dict = position.objects.values("stock__market").annotate(
+        count=Count("stock")).values(
+        'stock__market__id',
+        'stock__market__market_name'
+    )
+    for dict in market_dict:
+        amount = 0.0
+        # 从字典dict中取出’stock__market__id‘的值
+        market_id = dict['stock__market__id']
+        market_name = dict['stock__market__market_name']
+        # 对position表进行跨表过滤，使用双下划线取得多级关联表的字段名
+        record_list = position.objects.filter(stock__market=market_id).values(
+            'stock__stock_code',
+            'stock__stock_name',
+            'position_quantity',
+            'stock__market__transaction_currency'
+        )
+        for record in record_list:
+            stock_code = record['stock__stock_code']
+            position_quantity = record['position_quantity']
+            currency = record['stock__market__transaction_currency']
+            price = list(filter(lambda x: stock_code in x, price_array))[0][1]
+            if currency == 2:
+                rate = HKD_rate
+            elif currency == 3:
+                rate = USD_rate
+            else:
+                rate = 1.0
+            amount += position_quantity * price * rate
+        market_chart_array.append(market_name)
+        amount_array.append(amount)
+        amount_sum += amount
+    i = 0
+    while i < len(amount_array):
+        percent = format(float(amount_array[i]) / amount_sum, '.2%')
+        percent_array.append(percent)
+        i += 1
+    market_chart_content = list(zip(market_chart_array, amount_array, percent_array))
+    market_chart_content.sort(key=take_col2, reverse=True)  # 对industry_content列表按第二列（金额）降序排序
+    name_array, value_array = get_chart_array(market_chart_content, -1, 0, 1)
+    return json.dumps(name_array), value_array
+
+
 def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate):
     market_table_array = []
     market_chart_array = []
@@ -209,6 +258,7 @@ def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate)
         'stock__market__id',
         'stock__market__market_name'
     )
+    print(market_dict)
     for dict in market_dict:
         amount = 0.0
         name_array1 = []
@@ -223,6 +273,7 @@ def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate)
             'position_quantity',
             'stock__market__transaction_currency'
         )
+        print(record_list)
         for record in record_list:
             stock_code = record['stock__stock_code']
             stock_name = record['stock__stock_name']

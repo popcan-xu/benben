@@ -31,12 +31,22 @@ def overview(request):
         current_dividend_sum_CNY = dividend.objects.filter(dividend_currency=1, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
         current_dividend_sum_HKD = dividend.objects.filter(dividend_currency=2, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
         current_dividend_sum_USD = dividend.objects.filter(dividend_currency=3, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
+        # print(current_dividend_sum_CNY)
+        if current_dividend_sum_CNY == None:
+            current_dividend_sum_CNY = 0
+        if current_dividend_sum_HKD == None:
+            current_dividend_sum_HKD = 0
+        if current_dividend_sum_USD == None:
+            current_dividend_sum_USD = 0
         current_dividend_sum = float(current_dividend_sum_CNY) + float(current_dividend_sum_HKD) * rate_HKD + float(current_dividend_sum_USD) * rate_USD
         # 获得新股、新债总收益
         subscription_sum = float(subscription.objects.aggregate(amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount'])
         # 获得当年新股、新债总收益
-        current_subscription_sum = float(subscription.objects.filter(subscription_date__year=current_year).aggregate(
-            amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount'])
+        current_subscription_sum = subscription.objects.filter(subscription_date__year=current_year).aggregate(
+            amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount']
+        if current_subscription_sum == None:
+            current_subscription_sum = 0
+        current_subscription_sum = float(current_subscription_sum)
         # 获取持仓股票数量
         holding_stock_number = position.objects.values("stock").annotate(count=Count("stock")).count()
         # 获得总市值、持仓股票一览数据、持仓前五占比数据
@@ -65,13 +75,7 @@ def overview(request):
             top5_percent += float(top5_content[i][6][:-1])  # [:-1]用于截去百分比字符串的最后一位（百分号）
             i += 1
         # 获得持仓币种占比数据，用于生成chart图表
-        content_1, value_sum_1, name_array_1, value_array_1 = get_value_market_content(1, price_array, rate_HKD, rate_USD)
-        content_2, value_sum_2, name_array_2, value_array_2 = get_value_market_content(2, price_array, rate_HKD, rate_USD)
-        content_3, value_sum_3, name_array_3, value_array_3 = get_value_market_content(3, price_array, rate_HKD, rate_USD)
-        currency_name_array = ['人民币市值', '港元市值', '美元市值']
-        value_sum_2 *= rate_HKD
-        value_sum_3 *= rate_USD
-        currency_value_array = [int(value_sum_1), int(value_sum_2), int(value_sum_3)]
+        market_name_array, market_value_array = get_value_market_sum(price_array, rate_HKD, rate_USD)
         # 获得近期交易列表
         top5_trade_list = trade.objects.all().order_by('-trade_date', '-modified_time')[:5]
         # 获得近期分红列表
@@ -106,8 +110,8 @@ def overview(request):
             index += 1
         overview.update(top5_array=top5_array)
         # 持仓币种占比
-        overview.update(currency_name_array=currency_name_array)
-        overview.update(currency_value_array=currency_value_array)
+        overview.update(market_name_array=market_name_array)
+        overview.update(market_value_array=market_value_array)
         # 近期交易
         trade_array = []
         for i in top5_trade_list:

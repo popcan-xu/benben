@@ -39,6 +39,35 @@
             </div>
         </div>
 
+        <!-- 持仓数量 -->
+        <div class="col-xl-2 col-md-6 mb-4">
+            <div class="card border-left-secondary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                                持股数量</div>
+                            <div class="row no-gutters align-items-center">
+                                <div class="col-auto">
+                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{ overview.holding_stock_number }}</div>
+                                </div>
+                                <div class="col">
+                                    <div class="progress progress-sm mr-2">
+                                        <div class="progress-bar bg-secondary" role="progressbar"
+                                            style="width: {{ overview.holding_stock_number }}%" aria-valuenow="{{ overview.holding_stock_number }}" aria-valuemin="0"
+                                            aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 分红收益 -->
         <div class="col-xl-2 col-md-6 mb-4">
             <div class="card border-left-success shadow h-100 py-2">
@@ -113,35 +142,6 @@
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-money-bill fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 持仓数量 -->
-        <div class="col-xl-2 col-md-6 mb-4">
-            <div class="card border-left-secondary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
-                                持股数量</div>
-                            <div class="row no-gutters align-items-center">
-                                <div class="col-auto">
-                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{ overview.holding_stock_number }}</div>
-                                </div>
-                                <div class="col">
-                                    <div class="progress progress-sm mr-2">
-                                        <div class="progress-bar bg-secondary" role="progressbar"
-                                            style="width: {{ overview.holding_stock_number }}%" aria-valuenow="{{ overview.holding_stock_number }}" aria-valuemin="0"
-                                            aria-valuemax="100"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -230,13 +230,14 @@
                 <!-- Card Header - Dropdown -->
                 <div
                     class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">持仓币种占比</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">持仓市场占比</h6>
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
+                    <!--
                     <div style="height:320px; width:100%; display:block; ">
                         <div class="chart-pie pt-4">
-                            <canvas id="pie_currency"></canvas>
+                            <canvas id="pie_market"></canvas>
                         </div>
                         <div class="mt-4 text-center small">
                             <span class="mr-2">
@@ -250,6 +251,8 @@
                             </span>
                         </div>
                     </div>
+                    -->
+                    <div id="pie_area_market" style="width:100%; height:320px; display:block;"></div>
                 </div>
             </div>
         </div>
@@ -381,11 +384,152 @@
 </div>
 
 <script>
-    var currency_name_array = {{ overview.currency_name_array|safe }};
-    var currency_value_array = {{ overview.currency_value_array|safe }};
+    //market_name_array = JSON.parse('{{ overview.market_name_array|safe }}');
+    market_name_array = {{ overview.market_name_array|safe }};
+    market_value_array = {{ overview.market_value_array|safe }};
+    pie_container = document.getElementById('pie_area_market');
+	pie = echarts.init(pie_container, 'white', {renderer: 'canvas'});
+	pie_data = get_pie_data(market_name_array, market_value_array);
     window.onload = function() {
-        Chart_Pie("pie_currency", currency_name_array, currency_value_array);
+        draw_pie(pie, pie_container, pie_data);
+        //Chart_Pie("pie_market", name_array, value_array);
     };
+
+	function draw_pie(chart_pie, container, pie_data) {
+        //resize_chart(chart_pie, container);
+        var option = {
+                    //backgroundColor: "#2c343c",
+                    // 标题的一些配置参数
+                    title: {
+                        text: "",
+                        left: "center",
+                        top: 10,
+                        /*
+                        textStyle: {
+                            color: "pink"
+                        }
+                        */
+                    },
+                    //鼠标点击出现的文字
+                    tooltip: {
+                        trigger: "item",
+                        //formatter: "{a} <br/>{b} : {c} ({d}%)",
+                        formatter: "{b} : {c} ({d}%)"
+                    },
+                    //视觉映射器
+                    /*
+                    visualMap: {
+                        show: false,
+                        min: 20,
+                        max: 600,
+                        inRange: {
+                            colorLightness: [0, 1]
+                        }
+                    },
+                    */
+                    legend: {
+                        right: "5%",
+                        top: "10%",
+                        orient: "vertical",    // 图例列表水平布局
+                        show: true
+                        /*
+                        show: true,              // 显示图例
+                        left: "75%",             // 图例组件离容器左侧的距离
+                        top: 10,                 // 图例组件离容器上侧的距离
+                        right: "15%",            // 图例组件离容器右侧的距离
+                        bottom: 30,              // 图例组件离容器下侧的距离
+                        width: "50%",            // 图例组件的宽度
+                        height: 10,              // 图例组件的高度
+                        itemGap: 15,             // 图例每项之间的间隔
+                        itemWidth: 10,           // 图例标记的图形宽度
+                        itemHeight: 15,          // 图例标记的图形高度
+                        textStyle: {             // 图例文本样式
+                          color: "rgba(239, 15, 15, 1)",
+                          fontStyle: "italic",
+                          fontWeight: "bold",
+                          fontFamily: "serif",
+                          fontSize: 15
+                        },
+                        icon: "circle"     // 图例项的 icon
+                        */
+                    },
+                    //表格数据
+                    series: [{
+                        name: "市值",
+                        type: "pie",
+                        //radius: "55%", //饼图弧度大小
+                        radius: ["50%", "75%"],
+                        center: ["40%", "50%"], //饼图位置
+                        data: pie_data,
+                            /*
+                            [
+                                { value: 335, name: "直接访问" },
+                                { value: 310, name: "邮件营销" },
+                                { value: 274, name: "联盟广告" },
+                                { value: 235, name: "视频广告" },
+                                { value: 400, name: "搜索引擎" }
+                            ].sort(function(a, b) {
+                                return a.value - b.value;
+                            }),
+                            */
+                        //roseType: "radius",
+                        //roseType: "area",
+                        // 标注字的的颜色
+
+                        label: {
+                            normal: {
+                                show: false,
+                                textStyle: {
+                                    color: "rgba(255, 255, 255, 0.3)"
+                                }
+                            }
+                        },
+
+                        // 指示线的颜色
+
+                        labelLine: {
+                            normal: {
+                                show: false,
+                                lineStyle: {
+                                    color: "rgba(255, 255, 255, 0.3)"
+                                },
+                                smooth: 0.2,
+                                length: 10,
+                                length2: 20
+                            }
+                        },
+                        /*
+                        itemStyle: {
+                            normal: {
+                                color: "#c23531",
+                                shadowBlur: 200,
+                                shadowColor: "rgba(0, 0, 0, 0.5)"
+                            }
+                        },
+                        */
+                        animationType: "scale",
+                        animationEasing: "elasticOut",
+                        animationDelay: function(idx) {
+                            return Math.random() * 200;
+                        }
+                    }]
+                };
+		chart_pie.setOption(option);
+        //window.onresize = function () { resize_chart(chart_pie, container); };
+	}
+
+	function get_pie_data(name_array, value_array) {
+		var pie_data = [];
+		for(i = 0; i < name_array.length; i++){
+			pie_data.push(
+				{
+				   value: value_array[i],
+				   name: name_array[i]
+				}
+			);
+		}
+		return pie_data;
+	}
 
 </script>
 
