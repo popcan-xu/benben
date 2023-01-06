@@ -14,7 +14,7 @@
         <div style="text-align:center">
             <form action="" method="post" class="form-horizontal" role="form">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-primary"><i class="fa fa-rotate-right"></i>&nbsp&nbsp{{ overview.modified_time }}</button>
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-sync-alt"></i>&nbsp&nbsp{{ overview.modified_time }}</button>
             </form>
         </div>
     </div>
@@ -32,7 +32,7 @@
                             <div class="h5 mb-0 font-weight-bold text-gray-800">￥{{ overview.value_sum|floatformat:0 }}</div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                            <i class="fas fa-yen-sign fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -61,7 +61,7 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                            <i class="fas fa-list-numeric fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -81,7 +81,7 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                            <i class="fas fa-money-bill fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -101,7 +101,8 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+{#                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>#}
+                            <i class="fas fa-money-bill-alt fa-2x text-gray-300"></i>
                         </div>
                     </div>
                 </div>
@@ -117,11 +118,11 @@
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                 打新收益</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                ￥{{ overview.subscription_sum|floatformat:0 }}
+                                ￥{{ overview.subscription_sum|floatformat:0 }}({{ overview.subscription_stock_num|floatformat:0 }}/{{ overview.subscription_band_num|floatformat:0 }})
                             </div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-money-bill fa-2x text-gray-300"></i>
+{#                            <i class="fas fa-money-check fa-2x text-gray-300"></i>#}
                         </div>
                     </div>
                 </div>
@@ -137,11 +138,11 @@
                             <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                 当年打新</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                ￥{{ overview.current_subscription_sum|floatformat:0 }}
+                                ￥{{ overview.current_subscription_sum|floatformat:0 }}({{ overview.current_subscription_stock_num|floatformat:0 }}/{{ overview.current_subscription_band_num|floatformat:0 }})
                             </div>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-money-bill fa-2x text-gray-300"></i>
+{#                            <i class="fas fa-money-check-alt fa-2x text-gray-300"></i>#}
                         </div>
                     </div>
                 </div>
@@ -453,12 +454,15 @@
                         icon: "circle"     // 图例项的 icon
                         */
                     },
+                    //color: ['primary', 'secondary', 'success', 'info', 'warning', 'danger'],
+                    color: ['#4e73df', '#858796', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
                     //表格数据
                     series: [{
                         name: "市值",
                         type: "pie",
                         //radius: "55%", //饼图弧度大小
-                        radius: ["50%", "75%"],
+                        radius: ["60%", "85%"],
+                        //radius: [0, 120],
                         center: ["40%", "50%"], //饼图位置
                         data: pie_data,
                             /*

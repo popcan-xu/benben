@@ -20,6 +20,7 @@ def overview(request):
         overview = FileOperate(filepath='./templates/dashboard/', filename='overview.json').operation_file()
     else: # 若json文件不存在or点击了刷新按钮，重写json文件（文件不存在则创建文件），再从json文件中读取overview页面需要的数据
         current_year = datetime.datetime.now().year
+        # current_year = 2021
         # 获得汇率数据
         rate_HKD, rate_USD = get_rate()
         # 获得人民币、港元、美元分红总收益
@@ -39,14 +40,18 @@ def overview(request):
         if current_dividend_sum_USD == None:
             current_dividend_sum_USD = 0
         current_dividend_sum = float(current_dividend_sum_CNY) + float(current_dividend_sum_HKD) * rate_HKD + float(current_dividend_sum_USD) * rate_USD
-        # 获得新股、新债总收益
+        # 获得新股、新债总收益、中签数量
         subscription_sum = float(subscription.objects.aggregate(amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount'])
-        # 获得当年新股、新债总收益
+        subscription_stock_num = subscription.objects.filter(subscription_type=1).count()
+        subscription_band_num = subscription.objects.filter(subscription_type=2).count()
+        # 获得当年新股、新债总收益、中签数量
         current_subscription_sum = subscription.objects.filter(subscription_date__year=current_year).aggregate(
             amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount']
         if current_subscription_sum == None:
             current_subscription_sum = 0
         current_subscription_sum = float(current_subscription_sum)
+        current_subscription_stock_num = subscription.objects.filter(subscription_date__year=current_year, subscription_type=1).count()
+        current_subscription_band_num = subscription.objects.filter(subscription_date__year=current_year, subscription_type=2).count()
         # 获取持仓股票数量
         holding_stock_number = position.objects.values("stock").annotate(count=Count("stock")).count()
         # 获得总市值、持仓股票一览数据、持仓前五占比数据
@@ -93,7 +98,11 @@ def overview(request):
         overview.update(current_dividend_sum=current_dividend_sum)
         overview.update(current_dividend_percent=current_dividend_percent)
         overview.update(subscription_sum=subscription_sum)
+        overview.update(subscription_stock_num=subscription_stock_num)
+        overview.update(subscription_band_num=subscription_band_num)
         overview.update(current_subscription_sum=current_subscription_sum)
+        overview.update(current_subscription_stock_num=current_subscription_stock_num)
+        overview.update(current_subscription_band_num=current_subscription_band_num)
         overview.update(holding_stock_number=holding_stock_number)
         # 持藏股票一览
         holding_stock_array = []
@@ -104,7 +113,8 @@ def overview(request):
         overview.update(top5_percent=top5_percent)
         top5_array = []
         index = 0
-        progress_bar_bg = ['primary', 'success', 'info', 'warning', 'danger']
+        progress_bar_bg = ['primary', 'secondary', 'success', 'info', 'warning', 'danger']
+        # progress_bar_bg = ['primary', 'secondary', 'success', 'info', 'warning']
         for i in top5_content:
             top5_array.append((i[0], i[5], i[6], progress_bar_bg[index]))
             index += 1
