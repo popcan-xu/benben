@@ -47,8 +47,15 @@ def get_position_content(currency):
             row.append(quantity)
             quantity_sum += quantity
         row.append(quantity_sum)
+        # 按持仓数量和当前价格计算每只股票的市值，并加入到当前行的隐藏列（市值）中
+        price, increase, color = get_quote_snowball(stock_code)
+        row.append(quantity_sum * price)
+        # 增加股票对应的行
         position_content.append(row)
-    # position_content.sort(key=take_col1)  # 对stock_content列表按第1列（股票名称）降序排序
+    if currency == 1:
+        position_content.sort(key=take_col11, reverse=True)  # 对position_content列表按隐藏的第11列（市值）降序排序
+    elif currency == 2:
+        position_content.sort(key=take_col8, reverse=True)  # 对position_content列表按隐藏的第7列（市值）降序排序
     return position_content, abbreviation_array, account_num, stock_num
 
 

@@ -670,6 +670,15 @@ def take_col4(list):
 def take_col6(list):
     return float(list[5])
 
+# 返回二维列表的第7列，用于二维列表按第7列排序
+def take_col8(list):
+    return float(list[7])
+
+
+# 返回二维列表的第10列，用于二维列表按第10列排序
+def take_col11(list):
+    return float(list[10])
+
 
 # 时间戳（10位）转日期格式
 def timeStamp10_2_date(timeStamp):
