@@ -259,6 +259,113 @@
         </div>
     </div>
 
+    <div class="row">
+
+        <!-- 持仓币种占比 -->
+        <div class="col-xl-4 col-lg-4">
+            <div class="card shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div
+                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">持仓市场占比</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <!--
+                    <div style="height:320px; width:100%; display:block; ">
+                        <div class="chart-pie pt-4">
+                            <canvas id="pie_market"></canvas>
+                        </div>
+                        <div class="mt-4 text-center small">
+                            <span class="mr-2">
+                                <i class="fas fa-circle text-primary"></i> 人民币市值
+                            </span>
+                            <span class="mr-2">
+                                <i class="fas fa-circle text-success"></i> 港元市值
+                            </span>
+                            <span class="mr-2">
+                                <i class="fas fa-circle text-info"></i> 美元市值
+                            </span>
+                        </div>
+                    </div>
+                    -->
+                    <div id="line_area_net_value" style="width:100%; height:320px; display:block;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 持仓股票一览 -->
+        <div class="col-xl-4 col-lg-4">
+            <div class="card shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">持仓股票一览</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div style="height:320px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                        <div class="table-responsive">
+                            <table class="table table-condensed table-hover list_tab">
+                                <thead class="bg-gradient-secondary text-gray-100">
+                                    <tr>
+                                        <th>股票/代码</th>
+                                        <th>价格（元）</th>
+                                        <th>涨跌幅</th>
+                                        <!--
+                                        <th>持仓数量（股）</th>
+                                        <th>金额（{{ currency_CNY }}）</th>
+                                        <th>百分比</th>
+                                        -->
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for i in overview.holding_stock_array %}
+                                        <tr>
+                                            <td>{{ i.0|stringformat:"s" }}</td>
+                                            <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
+                                            <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+                                            <!--
+                                            <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
+                                            <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+                                            <td style="text-align: right">{{ i.6 }}</td>
+                                            -->
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 持仓前五占比 -->
+        <div class="col-xl-4 col-lg-4">
+            <div class="card shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div
+                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">持仓前五占比（{{ overview.top5_percent|floatformat:2 }}%）</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div style="height:320px; width:100%; display:block; overflow-y:auto;">
+                        {% for i in overview.top5_array %}
+                            <h4 class="small font-weight-bold">{{ i.0 }}
+                                <span>{{ i.1|floatformat:0 }}</span>
+                                <span class="float-right">{{ i.2|slice:":-1" }}%</span>
+                            </h4>
+                            <div class="progress mb-4">
+                                <div class="progress-bar bg-{{ i.3 }}" role="progressbar" style="width: {{ i.2|slice:":-1" }}%"
+                                    aria-valuenow="{{ i.2|slice:":-1" }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Content Row -->
     <div class="row">
         <!-- 近期交易 -->
@@ -391,8 +498,12 @@
     pie_container = document.getElementById('pie_area_market');
 	pie = echarts.init(pie_container, 'white', {renderer: 'canvas'});
 	pie_data = get_pie_data(market_name_array, market_value_array);
+    line_container = document.getElementById('line_area_net_value');
+    line = echarts.init(line_container, 'white', {renderer: 'canvas'});
+    line_data = ''
     window.onload = function() {
         draw_pie(pie, pie_container, pie_data);
+        draw_line(line, line_container, line_data);
         //Chart_Pie("pie_market", name_array, value_array);
     };
 
@@ -534,6 +645,65 @@
 		}
 		return pie_data;
 	}
+
+    function draw_line(chart_line, container, line_data) {
+        var option = {
+            title: {
+              text: '',
+              subtext: '',
+              x: 'center'
+            },
+
+            legend: {
+              orient: 'horizontal',
+              x: 'left',
+              y: 'top',
+              data: ['猜想','预期','实际']
+            },
+            grid: {
+                top: '20%',
+                left: '3%',
+                right: '10%',
+                bottom: '5%',
+                containLabel: true
+            },
+            xAxis: {
+              name: '月份',
+              type: 'category',
+              data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月',]
+            },
+            yAxis: {
+              name: '人次',
+              type: 'value',
+              min:0, // 配置 Y 轴刻度最小值
+              max:4000,  // 配置 Y 轴刻度最大值
+              splitNumber:7,  // 配置 Y 轴数值间隔
+            },
+
+            series: [ // 多组折线图数据
+              {
+                name: '猜想',
+                data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
+                type: 'line'
+              },
+
+              {
+                name: '预期',
+                data: [2455,2534,2360,2301,2861,2181,1944,2197,1745,1810,2283,2298],
+                type: 'line',
+              },
+
+              {
+                name: '实际',
+                data: [1107,1352,1740,1968,1647,1570,1343,1757,2547,2762,3170,3665],
+                type: 'line'
+              }
+            ],
+            color: ['#3366CC', '#FFCC99','#99CC33']
+
+        };
+        chart_line.setOption(option);
+    }
 
 </script>
 

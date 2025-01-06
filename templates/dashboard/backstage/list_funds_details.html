@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <div class="d-sm-flex align-items-center justify-content-between mb-0">
+                <h1 class="h4 mb-0 text-gray-800">基金明细列表</h1>
+                <a href="/benben/add_funds_details/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                    <i class="fa fa-plus fa-sm text-white-50"></i> 增加
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="dataTable" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                    <thead class="bg-gradient-secondary text-gray-100">
+                        <tr>
+                            <th>基金名称</th>
+                            <th>日期</th>
+                            <th>基金价值</th>
+                            <th>出入金</th>
+                            <th>本金</th>
+                            <th>份数</th>
+                            <th>净值</th>
+                            <th>收益</th>
+                            <th>收益率</th>
+                            <th>年化收益率</th>
+                            <th>操作</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!--#trade_list即为视图函数list_trade中render传入参数//-->
+                        {% for funds_details in funds_details_list %}
+                            <tr>
+                                <td>{{ funds_details.funds.funds_name }}</td>
+                                <td>{{ funds_details.date|date:'Y-m-d' }}</td>
+                                <td>{{ funds_details.funds_value }}</td>
+                                <td>{{ funds_details.funds_in_out }}</td>
+                                <td>{{ funds_details.funds_principal }}</td>
+                                <td>{{ funds_details.funds_PHR }}</td>
+                                <td>{{ funds_details.funds_net_value }}</td>
+                                <td>{{ funds_details.funds_profit }}</td>
+                                <td>{{ funds_details.funds_profit_rate }}</td>
+                                <td>{{ funds_details.funds_annualized_profit_rate }}</td>
+                                <td>
+                                    <a href="/benben/del_funds_details/{{ funds_details.id|safe }}/" class="btn btn-default btn-sm">
+                                        删除
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="/benben/edit_funds_details/{{ funds_details.id|safe }}/" class="btn btn-default btn-sm">
+                                        修改
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="9">无相关记录！</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    $('#dataTable').DataTable( {
+        //先按第一列逆序排序，如果有相同，再按第二列顺序排序
+        //order后面就是一个多维数组，可以自由增删
+        "order": [[ 1, "asc" ],[ 0, "asc"]]
+    } );
+} );
+</script>
+{% endblock %}

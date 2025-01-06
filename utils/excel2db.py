@@ -8,7 +8,7 @@ import django
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import broker, market, account, stock, trade, dividend, subscription
+from stock.models import broker, market, account, stock, trade, dividend, subscription, funds, funds_details
 import re
 from django.contrib import messages
 
@@ -189,3 +189,47 @@ def excel2subscription(file_name, sheet_name, start_row, end_row):
             except:
                 print('失败！', subscription_date, account_id, subscription_name, subscription_type)
     return ()
+
+
+def excel2funds(file_name, sheet_name, start_row, end_row):
+    workbook = xlrd.open_workbook(file_name)
+    sht = workbook.sheet_by_name(sheet_name)
+    funds_id = funds.objects.get(funds_name=sheet_name).id
+    # 获取总行数
+    nrows = sht.nrows  # 包括标题
+    # 获取总列数
+    # ncols = sht.ncols
+    if start_row == -1:
+        start_row = 0
+    if end_row == -1:
+        end_row = nrows
+    for i in range(start_row, end_row):
+        if sht.cell(i, 0).ctype == 3:  # 判断单元格内容是否为日期类型
+            date = xldate_as_datetime(sht.cell(i, 0).value, 0)
+            funds_value = sht.cell(i, 12).value
+            funds_in_out = sht.cell(i, 13).value
+            funds_principal = sht.cell(i, 14).value
+            funds_PHR = sht.cell(i, 15).value
+            funds_net_value = sht.cell(i, 16).value
+            funds_profit = sht.cell(i, 19).value
+            funds_profit_rate = sht.cell(i, 20).value
+            funds_annualized_profit_rate = sht.cell(i, 21).value
+            try:
+                p = funds_details.objects.create(
+                    funds_id=funds_id,
+                    date=date,
+                    funds_value=funds_value,
+                    funds_in_out=funds_in_out,
+                    funds_principal=funds_principal,
+                    funds_PHR=funds_PHR,
+                    funds_net_value=funds_net_value,
+                    funds_profit=funds_profit,
+                    funds_profit_rate=funds_profit_rate,
+                    funds_annualized_profit_rate=funds_annualized_profit_rate
+                )
+                print('导入记录成功！', funds_id, date, funds_value, funds_in_out, funds_principal, funds_PHR, funds_net_value)
+            except:
+                print('失败！', funds_id, date, funds_value, funds_in_out, funds_principal, funds_PHR, funds_net_value)
+    return ()
+
+

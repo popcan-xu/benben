@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, HttpResponse
-from .models import broker, market, account, industry, stock, position, trade, dividend, subscription, dividend_history
+from .models import broker, market, account, industry, stock, position, trade, dividend, subscription, dividend_history, funds, funds_details
 from utils.excel2db import *
 from utils.statistics import *
 from utils.utils import *
@@ -1121,7 +1121,7 @@ def edit_trade(request, trade_id):
 
 
 def list_trade(request):
-    trade_list = trade.objects.all()
+    trade_list = trade.objects.all().order_by('-trade_date', '-modified_time')
     return render(request, templates_path + 'backstage/list_trade.html', locals())
 
 
@@ -1201,7 +1201,7 @@ def edit_dividend(request, dividend_id):
 
 
 def list_dividend(request):
-    dividend_list = dividend.objects.all()
+    dividend_list = dividend.objects.all().order_by('-dividend_date', '-modified_time')
     return render(request,  templates_path + 'backstage/list_dividend.html', locals())
 
 
@@ -1285,7 +1285,7 @@ def edit_subscription(request, subscription_id):
 
 
 def list_subscription(request):
-    subscription_list = subscription.objects.all()
+    subscription_list = subscription.objects.all().order_by('-subscription_date', '-modified_time')
     return render(request,  templates_path + 'backstage/list_subscription.html', locals())
 
 
@@ -1365,6 +1365,166 @@ def list_dividend_history(request):
     return render(request,  templates_path + 'backstage/list_dividend_history.html', locals())
 
 
+# 基金表增删改查
+def add_funds(request):
+    if request.method == 'POST':
+        funds_name = request.POST.get('funds_name')
+        funds_create_date = request.POST.get('funds_create_date')
+        funds_value = request.POST.get('funds_value')
+        funds_principal = request.POST.get('funds_principal')
+        funds_PHR = request.POST.get('funds_PHR')
+        funds_net_value = request.POST.get('funds_net_value')
+        funds_script = request.POST.get('funds_script')
+        if funds_name.strip() == '':
+            error_info = "基金名称不能为空！"
+            return render(request, templates_path + 'backstage/add_funds.html', locals())
+        try:
+            p = funds.objects.create(
+                funds_name=funds_name,
+                funds_create_date=funds_create_date,
+                funds_value=funds_value,
+                funds_principal=funds_principal,
+                funds_PHR=funds_PHR,
+                funds_net_value=funds_net_value,
+                funds_script=funds_script
+            )
+            return redirect('/benben/list_funds/')
+        except Exception as e:
+            error_info = "输入信息有错误！"
+            return render(request, templates_path + 'backstage/add_funds.html', locals())
+        finally:
+            pass
+    return render(request, templates_path + 'backstage/add_funds.html', locals())
+
+
+def del_funds(request, funds_id):
+    funds_object = funds.objects.get(id=funds_id)
+    funds_object.delete()
+    return redirect('/benben/list_funds/')
+
+
+def edit_funds(request, funds_id):
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        funds_name = request.POST.get('funds_name')
+        funds_create_date = request.POST.get('funds_create_date')
+        funds_value = request.POST.get('funds_value')
+        funds_principal = request.POST.get('funds_principal')
+        funds_PHR = request.POST.get('funds_PHR')
+        funds_net_value = request.POST.get('funds_net_value')
+        funds_script = request.POST.get('funds_script')
+        funds_object = funds.objects.get(id=id)
+        try:
+            funds_object.funds_name = funds_name
+            funds_object.funds_create_date = funds_create_date
+            funds_object.funds_value = funds_value
+            funds_object.funds_principal = funds_principal
+            funds_object.funds_PHR = funds_PHR
+            funds_object.funds_net_value = funds_net_value
+            funds_object.funds_script = funds_script
+            funds_object.save()
+        except Exception as e:
+            error_info = "输入信息有错误！"
+            return render(request, templates_path + 'backstage/edit_funds.html', locals())
+        finally:
+            pass
+        return redirect('/benben/list_funds/')
+    else:
+        funds_object = funds.objects.get(id=funds_id)
+        return render(request, templates_path + 'backstage/edit_funds.html', locals())
+
+
+def list_funds(request):
+    funds_list = funds.objects.all()
+    return render(request,  templates_path + 'backstage/list_funds.html', locals())
+
+
+# 基金表增删改查
+def add_funds_details(request):
+    funds_list = funds.objects.all()
+    if request.method == 'POST':
+        funds_id = request.POST.get('funds_id')
+        date = request.POST.get('date')
+        funds_value = request.POST.get('funds_value')
+        funds_in_out = request.POST.get('funds_in_out')
+        funds_principal = request.POST.get('funds_principal')
+        funds_PHR = request.POST.get('funds_PHR')
+        funds_net_value = request.POST.get('funds_net_value')
+        funds_profit = request.POST.get('funds_profit')
+        funds_profit_rate = request.POST.get('funds_profit_rate')
+        funds_annualized_profit_rate = request.POST.get('funds_annualized_profit_rate')
+        if funds_id.strip() == '':
+            error_info = "基金名称不能为空！"
+            return render(request, templates_path + 'backstage/add_funds_details.html', locals())
+        try:
+            p = funds_details.objects.create(
+                funds_id=funds_id,
+                date=date,
+                funds_value=funds_value,
+                funds_in_out=funds_in_out,
+                funds_principal=funds_principal,
+                funds_PHR=funds_PHR,
+                funds_net_value=funds_net_value,
+                funds_profit=funds_profit,
+                funds_profit_rate=funds_profit_rate,
+                funds_annualized_profit_rate=funds_annualized_profit_rate
+            )
+            return redirect('/benben/list_funds_details/')
+        except Exception as e:
+            error_info = "输入信息有错误！"
+            return render(request, templates_path + 'backstage/add_funds_details.html', locals())
+        finally:
+            pass
+    return render(request, templates_path + 'backstage/add_funds_details.html', locals())
+
+
+def del_funds_details(request, funds_details_id):
+    funds_details_object = funds_details.objects.get(id=funds_details_id)
+    funds_details_object.delete()
+    return redirect('/benben/list_funds_details/')
+
+
+def edit_funds_details(request, funds_details_id):
+    funds_list = funds.objects.all()
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        date = request.POST.get('date')
+        funds_value = request.POST.get('funds_value')
+        funds_in_out = request.POST.get('funds_in_out')
+        funds_principal = request.POST.get('funds_principal')
+        funds_PHR = request.POST.get('funds_PHR')
+        funds_net_value = request.POST.get('funds_net_value')
+        funds_profit = request.POST.get('funds_profit')
+        funds_profit_rate = request.POST.get('funds_profit_rate')
+        funds_annualized_profit_rate = request.POST.get('funds_annualized_profit_rate')
+        funds_details_object = funds_details.objects.get(id=id)
+        try:
+            funds_details_object.date = date
+            funds_details_object.funds_value = funds_value
+            funds_details_object.funds_in_out = funds_in_out
+            funds_details_object.funds_principal = funds_principal
+            funds_details_object.funds_PHR = funds_PHR
+            funds_details_object.funds_net_value = funds_net_value
+            funds_details_object.funds_profit = funds_profit
+            funds_details_object.funds_profit_rate = funds_profit_rate
+            funds_details_object.funds_annualized_profit_rate = funds_annualized_profit_rate
+            funds_details_object.save()
+        except Exception as e:
+            error_info = "输入信息有错误！"
+            return render(request, templates_path + 'backstage/edit_funds_details.html', locals())
+        finally:
+            pass
+        return redirect('/benben/list_funds_details/')
+    else:
+        funds_details_object = funds_details.objects.get(id=funds_details_id)
+        return render(request, templates_path + 'backstage/edit_funds_details.html', locals())
+
+
+def list_funds_details(request):
+    funds_details_list = funds_details.objects.all()
+    return render(request,  templates_path + 'backstage/list_funds_details.html', locals())
+
+
 # 从网站中抓取数据导入数据库
 def capture_dividend_history(request):
     stock_list = stock.objects.all().values('stock_code', 'stock_name').order_by('stock_code')
@@ -1433,6 +1593,7 @@ def capture_dividend_history(request):
 
 # 从excel表读取数据导入数据库
 def batch_import(request):
+    funds_list = funds.objects.all()
     if request.method == 'POST':
         form_name = request.POST.get('form_name')
         if form_name == '交易':
@@ -1450,9 +1611,14 @@ def batch_import(request):
             account_type = request.POST.get('account_type')
             print(form_name, account_type)
             # excel2dividend('D:/gp/GP_操作.xlsm', '分红', -1, -1)
+        elif form_name == '基金明细':
+            funds_id = request.POST.get('funds_id')
+            funds_name = funds.objects.get(id=funds_id).funds_name
+            excel2funds('c:/gp/GP（人民币账户）.xls', funds_name, -1, -1)
+            print(form_name, funds_id, funds_name)
         else:
             pass
-    return render(request, templates_path + 'other/batch_import.html')  # 这里用'/'，‘//’或者‘/’代替'\'，防止'\b'被转义
+    return render(request, templates_path + 'other/batch_import.html', locals())  # 这里用'/'，‘//’或者‘/’代替'\'，防止'\b'被转义
 
 
 # 关于

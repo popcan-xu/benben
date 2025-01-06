@@ -105,6 +105,38 @@
                         </div>
                     </div>
                 </form>
+                <form action="" method="post" class="form-horizontal" role="form">
+                    {% csrf_token %}
+                    <input type="hidden" style="visibility: hidden;" name="form_name" value="基金明细" />
+                    <div class="row align-items-center h-100">
+                        <div class="col-md-11">
+                            <div class="row form-group">
+                                <div class="col-md-1 text-right">
+                                    <label for="account_id" class="control-label">基金明细：</label>
+                                </div>
+                                <div class="col-md-11">
+                                    <select class="form-control" name="funds_id" id="funds_id">
+                                        <option disabled selected value="">请选择基金...</option>
+                                        {% for funds in funds_list %}
+                                            {% if funds.funds_name == funds_details.funds.funds_name %}
+                                            <option value="{{ funds.id }}" selected>{{ funds.funds_name }}</option>
+                                            {% else %}
+                                            <option value="{{ funds.id }}">{{ funds.funds_name }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group" style="text-align:center">
+                                <div class="col-md-12">
+                                    <input type="submit" class="btn btn-primary" value="导入">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
             {{ error_info }}
 			{% if messages %}

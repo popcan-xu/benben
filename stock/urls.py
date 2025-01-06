@@ -83,6 +83,16 @@ urlpatterns = [
     path('edit_dividend_history/<int:dividend_history_id>/', edit_dividend_history),
     path('list_dividend_history/', list_dividend_history),
 
+    path('add_funds/', add_funds),
+    path('del_funds/<int:funds_id>/', del_funds),
+    path('edit_funds/<int:funds_id>/', edit_funds),
+    path('list_funds/', list_funds),
+
+    path('add_funds_details/', add_funds_details),
+    path('del_funds_details/<int:funds_details_id>/', del_funds_details),
+    path('edit_funds_details/<int:funds_details_id>/', edit_funds_details),
+    path('list_funds_details/', list_funds_details),
+
     path('capture_dividend_history/', capture_dividend_history),
 
     path('batch_import/', batch_import),
