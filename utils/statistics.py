@@ -41,7 +41,7 @@ def get_position_content(currency):
         # row.append(stock_name)
         for j in account_array:
             try:
-                quantity = position.objects.get(stock=i, account=j).position_quantity
+                quantity = position.objects.filter(position_currency=currency).get(stock=i, account=j).position_quantity
             except:
                 quantity = 0
             row.append(quantity)
