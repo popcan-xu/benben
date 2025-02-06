@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 {% extends 'dashboard/base_dashboard.html' %}
+{% load myfilters%}
 
 {% block page_content %}
 <div class="container-fluid">
@@ -7,7 +8,7 @@
         <div class="card-header py-3">
             <div class="d-sm-flex align-items-center justify-content-between mb-0">
                 <h1 class="h4 mb-0 text-gray-800">基金明细列表</h1>
-                <a href="/benben/add_funds_details/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                <a href="/benben/add_funds_details/0/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
                     <i class="fa fa-plus fa-sm text-white-50"></i> 增加
                 </a>
             </div>
@@ -24,6 +25,8 @@
                             <th>本金</th>
                             <th>份数</th>
                             <th>净值</th>
+                            <th>当期收益</th>
+                            <th>当期收益率</th>
                             <th>收益</th>
                             <th>收益率</th>
                             <th>年化收益率</th>
@@ -42,9 +45,11 @@
                                 <td>{{ funds_details.funds_principal }}</td>
                                 <td>{{ funds_details.funds_PHR }}</td>
                                 <td>{{ funds_details.funds_net_value }}</td>
+                                <td style="color: {{ funds_details.funds_current_profit|text_color }}">{{ funds_details.funds_current_profit }}</td>
+                                <td style="color: {{ funds_details.funds_current_profit_rate|text_color }}">{{ funds_details.funds_current_profit_rate|percent }}%</td>
                                 <td>{{ funds_details.funds_profit }}</td>
-                                <td>{{ funds_details.funds_profit_rate }}</td>
-                                <td>{{ funds_details.funds_annualized_profit_rate }}</td>
+                                <td>{{ funds_details.funds_profit_rate|percent }}%</td>
+                                <td>{{ funds_details.funds_annualized_profit_rate|percent }}%</td>
                                 <td>
                                     <a href="/benben/del_funds_details/{{ funds_details.id|safe }}/" class="btn btn-default btn-sm">
                                         删除

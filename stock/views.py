@@ -6,18 +6,25 @@ from utils.utils import *
 from django.template.defaulttags import register
 import datetime
 
+from django.db.models.functions import ExtractYear
+
 import pathlib
 
 import json
+
+
 
 templates_path = 'dashboard/'
 
 # 总览
 def overview(request):
+    #rate_HKD, rate_USD = get_rate()
     path = pathlib.Path("./templates/dashboard/overview.json")
     if path.is_file() and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
         # 读取overview.json
-        overview = FileOperate(filepath='./templates/dashboard/', filename='overview.json').operation_file()
+        # overview = FileOperate(filepath='./templates/dashboard/', filename='overview.json').operation_file()
+        with open('./templates/dashboard/overview.json', 'r', encoding='utf-8') as f:
+            overview = json.load(f)
     else: # 若json文件不存在or点击了刷新按钮，重写json文件（文件不存在则创建文件），再从json文件中读取overview页面需要的数据
         current_year = datetime.datetime.now().year
         # current_year = 2021
@@ -91,7 +98,7 @@ def overview(request):
         # 写入overview.json
         overview = {}
         # 汇率
-        overview.update(rate_HKD=rate_HKD, rate_USD=rate_USD)
+        #overview.update(rate_HKD=rate_HKD, rate_USD=rate_USD)
         # 总市值、分红收益、当年分红、当年分红率、打新收益、当年打新、持股数量
         overview.update(value_sum=value_sum)
         overview.update(dividend_sum=dividend_sum)
@@ -165,7 +172,113 @@ def overview(request):
         FileOperate(dictData=overview, filepath='./templates/dashboard/',
                     filename='overview.json').operation_file()
 
-    return render(request, templates_path + 'overview.html', {'overview':overview})
+
+    #rate = FileOperate(filepath='./templates/dashboard/', filename='rate.json').operation_file()
+    with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
+        rate = json.load(f)
+    # return render(request, templates_path + 'overview.html', {'overview':overview})
+    return render(request, templates_path + 'overview.html', locals())
+
+
+# 投资记账
+def investment_accounting(request):
+    funds_list = funds.objects.all()
+    # get_quote_tushare()
+    # get_quote_akshare()
+    # rate_HKD, rate_USD = get_rate()
+
+    path = pathlib.Path("./templates/dashboard/baseline.json")
+    if path.is_file() == True and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
+        pass
+    elif path.is_file() == False : # json文件不存在，则创建文件
+        # 获取指数历史数据
+        get_his_index()
+    else: #点击刷新按钮
+        # 获得汇率数据
+        rate_HKD, rate_USD = get_rate()
+        # 更新当年指数数据
+        get_current_index()
+    #rate = FileOperate(filepath='./templates/dashboard/', filename='rate.json').operation_file()
+    with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
+        rate = json.load(f)
+    # baseline = FileOperate(filepath='./templates/dashboard/', filename='baseline.json').operation_file()
+    with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
+        baseline = json.load(f)
+
+
+    return render(request, templates_path + 'investment_accounting.html', locals())
+
+
+def view_funds_details(request, funds_id):
+    annual_data_group = []
+    year_end_date_array = []
+    funds_net_value_array = []
+    baseline_array = []
+    name_array = []
+
+    funds_details_list = funds_details.objects.filter(funds=funds_id)
+    funds_name = funds.objects.get(id=funds_id).funds_name
+    funds_baseline_name = funds.objects.get(id=funds_id).funds_baseline
+    max_date = get_max_date(funds_id)
+    min_date = get_min_date(funds_id)
+    second_max_date = get_second_max_date(funds_id)
+    current_funds_details_object = funds_details_list.get(date=max_date)
+
+    name_array.append(funds_name)
+    name_array.append(funds_baseline_name)
+    path = pathlib.Path("./templates/dashboard/baseline.json")
+    if path.is_file() and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
+        # 读取baseline.json
+        # baseline = FileOperate(filepath='./templates/dashboard/', filename='baseline.json').operation_file()
+        with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
+            baseline = json.load(f)
+
+
+    min_date_baseline_value = get_baseline_closing_price(baseline[funds_baseline_name], int(min_date.year))
+
+    line_value = [funds_net_value_array, baseline_array]
+
+    # 按年份分组并计数
+    rs = funds_details_list.annotate(year=ExtractYear('date')).values('year').annotate(count=Count('id')).order_by('year')
+    max_net_value = 0
+    pre_net_value = 1
+    pre_baseline_net_value = 1
+    for r in rs:
+        year_end_date = get_year_end_date(funds_id, r['year'])
+        funds_value = funds_details_list.get(date=year_end_date).funds_value
+        funds_net_value = funds_details_list.get(date=year_end_date).funds_net_value
+        profit_rate = funds_net_value / pre_net_value - 1
+        pre_net_value = funds_net_value
+        baseline_value = get_baseline_closing_price(baseline[funds_baseline_name], int(r['year']))
+        baseline_net_value = baseline_value / min_date_baseline_value
+        baseline_array.append(baseline_net_value)
+        baseline_profit_rate = baseline_net_value / pre_baseline_net_value -1
+        pre_baseline_net_value = baseline_net_value
+
+        if max_net_value <= funds_net_value:
+            max_net_value = funds_net_value
+        elif max_net_value <= baseline_net_value:
+            max_net_value = baseline_net_value
+
+        item_array = []
+        item_array.append(year_end_date)
+        item_array.append(funds_value)
+        item_array.append(funds_net_value)
+        item_array.append(profit_rate)
+        item_array.append(baseline_value)
+        item_array.append(baseline_net_value)
+        item_array.append(baseline_profit_rate)
+        annual_data_group.append(item_array)
+
+        year_end_date_array.append(float(year_end_date.year))
+        funds_net_value_array.append(float(funds_net_value))
+
+    max_net_value = int(max_net_value + 1)
+
+    line_data = [name_array, line_value, year_end_date_array, max_net_value]
+
+
+    return render(request,  templates_path + 'view_funds_details.html', locals())
 
 
 # 持仓市值
@@ -1374,6 +1487,7 @@ def add_funds(request):
         funds_principal = request.POST.get('funds_principal')
         funds_PHR = request.POST.get('funds_PHR')
         funds_net_value = request.POST.get('funds_net_value')
+        funds_baseline = request.POST.get('funds_baseline')
         funds_script = request.POST.get('funds_script')
         if funds_name.strip() == '':
             error_info = "基金名称不能为空！"
@@ -1386,6 +1500,7 @@ def add_funds(request):
                 funds_principal=funds_principal,
                 funds_PHR=funds_PHR,
                 funds_net_value=funds_net_value,
+                funds_baseline=funds_baseline,
                 funds_script=funds_script
             )
             return redirect('/benben/list_funds/')
@@ -1412,6 +1527,7 @@ def edit_funds(request, funds_id):
         funds_principal = request.POST.get('funds_principal')
         funds_PHR = request.POST.get('funds_PHR')
         funds_net_value = request.POST.get('funds_net_value')
+        funds_baseline = request.POST.get('funds_baseline')
         funds_script = request.POST.get('funds_script')
         funds_object = funds.objects.get(id=id)
         try:
@@ -1421,6 +1537,7 @@ def edit_funds(request, funds_id):
             funds_object.funds_principal = funds_principal
             funds_object.funds_PHR = funds_PHR
             funds_object.funds_net_value = funds_net_value
+            funds_object.funds_baseline = funds_baseline
             funds_object.funds_script = funds_script
             funds_object.save()
         except Exception as e:
@@ -1435,28 +1552,57 @@ def edit_funds(request, funds_id):
 
 
 def list_funds(request):
-    funds_list = funds.objects.all()
+    funds_list = funds.objects.all().order_by('id')
     return render(request,  templates_path + 'backstage/list_funds.html', locals())
 
 
-# 基金表增删改查
-def add_funds_details(request):
+# 基金明细表增删改查
+def add_funds_details(request, funds_id):
     funds_list = funds.objects.all()
     if request.method == 'POST':
         funds_id = request.POST.get('funds_id')
-        date = request.POST.get('date')
+        date = datetime.datetime.strptime(request.POST.get('date'), "%Y-%m-%d").date()
         funds_value = request.POST.get('funds_value')
         funds_in_out = request.POST.get('funds_in_out')
-        funds_principal = request.POST.get('funds_principal')
-        funds_PHR = request.POST.get('funds_PHR')
-        funds_net_value = request.POST.get('funds_net_value')
-        funds_profit = request.POST.get('funds_profit')
-        funds_profit_rate = request.POST.get('funds_profit_rate')
-        funds_annualized_profit_rate = request.POST.get('funds_annualized_profit_rate')
+        #funds_principal = request.POST.get('funds_principal')
+        #funds_PHR = request.POST.get('funds_PHR')
+        #funds_net_value = request.POST.get('funds_net_value')
+        #funds_profit = request.POST.get('funds_profit')
+        #funds_profit_rate = request.POST.get('funds_profit_rate')
+        #funds_annualized_profit_rate = request.POST.get('funds_annualized_profit_rate')
+        #print(funds_id,date,funds_value,funds_in_out)
         if funds_id.strip() == '':
             error_info = "基金名称不能为空！"
             return render(request, templates_path + 'backstage/add_funds_details.html', locals())
         try:
+            funds_value = float(funds_value)
+            funds_in_out = float(funds_in_out)
+            latest_date = get_max_date(funds_id)
+            earliest_date = get_min_date(funds_id)
+            years = float((latest_date - earliest_date).days / 365)
+            #print(latest_date,earliest_date,years)
+            latest_funds_value = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_value)
+            latest_funds_principal = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_principal)
+            latest_funds_PHR = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_PHR)
+            latest_funds_net_value = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_net_value)
+            #print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR)
+
+            funds_principal = latest_funds_principal + funds_in_out
+            funds_net_value = (funds_value - funds_in_out) / latest_funds_PHR
+            funds_PHR = funds_value / funds_net_value
+            funds_current_profit = funds_value - funds_in_out - latest_funds_value
+            funds_current_profit_rate = (funds_net_value - latest_funds_net_value) / latest_funds_net_value
+            funds_profit = funds_value - funds_principal
+            funds_profit_rate = funds_profit / funds_principal
+            #print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR,funds_principal,funds_net_value,funds_PHR,funds_profit,funds_profit_rate)
+            #print(date, earliest_date)
+            years = float((date - earliest_date).days / 365)
+            #print(years)
+            funds_annualized_profit_rate = funds_net_value ** (1 / years) - 1
+            #print(funds_annualized_profit_rate)
+            #funds_annualized_profit_rate = (funds_net_value ** (1 / float(((latest_date - earliest_date).days) / 365)) - 1) * 100
+            #print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR,funds_principal,funds_net_value,funds_PHR,funds_profit,funds_profit_rate,funds_annualized_profit_rate)
+            # 插入一条基金明细记录
             p = funds_details.objects.create(
                 funds_id=funds_id,
                 date=date,
@@ -1465,16 +1611,34 @@ def add_funds_details(request):
                 funds_principal=funds_principal,
                 funds_PHR=funds_PHR,
                 funds_net_value=funds_net_value,
+                funds_current_profit=funds_current_profit,
+                funds_current_profit_rate=funds_current_profit_rate,
                 funds_profit=funds_profit,
                 funds_profit_rate=funds_profit_rate,
                 funds_annualized_profit_rate=funds_annualized_profit_rate
             )
+
+            # 更新一条基金记录
+            funds_object = funds.objects.get(id=funds_id)
+            funds_object.funds_value = funds_value
+            funds_object.funds_principal = funds_principal
+            funds_object.funds_PHR = funds_PHR
+            funds_object.funds_net_value = funds_net_value
+            funds_object.update_date = date
+            funds_object.save()
+
             return redirect('/benben/list_funds_details/')
         except Exception as e:
             error_info = "输入信息有错误！"
+            #print(latest_date, earliest_date, latest_funds_principal, latest_funds_PHR, funds_principal,funds_net_value, funds_PHR, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
             return render(request, templates_path + 'backstage/add_funds_details.html', locals())
         finally:
             pass
+    else:
+        if funds_id != 0:
+            funds_object = funds.objects.get(id=funds_id)
+        else:
+            funds_object = funds.objects.all()
     return render(request, templates_path + 'backstage/add_funds_details.html', locals())
 
 
@@ -1614,7 +1778,8 @@ def batch_import(request):
         elif form_name == '基金明细':
             funds_id = request.POST.get('funds_id')
             funds_name = funds.objects.get(id=funds_id).funds_name
-            excel2funds('c:/gp/GP（人民币账户）.xls', funds_name, -1, -1)
+            file_name = 'c:/gp/GP（' + funds_name + '）.xls'
+            excel2funds(file_name, funds_name, -1, -1)
             print(form_name, funds_id, funds_name)
         else:
             pass

@@ -156,12 +156,14 @@ class dividend_history(models.Model):
 # 基金数据模型
 class funds(models.Model):
     funds_name = models.CharField(max_length=32, verbose_name='基金名称', unique=True, db_index=True)
-    funds_script = models.CharField(max_length=32, verbose_name='备注', null=True)
+    funds_script = models.CharField(max_length=128, verbose_name='备注', null=True)
+    funds_baseline = models.CharField(max_length=32, verbose_name='比较基准', null=True)
     funds_create_date = models.DateField(verbose_name='基金创立日期', null=True, blank=True)
     funds_value = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金价值')
     funds_principal = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金本金')
     funds_PHR = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金份数')
     funds_net_value = models.DecimalField(default=0.0, max_digits=12, decimal_places=4, verbose_name='基金净值')
+    update_date = models.DateField(verbose_name='更新日期', null=True, blank=True)
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
 
 
@@ -174,7 +176,9 @@ class funds_details(models.Model):
     funds_principal = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金本金')
     funds_PHR = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金份数')
     funds_net_value = models.DecimalField(default=0.0, max_digits=12, decimal_places=4, verbose_name='基金净值')
+    funds_current_profit = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金当期收益')
+    funds_current_profit_rate = models.DecimalField(default=0.0, max_digits=12, decimal_places=4, verbose_name='基金当期收益率')
     funds_profit = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金收益')
-    funds_profit_rate = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金收益率')
-    funds_annualized_profit_rate = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金年化收益率')
+    funds_profit_rate = models.DecimalField(default=0.0, max_digits=12, decimal_places=4, verbose_name='基金收益率')
+    funds_annualized_profit_rate = models.DecimalField(default=0.0, max_digits=12, decimal_places=4, verbose_name='基金年化收益率')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')

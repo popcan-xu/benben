@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+{% extends 'dashboard/base_dashboard.html' %}
+{% load myfilters%}
+
+{% block page_content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">{{ funds_name }}</h1>
+        <div class="col-auto">
+            <div class="h6 mb-0 text-gray-500">
+                <a href="/benben/investment_accounting/" style="color: inherit; text-decoration: none;">返回 ></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Card Row -->
+    <div class="row">
+        <!-- 账户概要 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card shadow mb-4" style="width:100%; height:410px; display:block;">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">概要{{ baseline.恒生指数.2010 }}</h6>
+                    <div class="col-auto">
+                        <div class="h6 mb-0 text-gray-500">
+                            <a href="/benben/add_funds_details/{{ funds_id|safe }}/" style="color: inherit; text-decoration: none;">记一笔 ></a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">总资产（元）</div>
+                            <div class="h4 mb-0 text-gray-800 font">{{ current_funds_details_object.funds_value|floatformat:0 }}</div>
+                        </div>
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">本金（元）</div>
+                            <div class="h4 mb-0  text-gray-800">{{ current_funds_details_object.funds_principal|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                    <h6>&nbsp;</h6>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">当期收益（元）（{{ second_max_date|date:'Y-m-d' }}至{{ max_date|date:'Y-m-d' }}）</div>
+                            <div class="h4 mb-0 text-gray-800 font"><span style="color: {{ current_funds_details_object.funds_current_profit|text_color }}">{{ current_funds_details_object.funds_current_profit|floatformat:0 }}</span></div>
+                        </div>
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">当期收益率（%）</div>
+                            <div class="h4 mb-0  text-gray-800"><span style="color: {{ current_funds_details_object.funds_current_profit_rate|text_color }}">{{ current_funds_details_object.funds_current_profit_rate|percent }}</span></div>
+                        </div>
+                    </div>
+                    <h6>&nbsp;</h6>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">累计收益（元）（{{ min_date|date:'Y-m-d' }}/{{ max_date|date:'Y-m-d' }}）</div>
+                            <div class="h4 mb-0 text-gray-800 font">{{ current_funds_details_object.funds_profit|floatformat:0 }}</div>
+                        </div>
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">累计收益率（%）</div>
+                            <div class="h4 mb-0  text-gray-800">{{ current_funds_details_object.funds_profit_rate|percent }}</div>
+                        </div>
+                    </div>
+                    <h6>&nbsp;</h6>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">净值（元）</div>
+                            <div class="h4 mb-0 text-gray-800 font">{{ current_funds_details_object.funds_net_value|floatformat:4 }}</div>
+                        </div>
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">年化收益率（%）</div>
+                            <div class="h4 mb-0  text-gray-800">{{ current_funds_details_object.funds_annualized_profit_rate|percent }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 收益率曲线 -->
+        <div class="col-xl-6 col-lg-4">
+            <div class="card shadow mb-4" style="width:100%; height:410px; display:block;">
+                <!-- Card Header - Dropdown -->
+                <div
+                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">收益率曲线</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div id="line_net_value" style="width:100%; height:310px; display:block;"></div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <div class="row">
+        <!-- 年度收益对比 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">年度收益对比</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div style="height:320px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                        <div class="table-responsive">
+                            <table class="table table-condensed table-hover list_tab">
+                                <thead class="bg-gradient-secondary text-gray-100">
+                                    <tr>
+                                        <th>日期</th>
+                                        <th>基金价值</th>
+                                        <th>净值</th>
+                                        <th>收益率</th>
+                                        <th>{{ funds_baseline_name }}</th>
+                                        <th>{{ funds_baseline_name }}净值</th>
+                                        <th>{{ funds_baseline_name }}收益率</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in annual_data_group %}
+                                        <tr>
+                                            <td>{{ item.0|date:'Y' }}</td>
+                                            <td>{{ item.1|floatformat:0 }}</td>
+                                            <td>{{ item.2|floatformat:4 }}</td>
+                                            <td>{{ item.3|percent }}%</td>
+                                            <td>{{ item.4|floatformat:2 }}</td>
+                                            <td>{{ item.5|floatformat:4 }}</td>
+                                            <td>{{ item.6|percent }}%</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="9">无相关记录！</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 资产构成 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">资产构成</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="h6 font-weight-bold text-danger text-uppercase mb-1">
+                                <a href="/benben/view_funds_details/4" style="color: inherit; text-decoration: none;">资产构成</a>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="h6 mb-0 text-gray-500">
+                                <a href="/benben/view_funds_details/4" style="color: inherit; text-decoration: none;">详情 ></a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Divider -->
+                    <h3>&nbsp;</h3>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">总资产（元）</div>
+                            <div class="h3 mb-0 text-gray-800 font">HK${{ funds_value_HKD|floatformat:0 }}</div>
+                        </div>
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">净值</div>
+                            <div class="h3 mb-0  text-gray-800">{{ funds_net_value_HKD|floatformat:4 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <div class="d-sm-flex align-items-center justify-content-between mb-0">
+                <h5 class="mb-0 text-gray-800">{{ funds_name }}明细列表</h5>
+                <div class="col-auto">
+                    <div class="h6 mb-0 text-gray-500">
+                        <a href="/benben/add_funds_details/{{ funds_id|safe }}/" style="color: inherit; text-decoration: none;">记一笔 ></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="dataTable" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                    <thead class="bg-gradient-secondary text-gray-100">
+                        <tr>
+                            <th>基金名称</th>
+                            <th>日期</th>
+                            <th>基金价值</th>
+                            <th>出入金</th>
+                            <th>本金</th>
+                            <th>份数</th>
+                            <th>净值</th>
+                            <th>当期收益</th>
+                            <th>当期收益率</th>
+                            <th>收益</th>
+                            <th>收益率</th>
+                            <th>年化收益率</th>
+                            <th>操作</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!--#trade_list即为视图函数list_trade中render传入参数//-->
+                        {% for funds_details in funds_details_list %}
+                            <tr>
+                                <td>{{ funds_details.funds.funds_name }}</td>
+                                <td>{{ funds_details.date|date:'Y-m-d' }}</td>
+                                <td>{{ funds_details.funds_value }}</td>
+                                <td>{{ funds_details.funds_in_out }}</td>
+                                <td>{{ funds_details.funds_principal }}</td>
+                                <td>{{ funds_details.funds_PHR }}</td>
+                                <td>{{ funds_details.funds_net_value }}</td>
+                                <td style="color: {{ funds_details.funds_current_profit|text_color }}">{{ funds_details.funds_current_profit }}</td>
+                                <td style="color: {{ funds_details.funds_current_profit_rate|text_color }}">{{ funds_details.funds_current_profit_rate|percent }}%</td>
+                                <td>{{ funds_details.funds_profit }}</td>
+                                <td>{{ funds_details.funds_profit_rate|percent }}%</td>
+                                <td>{{ funds_details.funds_annualized_profit_rate|percent }}%</td>
+                                <td>
+                                    <a href="/benben/del_funds_details/{{ funds_details.id|safe }}/" class="btn btn-default btn-sm">
+                                        删除
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="/benben/edit_funds_details/{{ funds_details.id|safe }}/" class="btn btn-default btn-sm">
+                                        修改
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="9">无相关记录！</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    line_container = document.getElementById('line_net_value');
+    line = echarts.init(line_container, 'white', {renderer: 'canvas'});
+    line_data = {{ line_data|safe }};
+
+    window.onload = function() {
+        draw_line(line, line_container, line_data);
+    };
+
+
+    function draw_line(chart_line, container, line_data) {
+        var option = {
+            title: {
+                text: '',
+                subtext: '',
+                x: 'center'
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                orient: 'horizontal',
+                x: 'left',
+                y: 'top',
+                //data: ['人民币账户','沪深300全收益指数','上证指数']
+                data: line_data[0]
+            },
+            grid: {
+                top: '20%',
+                left: '3%',
+                right: '6%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                name: '年份',
+                type: 'category',
+                boundaryGap: false,
+                //data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月',]
+                data: line_data[2]
+            },
+            yAxis: {
+                name: '净值',
+                type: 'value',
+                min:0, // 配置 Y 轴刻度最小值
+                max:line_data[3],  // 配置 Y 轴刻度最大值
+                splitNumber:7,  // 配置 Y 轴数值间隔
+            },
+            series: [ // 多组折线图数据
+                {
+                    //name: '人民币账户',
+                    name: line_data[0][0],
+                    //data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
+                    data: line_data[1][0],
+                    type: 'line'
+                },
+
+                {
+                    //name: '沪深300全收益指数',
+                    name: line_data[0][1],
+                    //data: [1.0000,0.8842,0.6716,0.7374,0.6981,1.0879,1.1664,1.0584,1.3151,1.0043,1.3978,1.8156,1.7518,1.4043,1.2760,1.5087,1.5087],
+                    data: line_data[1][1],
+                    type: 'line'
+                },
+
+                /*
+                {
+                    //name: '上证指数',
+                    name: line_data[0][2],
+                    //data: [1.0000,0.8569,0.6711,0.6924,0.6457,0.9870,1.0800,0.9471,1.0092,0.7610,0.9307,1.0598,1.1107,0.9427,0.9078,1.0228,1.0228],
+                    data: line_data[1][2],
+                    type: 'line'
+                }
+                */
+            ],
+            color: ['#3366CC', '#FFCC99','#99CC33']
+        };
+        chart_line.setOption(option);
+    }
+
+
+    $(document).ready(function() {
+        $('#dataTable').DataTable( {
+            //先按第一列逆序排序，如果有相同，再按第二列顺序排序
+            //order后面就是一个多维数组，可以自由增删
+            "order": [[ 1, "desc" ]]
+        } );
+    } );
+
+</script>
+
+
+
+<script>
+</script>
+{% endblock %}

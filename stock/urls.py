@@ -15,6 +15,9 @@ urlpatterns = [
     path('index/', overview),
     path('overview/', overview),
 
+    path('investment_accounting/', investment_accounting),
+    path('view_funds_details/<int:funds_id>/', view_funds_details),
+
     path('market_value/', market_value),
 
     path('input_trade/', input_trade),
@@ -88,7 +91,7 @@ urlpatterns = [
     path('edit_funds/<int:funds_id>/', edit_funds),
     path('list_funds/', list_funds),
 
-    path('add_funds_details/', add_funds_details),
+    path('add_funds_details/<int:funds_id>/', add_funds_details),
     path('del_funds_details/<int:funds_details_id>/', del_funds_details),
     path('edit_funds_details/<int:funds_details_id>/', edit_funds_details),
     path('list_funds_details/', list_funds_details),

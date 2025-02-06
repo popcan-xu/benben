@@ -4,6 +4,12 @@ html,body{
     height:100%;
 }
 
+.spacer {
+     padding-top: 80px;
+     padding-bottom: 40px
+}
+
+
 .h.jumbotron {
     padding: 12px;
     margin: 8px;

@@ -9,6 +9,11 @@ import django
 import datetime, time
 import pathlib
 import requests
+from django.db.models import Max, Min
+
+import tushare as ts
+import akshare as ak
+import pandas as pd
 
 import re
 
@@ -21,7 +26,7 @@ import re
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import market, stock, trade, position, dividend, subscription
+from stock.models import market, stock, trade, position, dividend, subscription, funds_details
 
 
 # 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
@@ -302,9 +307,26 @@ def get_quote_gtimg(stock_code):
         color = 'grey'
     return price, increase, color
 
+# 从akshare获取汇率数据
+def get_rate():
+    df = ak.fx_quote_baidu(symbol="人民币")
+    rate_HKD = 1 / float(df.query('名称=="人民币港元"')['最新价'].iloc[0])
+    rate_USD = 1 / float(df.query('名称=="人民币美元"')['最新价'].iloc[0])
+    # 1. 读取JSON文件
+    with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    # 2. 修改汇率数据
+    data["rate_HKD"] = rate_HKD
+    data["rate_USD"] = rate_USD
+    data["modified_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # 3. 写回JSON文件（保留原有格式）
+    with open('./templates/dashboard/rate.json', 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)  # 保持中文可读性
+
+    return rate_HKD, rate_USD
 
 # 从https://wocha.cn/网站抓取汇率数据
-def get_rate():
+def get_rate_wocha():
     rate_HKD = 1.0
     rate_USD = 1.0
     path = pathlib.Path("./templates/dashboard/rate.json")
@@ -341,7 +363,7 @@ def get_rate():
 
 
 # 从https://qq.ip138.com/网站抓取汇率数据
-def get_rate_old():
+def get_rate_ip138():
     rate_HKD = 1.0
     rate_USD = 1.0
     path = pathlib.Path("./templates/dashboard/rate.json")
@@ -798,6 +820,161 @@ def getDateRate_usd(date):
 
     return usd_rate
 
+# 从指数历史数据生成json文件
+def get_his_index():
+    # 沪深300指数
+    item = []
+    data = []
+    df = ak.stock_zh_index_daily_em(symbol="sh000300").sort_values(by='date',ascending=False)
+    current_year = datetime.datetime.strptime(df.head(1)['date'].iloc[0], "%Y-%m-%d").year
+    current_latest = float(df.head(1)['close'].iloc[0])
+    item.append(current_year)
+    item.append(current_latest)
+    data.append(item)
+    item = []
+    for index in df.index:
+        row = df.loc[index]
+        year = datetime.datetime.strptime(row['date'], "%Y-%m-%d").year
+        if year != current_year:
+            current_year = year
+            item.append(year)
+            item.append(float(row['close']))
+            data.append(item)
+            item = []
+    df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
+    dict_data_HS300 = df.to_dict(orient='records')
+
+
+    # 恒生指数
+    item = []
+    data = []
+    df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date',ascending=False)
+    current_year = datetime.datetime.strptime(df.head(1)['date'].iloc[0], "%Y-%m-%d").year
+    current_latest = float(df.head(1)['latest'].iloc[0])
+    item.append(current_year)
+    item.append(current_latest)
+    data.append(item)
+    item = []
+    for index in df.index:
+        row = df.loc[index]
+        year = datetime.datetime.strptime(row['date'], "%Y-%m-%d").year
+        if year != current_year:
+            current_year = year
+            item.append(year)
+            item.append(float(row['latest']))
+            data.append(item)
+            item = []
+    df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
+    dict_data_HSI = df.to_dict(orient='records')
+
+    # 标普500指数
+    item = []
+    data = []
+    df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date',ascending=False) #标普500指数历史
+    current_year = df.head(1)['date'].iloc[0].year
+    current_close = float(df.head(1)['close'].iloc[0])
+    item.append(current_year)
+    item.append(current_close)
+    data.append(item)
+    item = []
+    for index in df.index:
+        row = df.loc[index]
+        year = row['date'].year
+        if year != current_year:
+            current_year = year
+            item.append(year)
+            item.append(float(row['close']))
+            data.append(item)
+            item = []
+    df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
+    dict_data_INX = df.to_dict(orient='records')
+
+    baseline = {}
+    baseline.update(沪深300指数=dict_data_HS300)
+    baseline.update(恒生指数=dict_data_HSI)
+    baseline.update(标普500指数=dict_data_INX)
+    # 打时间戳
+    baseline.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    # 写入json文件
+    FileOperate(dictData=baseline, filepath='./templates/dashboard/', filename='baseline.json').operation_file()
+
+    return
+
+# 从指数当年数据更新json文件
+def get_current_index():
+    # 沪深300指数
+    df = ak.stock_zh_index_daily_em(symbol="sh000300").sort_values(by='date',ascending=False).head(1)
+    current_year_HS300 = datetime.datetime.strptime(df['date'].iloc[0], "%Y-%m-%d").year
+    current_HS300 = float(df['close'].iloc[0])
+
+
+    # 恒生指数
+    df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date',ascending=False).head(1)
+    current_year_HSI = datetime.datetime.strptime(df['date'].iloc[0], "%Y-%m-%d").year
+    current_HSI = float(df['latest'].iloc[0])
+
+    # 标普500指数
+    df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date',ascending=False).head(1)
+    current_year_INX = df['date'].iloc[0].year
+    current_INX = float(df['close'].iloc[0])
+
+    # 1. 读取JSON文件
+    #baseline = FileOperate(filepath='./templates/dashboard/', filename='baseline.json').operation_file()
+    with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
+        baseline = json.load(f)
+
+    # 2. 查找并修改当年数据
+    for item in baseline["沪深300指数"]:
+        if item["Year"] == current_year_HS300:
+            item["ClosingPrice"] = current_HS300  # 替换成你的新数值
+            break  # 找到后立即退出循环
+    for item in baseline["恒生指数"]:
+        if item["Year"] == current_year_HSI:
+            item["ClosingPrice"] = current_HSI  # 替换成你的新数值
+            break  # 找到后立即退出循环
+    for item in baseline["标普500指数"]:
+        if item["Year"] == current_year_INX:
+            item["ClosingPrice"] = current_INX  # 替换成你的新数值
+            break  # 找到后立即退出循环
+    baseline["modified_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # 3. 写回JSON文件（保留原有格式）
+    with open('./templates/dashboard/baseline.json', 'w', encoding='utf-8') as f:
+        json.dump(baseline, f, ensure_ascii=False, indent=2)  # 保持中文可读性
+
+    return
+
+def get_baseline_closing_price(baseline_object, target_year):
+    closing_price = 0
+    for r in baseline_object:
+        if r['Year'] == target_year:
+            closing_price = r['ClosingPrice']
+            break
+    return float(closing_price)
+
+
+# 从基金明细表获取当前基金的最大记账日期
+def get_max_date(funds_id):
+    max_date = funds_details.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
+    return max_date
+
+# 从基金明细表获取当前基金的最小记账日期
+def get_min_date(funds_id):
+    min_date = funds_details.objects.filter(funds_id=funds_id).aggregate(min_date=Min('date'))['min_date']
+    return min_date
+
+# 从基金明细表获取当前基金的第二大记账日期
+def get_second_max_date(funds_id):
+    max_date = funds_details.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
+    second_max_date = funds_details.objects.filter(funds_id=funds_id).exclude(date=max_date).order_by('-date').values_list('date', flat=True)[0]
+    # second_max_date = funds_details.objects.filter(funds_id=funds_id).order_by('-date').values_list('date', flat=True)[1]
+    # third_max_date = funds_details.objects.filter(funds_id=funds_id).order_by('-date').values_list('date', flat=True)[2]
+    return second_max_date
+
+# 从基金明细表获取指定年份的年末日期
+def get_year_end_date(funds_id, year):
+    year_end_date = None
+    year_end_date = funds_details.objects.filter(funds_id=funds_id, date__year=year).aggregate(max_date=Max('date'))['max_date']
+    return year_end_date
 
 
 
@@ -846,3 +1023,146 @@ def timeStamp13_2_date(timeStamp):
         return time.strftime("%Y-%m-%d", time.localtime(timeStamp / 1000))
     else:
         return 'None'
+
+
+
+# 从tushare获取股票行情
+def get_quote_tushare():
+    # 设置 Tushare Pro token
+    ts.set_token('02b13d21dd01b2682f10173d8003b92e1a8ff778695b8cf929169250')
+
+    # 初始化 Tushare Pro API
+    pro = ts.pro_api()
+
+    # 拉取数据
+    data = pro.hk_daily(**{
+        "ts_code": "00700.HK",  # 股票代码
+        "start_date": 20250115,  # 开始日期
+        "end_date": 20250120,  # 结束日期
+    }, fields=[
+        "ts_code",  # 交易日期
+        "open",  # 开盘价
+        "high",  # 最高价
+        "low",  # 最低价
+        "close",  # 收盘价
+        "pct_chg",  # 涨跌幅
+        "vol",  # 成交量
+        "trade_date"  # 交易日期
+    ])
+
+    # 显示数据
+    print(data)
+    print(data.iloc[0].iloc[4])
+    print(data.iloc[0,4])
+
+
+    df = pro.daily(ts_code='600519.SH', start_date='20230103', end_date='20230105')
+    print("pro.daily(ts_code='600519.SH', start_date='20230103', end_date='20230105')")
+    print(df.tail())
+    print(df['close'])
+
+    df = pro.hk_daily(ts_code='00700.HK', start_date='20190904', end_date='20190905')
+    print("pro.hk_daily(ts_code='00700.HK', start_date='20190904', end_date='20190905')")
+    print(df)
+    print(df['close'])
+
+    # sina数据
+    df = ts.realtime_quote(ts_code='511880.SH,200596.SZ,000001.SZ,000300.SH')
+    print("ts.realtime_quote(ts_code='600000.SH,600036.SH,000001.SZ,000300.SH')")
+    print(df.iloc[0,6])
+
+    # 东财数据
+    df = ts.realtime_quote(ts_code='511880.SH', src='dc')
+    print("ts.realtime_quote(ts_code='600000.SH', src='dc')")
+    print(df.iloc[0].iloc[6])
+
+
+    df = ts.get_realtime_quotes('200596')[['name', 'price', 'pre_close', 'date', 'time']]
+    #df1 = pd.DataFrame(df)
+    print("ts.get_realtime_quotes('600000')[['name', 'price', 'pre_close', 'date', 'time']]")
+    print(df['name'].iloc[0])
+    print(df['date'].iloc[0])
+    print(df['price'].iloc[0])
+    #print(df)
+
+    #stock_basic = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
+    #print(stock_basic.head())
+    return
+
+
+
+def get_quote_akshare():
+    # https://finance.sina.com.cn/realstock/company/shh00300/nc.shtml
+    '''
+    stock_zh_a_hist_df = ak.stock_zh_a_hist(symbol="600519", period="daily", start_date="20250101", end_date="20250120", adjust="")
+    print(stock_zh_a_hist_df)
+    print(stock_zh_a_hist_df['收盘'])
+
+    stock_hk_hist_df = ak.stock_hk_hist(symbol="00700", start_date="20250101", end_date="20250120", adjust="")
+    print(stock_hk_hist_df)
+    print(stock_hk_hist_df['收盘'])
+
+    stock_zh_b_daily_df = ak.stock_zh_b_daily(symbol='sz200596', start_date='20250101', end_date='20250120', adjust='')
+    print(stock_zh_b_daily_df)
+
+    fund_etf_hist_em_df = ak.fund_etf_hist_em(symbol="000300", period="daily", start_date="20250101", end_date="20250120", adjust="")
+    print(fund_etf_hist_em_df)
+
+    fund_etf_hist_em_df = ak.fund_etf_hist_em(symbol="511880", period="daily", start_date="20250101", end_date="20250120", adjust="")
+    print(fund_etf_hist_em_df)
+
+    #index_investing_global_df = ak.index_investing_global(country="美国", index_name="VIX恐慌指数", period="每月", start_date="2005-01-01", end_date="2020-06-05")
+    #print(index_investing_global_df)
+
+    df = ak.stock_zh_index_spot_sina()
+    print(df[df['代码'] == 'sh000300'])
+    print(df[df['名称'] == '沪深300全收益'])
+
+
+    df = ak.stock_zh_index_daily_em(symbol="h00300")
+    print(df)
+
+    df = ak.stock_hk_index_spot_sina() # 恒生指数实时行情新浪
+    print(df[df['代码'] == 'HSI']['最新价'])
+
+    index_us_stock_sina_df = ak.index_us_stock_sina(symbol=".INX") #标普500指数历史
+    print(index_us_stock_sina_df)
+
+    stock_hk_index_daily_sina_df = ak.stock_hk_index_daily_sina(symbol="HSI") # 恒生指数历史行情
+    print(stock_hk_index_daily_sina_df)
+
+    stock_zh_index_daily_em_df = ak.stock_hk_index_daily_em(symbol="HSI")
+    print(stock_zh_index_daily_em_df)
+
+    df = ak.stock_hk_index_spot_em() # 恒生指数实时行情东财 延时短
+    print(df[df['代码'] == 'HSI']['最新价'])
+    '''
+
+    #currency_boc_safe_df = ak.currency_boc_safe(start_date="20250101", end_date="20250120")
+    #print(currency_boc_safe_df['美元'])
+
+    #stock_zh_index_spot_em_df = ak.stock_zh_index_spot_em(symbol="深证系列指数")
+    #print(stock_zh_index_spot_em_df)
+
+    df = ak.fx_quote_baidu(symbol="人民币")
+    print(df)
+    print(df[df['名称'] == '人民币港元']['最新价'].iloc[0])
+    print(df.query('名称=="人民币港元"')['最新价'].iloc[0])
+    print(df.query('名称=="人民币美元"')['最新价'].iloc[0])
+
+    df = ak.currency_boc_safe() #所有汇率历史数据
+    print(df)
+
+    df = ak.fx_spot_quote()
+    print(df[df['货币对'] == 'USD/CNY']['卖报价'].iloc[0])
+    print(df[df['货币对'] == 'HKD/CNY']['卖报价'].iloc[0])
+
+    df = ak.currency_boc_sina(symbol="美元", start_date="20250125", end_date="20250204")
+    print(df)
+
+    #df = ak.currency_convert(base="USD", to="CNY", amount="100")
+    #print(df)
+
+    return
+
+
