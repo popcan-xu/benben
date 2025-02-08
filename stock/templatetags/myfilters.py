@@ -12,6 +12,12 @@ def text_color(value):
     else:
         return ''
 
+@register.filter
+def get_type(value):
+    return type(value).__name__
+
 register.filter(percent)
 
 register.filter(text_color)
+
+register.filter(get_type)

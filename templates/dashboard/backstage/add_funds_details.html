@@ -32,7 +32,7 @@
                                     {% endfor %}
                                     </select>
                                 {% else %} {# 其他参数代表从view_funds_details.html点击记一笔链接 #}
-                                    <select class="form-control" name="funds_id" id="funds_id" disabled>
+                                    <select class="form-control" name="funds_id" id="funds_id">
                                     {% for funds in funds_list %}
                                         {% if funds.id == funds_object.id %}
                                             <option value="{{ funds.id }}" selected>{{ funds.funds_name }}</option>
