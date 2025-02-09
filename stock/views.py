@@ -232,7 +232,7 @@ def view_funds_details(request, funds_id):
     name_list.append(funds_name)
     name_list.append(funds_baseline_name)
     path = pathlib.Path("./templates/dashboard/baseline.json")
-    if path.is_file(): # 若json文件存，从json文件中读取overview页面需要的数据以提高性能
+    if path.is_file(): # 若json文件存，从json文件中读取页面需要的数据以提高性能
         # 读取baseline.json
         with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
             baseline = json.load(f)
@@ -317,9 +317,9 @@ def view_funds_details(request, funds_id):
         baseline_profit_rate_list.append(float(Decimal(baseline_profit_rate * 100).quantize(Decimal('0.00'))))
 
     line_value = [funds_net_value_list, baseline_net_value_list]
-    bar_value = [funds_profit_rate_list[1:], baseline_profit_rate_list[1:]] #柱图第一列去掉
+    bar_value = [funds_profit_rate_list[1:], baseline_profit_rate_list[1:]] # 柱图第一列去掉
     line_data = [name_list, line_value, year_end_date_list]
-    bar_data = [name_list, bar_value, year_end_date_list[1:]]
+    bar_data = [name_list, bar_value, year_end_date_list[1:]] # 柱图第一列去掉
 
     return render(request,  templates_path + 'view_funds_details.html', locals())
 
