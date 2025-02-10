@@ -82,7 +82,7 @@
     },
     {
       "Year": 2025,
-      "ClosingPrice": 3892.7
+      "ClosingPrice": 3901.06
     }
   ],
   "恒生指数": [
@@ -228,7 +228,7 @@
     },
     {
       "Year": 2025,
-      "ClosingPrice": 21133.54
+      "ClosingPrice": 21521.98
     }
   ],
   "标普500指数": [
@@ -318,8 +318,8 @@
     },
     {
       "Year": 2025,
-      "ClosingPrice": 6083.5698
+      "ClosingPrice": 6025.9902
     }
   ],
-  "modified_time": "2025-02-07 17:10:33"
+  "modified_time": "2025-02-10 17:29:20"
 }

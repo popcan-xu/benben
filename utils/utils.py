@@ -11,7 +11,7 @@ import pathlib
 import requests
 from django.db.models import Max, Min
 
-import tushare as ts
+# import tushare as ts
 import akshare as ak
 import pandas as pd
 

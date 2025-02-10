@@ -44,23 +44,27 @@
                     <h6>&nbsp;</h6>
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">当期收益（元）（{{ second_max_date|date:'Y-m-d' }}至{{ max_date|date:'Y-m-d' }}）</div>
+                            <div class="h6 mb-0 text-gray-500">当期收益（元）</div>
                             <div class="h4 mb-0 text-gray-800 font"><span style="color: {{ current_funds_details_object.funds_current_profit|text_color }}">{{ current_funds_details_object.funds_current_profit|floatformat:0 }}</span></div>
+                            <div class="small mb-0 text-gray-500">注：{{ second_max_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
                         </div>
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">当期收益率（%）</div>
                             <div class="h4 mb-0  text-gray-800"><span style="color: {{ current_funds_details_object.funds_current_profit_rate|text_color }}">{{ current_funds_details_object.funds_current_profit_rate|percent }}</span></div>
+                            <div class="small mb-0 text-gray-500">注：{{ second_max_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
                         </div>
                     </div>
                     <h6>&nbsp;</h6>
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计收益（元）（{{ min_date|date:'Y-m-d' }}/{{ max_date|date:'Y-m-d' }}）</div>
+                            <div class="h6 mb-0 text-gray-500">累计收益（元）</div>
                             <div class="h4 mb-0 text-gray-800 font">{{ current_funds_details_object.funds_profit|floatformat:0 }}</div>
+                            <div class="small mb-0 text-gray-500">注：{{ min_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
                         </div>
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">累计收益率（%）</div>
                             <div class="h4 mb-0  text-gray-800">{{ current_funds_details_object.funds_profit_rate|percent }}</div>
+                            <div class="small mb-0 text-gray-500">注：{{ min_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
                         </div>
                     </div>
                     <h6>&nbsp;</h6>
