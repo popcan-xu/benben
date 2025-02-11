@@ -19,7 +19,7 @@ templates_path = 'dashboard/'
 
 # 总览
 def overview(request):
-    #rate_HKD, rate_USD = get_rate()
+    rate_HKD, rate_USD = get_rate()
     path = pathlib.Path("./templates/dashboard/overview.json")
     if path.is_file() and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
         # 读取overview.json
@@ -30,7 +30,7 @@ def overview(request):
         current_year = datetime.datetime.now().year
         # current_year = 2021
         # 获得汇率数据
-        rate_HKD, rate_USD = get_rate()
+        # rate_HKD, rate_USD = get_rate()
         # 获得人民币、港元、美元分红总收益
         dividend_sum_CNY = dividend.objects.filter(dividend_currency=1).aggregate(amount=Sum('dividend_amount'))['amount']
         dividend_sum_HKD = dividend.objects.filter(dividend_currency=2).aggregate(amount=Sum('dividend_amount'))['amount']
@@ -175,8 +175,12 @@ def overview(request):
 
 
     #rate = FileOperate(filepath='./templates/dashboard/', filename='rate.json').operation_file()
-    with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
-        rate = json.load(f)
+    #path = pathlib.Path("./templates/dashboard/rate.json")
+    #if path.is_file() == True and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
+    #    with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
+    #        rate = json.load(f)
+    #else:
+    #    pass
     # return render(request, templates_path + 'overview.html', {'overview':overview})
     return render(request, templates_path + 'overview.html', locals())
 
@@ -186,7 +190,7 @@ def investment_accounting(request):
     funds_list = funds.objects.all()
     # get_quote_tushare()
     # get_quote_akshare()
-    # rate_HKD, rate_USD = get_rate()
+    rate_HKD, rate_USD = get_rate()
 
     path = pathlib.Path("./templates/dashboard/baseline.json")
     if path.is_file() == True and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
@@ -200,8 +204,8 @@ def investment_accounting(request):
         # 更新当年指数数据
         get_current_index()
     #rate = FileOperate(filepath='./templates/dashboard/', filename='rate.json').operation_file()
-    with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
-        rate = json.load(f)
+    #with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
+    #    rate = json.load(f)
     # baseline = FileOperate(filepath='./templates/dashboard/', filename='baseline.json').operation_file()
     with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
         baseline = json.load(f)

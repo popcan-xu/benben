@@ -309,20 +309,42 @@ def get_quote_gtimg(stock_code):
 
 # 从akshare获取汇率数据
 def get_rate():
-    df = ak.fx_quote_baidu(symbol="人民币")
-    rate_HKD = 1 / float(df.query('名称=="人民币港元"')['最新价'].iloc[0])
-    rate_USD = 1 / float(df.query('名称=="人民币美元"')['最新价'].iloc[0])
-    # 1. 读取JSON文件
-    with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    # 2. 修改汇率数据
-    data["rate_HKD"] = rate_HKD
-    data["rate_USD"] = rate_USD
-    data["modified_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # 3. 写回JSON文件（保留原有格式）
-    with open('./templates/dashboard/rate.json', 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)  # 保持中文可读性
-
+    path = pathlib.Path("./templates/dashboard/rate.json")
+    if path.is_file() == True: # 若json文件存在
+        print("rate.json存在")
+        # 1. 读取JSON文件
+        with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        time1 = datetime.datetime.strptime(data['modified_time'], "%Y-%m-%d %H:%M:%S")
+        time2 = datetime.datetime.now()
+        if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900):
+            print("间隔大于15")
+            df = ak.fx_quote_baidu(symbol="人民币")
+            rate_HKD = 1 / float(df.query('名称=="人民币港元"')['最新价'].iloc[0])
+            rate_USD = 1 / float(df.query('名称=="人民币美元"')['最新价'].iloc[0])
+            # 2. 修改汇率数据
+            data["rate_HKD"] = rate_HKD
+            data["rate_USD"] = rate_USD
+            data["modified_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # 3. 写回JSON文件（保留原有格式）
+            with open('./templates/dashboard/rate.json', 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)  # 保持中文可读性
+        else:
+            print("间隔小于15")
+            rate_HKD = data["rate_HKD"]
+            rate_USD = data["rate_USD"]
+    else:
+        print("rate.json不存在")
+        df = ak.fx_quote_baidu(symbol="人民币")
+        rate_HKD = 1 / float(df.query('名称=="人民币港元"')['最新价'].iloc[0])
+        rate_USD = 1 / float(df.query('名称=="人民币美元"')['最新价'].iloc[0])
+        rate = {}
+        rate.update(rate_HKD=rate_HKD)
+        rate.update(rate_USD=rate_USD)
+        rate.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        # 写入json文件
+        FileOperate(dictData=rate, filepath='./templates/dashboard/',
+                    filename='rate.json').operation_file()
     return rate_HKD, rate_USD
 
 # 从https://wocha.cn/网站抓取汇率数据
