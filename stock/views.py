@@ -188,8 +188,6 @@ def overview(request):
 # 投资记账
 def investment_accounting(request):
     funds_list = funds.objects.all()
-    # get_quote_tushare()
-    # get_quote_akshare()
     rate_HKD, rate_USD = get_rate()
 
     path = pathlib.Path("./templates/dashboard/baseline.json")
@@ -325,6 +323,12 @@ def view_funds_details(request, funds_id):
     line_data = [name_list, line_value, year_end_date_list]
     bar_data = [name_list, bar_value, year_end_date_list[1:]] # 柱图第一列去掉
 
+    # 生成资产变化日历字典数据assetChanges
+    assetChanges = {}
+    for rs in funds_details_list:
+        date = rs.date.strftime("%Y-%m-%d")
+        amount = float(rs.funds_current_profit)
+        assetChanges[date] = amount
     return render(request,  templates_path + 'view_funds_details.html', locals())
 
 
@@ -1835,8 +1839,23 @@ def batch_import(request):
 
 # 关于
 def about(request):
-    return render(request, templates_path + 'about.html')
+    return render(request, templates_path + 'about.html', locals())
 
+
+# 测试
+def test(request):
+    # get_akshare()
+    # price, increase, color = get_quote_akshare('00700')
+    # print(price, increase, color)
+    # price, increase, color = get_quote_akshare("511880")
+    # print(price, increase, color)
+    # price, increase, color = get_quote_akshare("200596")
+    # print(price, increase, color)
+    # price, increase, color = get_quote_akshare("600519")
+    # print(price, increase, color)
+    # price, increase, color = get_quote_akshare("000002")
+    # print(price, increase, color)
+    return render(request, templates_path + 'test.html', locals())
 
 # 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值
 @register.filter

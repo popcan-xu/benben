@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资产变化日历</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* 保持原有样式不变 */
+        .date-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .month-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .day-cell, .month-cell {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 14px;
+            min-height: 80px;
+            position: relative;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .asset-value {
+            margin-top: 5px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .week-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .week-day {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        .summary {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+        }
+        .current-day {
+            background-color: #87bdd8 !important;
+            color: #333 !important;
+        }
+        .positive {
+            background-color: #ffe5e5 !important;
+            color: #b30000 !important;
+        }
+        .negative {
+            background-color: #e5ffe5 !important;
+            color: #008000 !important;
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+        .day-cell:hover, .month-cell:hover {
+            transform: scale(1.05);
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center mb-4">
+                    <div class="col-auto pr-0">
+                        <div class="btn-group" id="viewSwitch">
+                            <button class="btn btn-outline-primary active" data-type="month">月视图</button>
+                            <button class="btn btn-outline-primary" data-type="year">年视图</button>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="text-center">
+                            <span id="timeDisplay"></span>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" id="prevBtn">上一周期</button>
+                        <button class="btn btn-primary" id="nextBtn">下一周期</button>
+                    </div>
+                </div>
+                <div class="week-days" id="weekHeader">
+                    <div class="week-day">一</div>
+                    <div class="week-day">二</div>
+                    <div class="week-day">三</div>
+                    <div class="week-day">四</div>
+                    <div class="week-day">五</div>
+                    <div class="week-day">六</div>
+                    <div class="week-day">日</div>
+                </div>
+                <div class="date-grid" id="calendarGrid"></div>
+                <div class="summary" id="periodSummary"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 每日资产变化数据
+        const assetChanges = {
+            "2024-10-15": 5000,
+            "2024-10-20": -3000,
+            "2024-11-05": 8000,
+            "2024-11-18": -4500,
+            "2024-12-10": 123456,
+            "2025-01-08": -75123,
+            "2025-02-14": 18000
+        };
+
+        // 初始化当前日期
+        const today = new Date();
+        let currentYear = today.getFullYear();
+        let currentMonth = today.getMonth();
+        let currentView = 'month';
+
+        function formatAmount(amount) {
+            const isNegative = amount < 0;
+            const absAmount = Math.abs(amount);
+            let formatted = absAmount >= 10000
+                ? `${(absAmount/10000).toFixed(2)}万`
+                : absAmount.toLocaleString();
+            return `${isNegative ? '-' : ''}${formatted}`;
+        }
+
+        function getMonthlyTotal(year, month) {
+            const monthKey = `${year}-${String(month+1).padStart(2,'0')}`;
+            return Object.entries(assetChanges)
+                .filter(([date]) => date.startsWith(monthKey))
+                .reduce((sum, [_, amount]) => sum + amount, 0);
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            if(currentView === 'month') {
+                renderMonthView();
+            } else {
+                renderYearView();
+            }
+
+            updateNavigation();
+            updateSummary();
+        }
+
+        function renderMonthView() {
+            const grid = document.getElementById('calendarGrid');
+            grid.className = 'date-grid';
+            document.getElementById('weekHeader').style.display = 'grid';
+
+            const dates = getDaysOfMonth(currentYear, currentMonth);
+            dates.forEach(date => {
+                const cell = document.createElement('div');
+                cell.className = 'day-cell';
+
+                if(date.getMonth() === currentMonth) {
+                    const dateString = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+                    const dailyChange = assetChanges[dateString] || 0;
+
+                    if(dailyChange > 0) {
+                        cell.classList.add('positive');
+                    } else if(dailyChange < 0) {
+                        cell.classList.add('negative');
+                    }
+
+                    cell.textContent = date.getDate();
+
+                    const valueSpan = document.createElement('span');
+                    valueSpan.className = 'asset-value';
+                    valueSpan.textContent = formatAmount(dailyChange);
+                    cell.appendChild(valueSpan);
+
+                    if(date.toDateString() === today.toDateString()) {
+                        cell.classList.add('current-day');
+                    }
+                } else {
+                    cell.classList.add('bg-light', 'text-muted');
+                }
+
+                grid.appendChild(cell);
+            });
+
+            document.getElementById('timeDisplay').textContent =
+                `${currentYear}年 ${currentMonth + 1}月`;
+        }
+
+        function renderYearView() {
+            const grid = document.getElementById('calendarGrid');
+            grid.className = 'date-grid month-grid';
+            document.getElementById('weekHeader').style.display = 'none';
+
+            for(let month = 0; month < 12; month++) {
+                const cell = document.createElement('div');
+                cell.className = 'month-cell';
+                cell.dataset.year = currentYear;
+                cell.dataset.month = month;
+
+                const monthlyTotal = getMonthlyTotal(currentYear, month);
+                if(monthlyTotal > 0) {
+                    cell.classList.add('positive');
+                } else if(monthlyTotal < 0) {
+                    cell.classList.add('negative');
+                }
+
+                cell.textContent = `${month + 1}月`;
+
+                const valueSpan = document.createElement('span');
+                valueSpan.className = 'asset-value';
+                valueSpan.textContent = formatAmount(monthlyTotal);
+                cell.appendChild(valueSpan);
+
+                cell.addEventListener('click', handleMonthClick);
+                grid.appendChild(cell);
+            }
+
+            document.getElementById('timeDisplay').textContent = `${currentYear}年`;
+        }
+
+        function handleMonthClick(event) {
+            const cell = event.currentTarget;
+            currentYear = parseInt(cell.dataset.year);
+            currentMonth = parseInt(cell.dataset.month);
+            currentView = 'month';
+
+            // 手动更新视图切换按钮状态
+            document.querySelectorAll('#viewSwitch button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === 'month');
+            });
+
+            renderCalendar();
+        }
+
+        function updateSummary() {
+            let total = 0;
+
+            if(currentView === 'month') {
+                total = getMonthlyTotal(currentYear, currentMonth);
+            } else {
+                for(let m = 0; m < 12; m++) {
+                    total += getMonthlyTotal(currentYear, m);
+                }
+            }
+
+            document.getElementById('periodSummary').textContent =
+                `${currentView === 'month' ? '本月' : '本年'}资产变化汇总：${formatAmount(total)}`;
+        }
+
+        function updateNavigation() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if(currentView === 'month') {
+                prevBtn.textContent = '上一月';
+                nextBtn.textContent = '下一月';
+                const isCurrentMonth = currentYear === today.getFullYear() &&
+                                    currentMonth === today.getMonth();
+                nextBtn.disabled = isCurrentMonth;
+            } else {
+                prevBtn.textContent = '上一年';
+                nextBtn.textContent = '下一年';
+                nextBtn.disabled = currentYear >= today.getFullYear();
+            }
+        }
+
+        function getDaysOfMonth(year, month) {
+            const firstDay = new Date(year, month, 1);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+            const dates = [];
+
+            for(let i = 0; i < startDay; i++) {
+                dates.push(new Date(year, month, -i));
+            }
+            for(let i = 1; i <= daysInMonth; i++) {
+                dates.push(new Date(year, month, i));
+            }
+            while(dates.length % 7 !== 0) {
+                dates.push(new Date(year, month + 1, dates.length % 7 + 1));
+            }
+
+            return dates;
+        }
+
+        function prevPeriod() {
+            if(currentView === 'month') {
+                currentMonth--;
+                if(currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+            } else {
+                currentYear--;
+            }
+            renderCalendar();
+        }
+
+        function nextPeriod() {
+            if(currentView === 'month') {
+                const nextDate = new Date(currentYear, currentMonth + 1);
+                if(nextDate <= new Date(today.getFullYear(), today.getMonth() + 1)) {
+                    currentMonth++;
+                    if(currentMonth > 11) {
+                        currentMonth = 0;
+                        currentYear++;
+                    }
+                }
+            } else {
+                currentYear++;
+            }
+            renderCalendar();
+        }
+
+        // 事件监听
+        document.getElementById('prevBtn').addEventListener('click', prevPeriod);
+        document.getElementById('nextBtn').addEventListener('click', nextPeriod);
+
+        document.querySelectorAll('#viewSwitch button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const newView = this.dataset.type;
+                if(newView !== currentView) {
+                    currentView = newView;
+                    document.querySelectorAll('#viewSwitch button').forEach(b =>
+                        b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    if(currentView === 'year') {
+                        // 保留当前年份
+                    } else {
+                        // 仅在主动切换视图时重置到当前年月
+                        if(this.dataset.type === 'month') {
+                            currentYear = today.getFullYear();
+                            currentMonth = today.getMonth();
+                        }
+                    }
+                    renderCalendar();
+                }
+            });
+        });
+
+        // 初始渲染
+        renderCalendar();
+    </script>
+</body>
+</html>

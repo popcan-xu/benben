@@ -101,5 +101,6 @@ urlpatterns = [
     path('batch_import/', batch_import),
 
     path('about/', about),
+    path('test/', test),
 
 ]
