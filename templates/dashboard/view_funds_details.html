@@ -190,24 +190,47 @@
                     <!-- 标题和按钮区域 -->
                     <div class="row align-items-center mb-4">
                         <div class="col-auto pr-0">
+                            <!-- 年月视图切换按钮 -->
                             <div class="btn-group" id="viewSwitch">
-                                <!-- 视图切换按钮 -->
-                                <button class="btn btn-outline-primary active" data-type="month">月视图</button>
-                                <button class="btn btn-outline-primary" data-type="year">年视图</button>
+                                <button class="btn btn-outline-primary active" data-type="month">月</button>
+                                <button class="btn btn-outline-primary" data-type="year">年</button>
                             </div>
                         </div>
-                        <div class="col">
-                            <div class="text-center">
-                                <!-- 当前时间显示 -->
-                                <span id="timeDisplay"></span>
+                        <div class="col d-flex justify-content-end">
+                            <!-- 时间显示和按钮 -->
+                            <div class="d-flex align-items-center">
+                                <button class="btn" id="prevBtn">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <div class="flex-grow-1 text-center px-1">
+                                    <span id="timeDisplay"></span>
+                                </div>
+                                <button class="btn" id="nextBtn">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
                             </div>
-                        </div>
-                        <div class="col-auto">
-                            <!-- 导航按钮 -->
-                            <button class="btn btn-primary" id="prevBtn">上一周期</button>
-                            <button class="btn btn-primary" id="nextBtn">下一周期</button>
                         </div>
                     </div>
+{#                    <div class="row align-items-center mb-4">#}
+{#                        <div class="col-auto pr-0 d-flex align-items-center">#}
+{#                            <!-- 查看切换按钮 -->#}
+{#                            <div class="btn-group" id="viewSwitch">#}
+{#                                <button class="btn btn-outline-primary active" data-type="month">月</button>#}
+{#                                <button class="btn btn-outline-primary" data-type="year">年</button>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="col-auto flex-grow-1 text-center">#}
+{#                            <span id="timeDisplay"></span>#}
+{#                        </div>#}
+{#                        <div class="col-auto d-flex align-items-center">#}
+{#                            <button class="btn btn-primary" id="prevBtn">#}
+{#                                <i class="fas fa-chevron-left"></i> <!-- 字体图标 -->#}
+{#                            </button>#}
+{#                            <button class="btn btn-primary" id="nextBtn">#}
+{#                                <i class="fas fa-chevron-right"></i>#}
+{#                            </button>#}
+{#                        </div>#}
+{#                    </div>#}
                     <!-- 星期头 -->
                     <div class="week-days" id="weekHeader">
                         <div class="week-day">一</div>
@@ -651,6 +674,7 @@ function updateSummary() {
 }
 
 // 更新导航按钮的状态
+/*
 function updateNavigation() {
     const prevBtn = document.getElementById('prevBtn'); // 上一周期按钮
     const nextBtn = document.getElementById('nextBtn'); // 下一周期按钮
@@ -666,6 +690,28 @@ function updateNavigation() {
         nextBtn.disabled = currentYear >= today.getFullYear(); // 禁用下一年按钮（如果当前年）
     }
 }
+*/
+function updateNavigation() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    if(currentView === 'month') {
+        //prevBtn.textContent = '上一月';
+        //nextBtn.textContent = '下一月';
+        prevBtn.title = '上一月';
+        nextBtn.title = '下一月';
+        const isCurrentMonth = currentYear === today.getFullYear() &&
+                            currentMonth === today.getMonth();
+        nextBtn.disabled = isCurrentMonth;
+    } else {
+        //prevBtn.textContent = '上一年';
+        //nextBtn.textContent = '下一年';
+        prevBtn.title = '上一年';
+        nextBtn.title = '下一年';
+        nextBtn.disabled = currentYear >= today.getFullYear();
+    }
+}
+
 
 // 获取指定年份和月份的所有日期
 function getDaysOfMonth(year, month) {

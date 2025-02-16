@@ -1,11 +1,41 @@
 <!DOCTYPE html>
+{% extends 'dashboard/base_dashboard.html' %}
+{% block page_content %}
+
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>资产变化日历</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+{#    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">#}
     <style>
+        @media (max-width: 768px) {
+            #viewSwitch .btn {
+                padding: 0.25rem 0.5rem; /* 减小按钮内边距 */
+                font-size: 0.875rem; /* 减小字体大小 */
+            }
+            #prevBtn,
+            #nextBtn {
+                background-color: transparent; /* 透明背景 */
+                border: none; /* 移除边框 */
+                padding: 5px; /* 调整内边距 */
+            }
+
+            #prevBtn:hover,
+            #nextBtn:hover {
+                background-color: transparent; /* 保持透明背景 */
+                box-shadow: none; /* 移除悬停时的阴影 */
+            }
+
+            .text-center {
+                font-size: 0.875rem; /* 减小年月显示的字体大小 */
+            }
+
+            .row.align-items-center {
+                gap: 5px; /* 减小元素之间的间距 */
+            }
+        }
+
         /* 保持原有样式不变 */
         .date-grid {
             display: grid;
@@ -85,19 +115,25 @@
             <div class="card-body">
                 <div class="row align-items-center mb-4">
                     <div class="col-auto pr-0">
+                        <!-- 年月视图切换按钮 -->
                         <div class="btn-group" id="viewSwitch">
-                            <button class="btn btn-outline-primary active" data-type="month">月视图</button>
-                            <button class="btn btn-outline-primary" data-type="year">年视图</button>
+                            <button class="btn btn-outline-primary active" data-type="month">月</button>
+                            <button class="btn btn-outline-primary" data-type="year">年</button>
                         </div>
                     </div>
-                    <div class="col">
-                        <div class="text-center">
-                            <span id="timeDisplay"></span>
+                    <div class="col d-flex justify-content-end">
+                        <!-- 时间显示和按钮 -->
+                        <div class="d-flex align-items-center">
+                            <button class="btn" id="prevBtn">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div class="flex-grow-1 text-center px-1">
+                                <span id="timeDisplay"></span>
+                            </div>
+                            <button class="btn" id="nextBtn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
                         </div>
-                    </div>
-                    <div class="col-auto">
-                        <button class="btn btn-primary" id="prevBtn">上一周期</button>
-                        <button class="btn btn-primary" id="nextBtn">下一周期</button>
                     </div>
                 </div>
                 <div class="week-days" id="weekHeader">
@@ -270,14 +306,18 @@
             const nextBtn = document.getElementById('nextBtn');
 
             if(currentView === 'month') {
-                prevBtn.textContent = '上一月';
-                nextBtn.textContent = '下一月';
+                //prevBtn.textContent = '上一月';
+                //nextBtn.textContent = '下一月';
+                prevBtn.title = '上一月';
+                nextBtn.title = '下一月';
                 const isCurrentMonth = currentYear === today.getFullYear() &&
                                     currentMonth === today.getMonth();
                 nextBtn.disabled = isCurrentMonth;
             } else {
-                prevBtn.textContent = '上一年';
-                nextBtn.textContent = '下一年';
+                //prevBtn.textContent = '上一年';
+                //nextBtn.textContent = '下一年';
+                prevBtn.title = '上一年';
+                nextBtn.title = '下一年';
                 nextBtn.disabled = currentYear >= today.getFullYear();
             }
         }
@@ -362,3 +402,6 @@
     </script>
 </body>
 </html>
+
+
+{% endblock %}

@@ -1,3 +1,32 @@
+        @media (max-width: 768px) {
+            #viewSwitch .btn {
+                padding: 0.25rem 0.5rem; /* 减小按钮内边距 */
+                font-size: 0.875rem; /* 减小字体大小 */
+            }
+            #prevBtn,
+            #nextBtn {
+                background-color: transparent; /* 透明背景 */
+                border: none; /* 移除边框 */
+                padding: 5px; /* 调整内边距 */
+            }
+
+            #prevBtn:hover,
+            #nextBtn:hover {
+                background-color: transparent; /* 保持透明背景 */
+                box-shadow: none; /* 移除悬停时的阴影 */
+            }
+
+            .text-center {
+                font-size: 0.875rem; /* 减小年月显示的字体大小 */
+            }
+
+            .row.align-items-center {
+                gap: 5px; /* 减小元素之间的间距 */
+            }
+        }
+
+
+
         /* 日期网格布局 */
         .date-grid {
             display: grid; /* 使用网格布局 */
