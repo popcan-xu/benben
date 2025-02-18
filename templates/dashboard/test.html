@@ -245,6 +245,10 @@
             grid.className = 'date-grid month-grid';
             document.getElementById('weekHeader').style.display = 'none';
 
+            const today = new Date(); // 获取当前日期
+            const currentActualYear = today.getFullYear();
+            const currentActualMonth = today.getMonth();
+
             for(let month = 0; month < 12; month++) {
                 const cell = document.createElement('div');
                 cell.className = 'month-cell';
@@ -265,7 +269,22 @@
                 valueSpan.textContent = formatAmount(monthlyTotal);
                 cell.appendChild(valueSpan);
 
-                cell.addEventListener('click', handleMonthClick);
+                // 判断是否为当前年份的未来月份
+                if (currentYear === currentActualYear && month > currentActualMonth) {
+                    // 禁用点击事件
+                    cell.style.cursor = 'not-allowed';
+                    cell.style.opacity = 0.5;
+                    cell.style.userSelect = 'none';
+                    // 移除悬停效果
+                    cell.classList.remove('hover-effect');
+                } else {
+                    // 允许点击
+                    cell.style.cursor = 'pointer';
+                    cell.style.opacity = 1;
+                    cell.style.userSelect = 'text';
+                    cell.addEventListener('click', handleMonthClick);
+                }
+
                 grid.appendChild(cell);
             }
 

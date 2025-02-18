@@ -607,6 +607,7 @@ function renderMonthView() {
 }
 
 // 渲染年视图
+/*
 function renderYearView() {
     const grid = document.getElementById('calendarGrid'); // 获取日期网格
     grid.className = 'date-grid month-grid'; // 设置网格样式
@@ -641,6 +642,59 @@ function renderYearView() {
 
     document.getElementById('timeDisplay').textContent = `${currentYear}年`; // 更新时间显示
 }
+*/
+function renderYearView() {
+    const grid = document.getElementById('calendarGrid');
+    grid.className = 'date-grid month-grid';
+    document.getElementById('weekHeader').style.display = 'none';
+
+    const today = new Date(); // 获取当前日期
+    const currentActualYear = today.getFullYear();
+    const currentActualMonth = today.getMonth();
+
+    for(let month = 0; month < 12; month++) {
+        const cell = document.createElement('div');
+        cell.className = 'month-cell';
+        cell.dataset.year = currentYear;
+        cell.dataset.month = month;
+
+        const monthlyTotal = getMonthlyTotal(currentYear, month);
+        if(monthlyTotal > 0) {
+            cell.classList.add('positive');
+        } else if(monthlyTotal < 0) {
+            cell.classList.add('negative');
+        }
+
+        cell.textContent = `${month + 1}月`;
+
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'asset-value';
+        valueSpan.textContent = formatAmount(monthlyTotal);
+        cell.appendChild(valueSpan);
+
+        // 判断是否为当前年份的未来月份
+        if (currentYear === currentActualYear && month > currentActualMonth) {
+            // 禁用点击事件
+            cell.style.cursor = 'not-allowed';
+            cell.style.opacity = 0.5;
+            cell.style.userSelect = 'none';
+            // 移除悬停效果
+            cell.classList.remove('hover-effect');
+        } else {
+            // 允许点击
+            cell.style.cursor = 'pointer';
+            cell.style.opacity = 1;
+            cell.style.userSelect = 'text';
+            cell.addEventListener('click', handleMonthClick);
+        }
+
+        grid.appendChild(cell);
+    }
+
+    document.getElementById('timeDisplay').textContent = `${currentYear}年`;
+}
+
+
 
 // 处理月份点击事件
 function handleMonthClick(event) {
@@ -798,12 +852,6 @@ document.querySelectorAll('#viewSwitch button').forEach(btn => {
 
 // 初始渲染
 renderCalendar();
-
-
-
-
-
-
 
 </script>
 
