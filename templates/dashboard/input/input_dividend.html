@@ -36,7 +36,7 @@
                             <label for="stock_name" class="col-md-4 control-label text-right">股票：</label>
                             <div class="col-md-8">
                                 <select class="form-control" name="stock_id" id="stock_id">
-                                {% for stock in stock_list %}
+                                {% for stock in stock_list_order %}
                                     {% if stock.stock_code == dividend.stock.stock_code %}
                                     <option value="{{ stock.id }}" selected>{{ stock.stock_name }}({{ stock.stock_code }})</option>
                                     {% else %}

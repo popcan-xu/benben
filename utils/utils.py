@@ -993,9 +993,18 @@ def get_current_index():
 
 
     # 恒生指数
-    df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date',ascending=False).head(1)
-    current_year_HSI = datetime.datetime.strptime(df['date'].iloc[0], "%Y-%m-%d").year
-    current_HSI = float(df['latest'].iloc[0])
+    # df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date',ascending=False).head(1)
+    # current_year_HSI = datetime.datetime.strptime(df['date'].iloc[0], "%Y-%m-%d").year
+    # current_HSI = float(df['latest'].iloc[0])
+
+    # df = ak.stock_hk_index_daily_sina(symbol="HSI").sort_values(by='date',ascending=False).head(1)
+    # current_year_HSI = df['date'].iloc[0].year
+    # current_HSI = float(df['close'].iloc[0])
+
+    df = ak.stock_hk_index_spot_sina()
+    current_HSI = float(df[df['代码'] == 'HSI']['最新价'].iloc[0])
+    current_year_HSI = datetime.datetime.now().year
+
 
     # 标普500指数
     df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date',ascending=False).head(1)
@@ -1262,6 +1271,20 @@ def get_akshare():
     # df = ak.fund_etf_spot_em()
     # print(df)
     #
+    # df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date', ascending=False).head(1)
+    # stock_hk_index_spot_em_df = ak.stock_hk_index_spot_em()
+    # print(stock_hk_index_spot_em_df)
+    # stock_hk_index_daily_sina_df = ak.stock_hk_index_daily_sina(symbol="CES100")
+    # print(stock_hk_index_daily_sina_df)
+    # df = ak.stock_hk_index_daily_sina(symbol="HSI").sort_values(by='date',ascending=False).head(1)
+    # # df = ak.stock_hk_index_daily_em(symbol="HSI")
+    # print(df)
+    # current_year_HSI = df['date'].iloc[0].year
+    # current_HSI = float(df['close'].iloc[0])
+    df = ak.stock_hk_index_spot_sina()
+    print(df)
+    print(df[df['代码'] == 'HSI']['最新价'])
+
     return
 
 def classify_stock_code(code):
@@ -1290,3 +1313,17 @@ def classify_stock_code(code):
     else:
         return "未知类型"
 
+def get_stock_list_order():
+    stock_list = stock.objects.all().order_by('stock_code')
+    stock_list_order = []
+    code_hold = []
+    code_not_hold = []
+    for rs in stock_list:
+        if position.objects.filter(stock=rs.id).exists():
+            code_hold.append(rs.stock_code)
+        else:
+            code_not_hold.append(rs.stock_code)
+    codes = code_hold + code_not_hold
+    for code in codes:
+        stock_list_order.append(stock.objects.get(stock_code = code))
+    return stock_list_order

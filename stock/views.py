@@ -364,7 +364,8 @@ def input_trade(request):
         (3, '美元'),
     )
     account_list = account.objects.all()
-    stock_list = stock.objects.all().order_by('stock_code')
+    stock_list_order = get_stock_list_order()
+
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
         stock_id = request.POST.get('stock_id')
@@ -426,7 +427,8 @@ def input_dividend(request):
         (3, '美元'),
     )
     account_list = account.objects.all()
-    stock_list = stock.objects.all().order_by('stock_code')
+    stock_list_order = get_stock_list_order()
+
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
         stock_id = request.POST.get('stock_id')
@@ -1844,7 +1846,7 @@ def about(request):
 
 # 测试
 def test(request):
-    # get_akshare()
+    get_akshare()
     # price, increase, color = get_quote_akshare('00700')
     # print(price, increase, color)
     # price, increase, color = get_quote_akshare("511880")
@@ -1855,6 +1857,7 @@ def test(request):
     # print(price, increase, color)
     # price, increase, color = get_quote_akshare("000002")
     # print(price, increase, color)
+
     return render(request, templates_path + 'test.html', locals())
 
 # 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值
