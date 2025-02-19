@@ -39,8 +39,8 @@
                                 <td>{{ trade.get_trade_type_display }}</td>
                                 <td>{{ trade.trade_price }}</td>
                                 <td>{{ trade.trade_quantity }}</td>
-                                <!-- 模板变量的乘法需要使用widthratio // -->
-                                <td>{% widthratio trade.trade_price 1 trade.trade_quantity %}</td>
+                                <!-- 模板变量的乘法需要使用widthratio，将结果存储在变量 ratio 中，并对 ratio增加千位分隔符-->
+                                <td>{% widthratio trade.trade_price 1 trade.trade_quantity as ratio %}{{ ratio|floatformat:0|add:"" }}</td>
                                 <td>{{ trade.get_settlement_currency_display }}</td>
                                 <td>{{ trade.account.account_abbreviation }}</td>
                                 <!--<td style="vertical-align: middle;">{{ trade.created_time }}</td>-->
