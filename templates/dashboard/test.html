@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>资产变化日历</title>
-{#    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">#}
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         @media (max-width: 768px) {
             #viewSwitch .btn {
@@ -137,13 +137,13 @@
                     </div>
                 </div>
                 <div class="week-days" id="weekHeader">
+                    <div class="week-day">日</div>
                     <div class="week-day">一</div>
                     <div class="week-day">二</div>
                     <div class="week-day">三</div>
                     <div class="week-day">四</div>
                     <div class="week-day">五</div>
                     <div class="week-day">六</div>
-                    <div class="week-day">日</div>
                 </div>
                 <div class="date-grid" id="calendarGrid"></div>
                 <div class="summary" id="periodSummary"></div>
@@ -343,16 +343,21 @@
 
         function getDaysOfMonth(year, month) {
             const firstDay = new Date(year, month, 1);
+            const startDay = firstDay.getDay(); // 直接使用getDay()的值
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
             const dates = [];
 
+            // 填充空白日期（周日）
             for(let i = 0; i < startDay; i++) {
                 dates.push(new Date(year, month, -i));
             }
+
+            // 生成当月日期（从周日开始）
             for(let i = 1; i <= daysInMonth; i++) {
                 dates.push(new Date(year, month, i));
             }
+
+            // 补全至7的倍数
             while(dates.length % 7 !== 0) {
                 dates.push(new Date(year, month + 1, dates.length % 7 + 1));
             }
@@ -361,17 +366,17 @@
         }
 
         function prevPeriod() {
-            if(currentView === 'month') {
-                currentMonth--;
-                if(currentMonth < 0) {
-                    currentMonth = 11;
-                    currentYear--;
+                    if(currentView === 'month') {
+                        currentMonth--;
+                        if(currentMonth < 0) {
+                            currentMonth = 11;
+                            currentYear--;
+                        }
+                    } else {
+                        currentYear--;
+                    }
+                    renderCalendar();
                 }
-            } else {
-                currentYear--;
-            }
-            renderCalendar();
-        }
 
         function nextPeriod() {
             if(currentView === 'month') {

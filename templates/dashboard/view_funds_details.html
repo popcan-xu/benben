@@ -19,7 +19,7 @@
     <div class="row">
         <!-- 账户概要 -->
         <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card shadow mb-4" style="width:100%; height:410px; display:block;">
+            <div class="card h-100 shadow mb-4">
                 <!-- Card Header - Dropdown -->
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">概要</h6>
@@ -45,26 +45,26 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">当期收益（元）</div>
-                            <div class="h4 mb-0 text-gray-800 font"><span style="color: {{ current_funds_details_object.funds_current_profit|text_color }}">{{ current_funds_details_object.funds_current_profit|floatformat:0 }}</span></div>
                             <div class="small mb-0 text-gray-500">注：{{ second_max_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
+                            <div class="h4 mb-0 text-gray-800 font"><span style="color: {{ current_funds_details_object.funds_current_profit|text_color }}">{{ current_funds_details_object.funds_current_profit|floatformat:0 }}</span></div>
                         </div>
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">当期收益率（%）</div>
-                            <div class="h4 mb-0  text-gray-800"><span style="color: {{ current_funds_details_object.funds_current_profit_rate|text_color }}">{{ current_funds_details_object.funds_current_profit_rate|percent }}</span></div>
                             <div class="small mb-0 text-gray-500">注：{{ second_max_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
+                            <div class="h4 mb-0  text-gray-800"><span style="color: {{ current_funds_details_object.funds_current_profit_rate|text_color }}">{{ current_funds_details_object.funds_current_profit_rate|percent }}</span></div>
                         </div>
                     </div>
                     <h6>&nbsp;</h6>
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">累计收益（元）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ current_funds_details_object.funds_profit|floatformat:0 }}</div>
                             <div class="small mb-0 text-gray-500">注：{{ min_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
+                            <div class="h4 mb-0 text-gray-800 font">{{ current_funds_details_object.funds_profit|floatformat:0 }}</div>
                         </div>
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">累计收益率（%）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ current_funds_details_object.funds_profit_rate|percent }}</div>
                             <div class="small mb-0 text-gray-500">注：{{ min_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
+                            <div class="h4 mb-0  text-gray-800">{{ current_funds_details_object.funds_profit_rate|percent }}</div>
                         </div>
                     </div>
                     <h6>&nbsp;</h6>
@@ -82,17 +82,20 @@
             </div>
         </div>
 
-        <!-- 净值曲线 -->
-        <div class="col-xl-6 col-lg-4">
-            <div class="card shadow mb-4" style="width:100%; height:410px; display:block;">
+        <!-- 近一年收益 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card h-100 shadow mb-4">
                 <!-- Card Header - Dropdown -->
-                <div
-                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">净值曲线</h6>
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">近一年收益</h6>
+                    <div class="col-auto">
+                        <div class="h6 mb-0 text-gray-500">
+                            <a href="/benben/add_funds_details/{{ funds_id|safe }}/" style="color: inherit; text-decoration: none;">记一笔 ></a>
+                        </div>
+                    </div>
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
-                    <div id="line_net_value" style="width:100%; height:310px; display:block;"></div>
                 </div>
             </div>
         </div>
@@ -100,23 +103,92 @@
     </div>
 
     <div class="row">
+        <!-- 净值曲线 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card h-100 shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div
+                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">净值曲线</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div id="line_net_value" style="width:100%; height:400px;"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- 年度收益率 -->
         <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card shadow mb-4">
+            <div class="card h-100 shadow mb-4">
                 <!-- Card Header - Dropdown -->
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">年度收益率</h6>
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
-                    <div id="bar_net_value" style="width:100%; height:450px;"></div><!--数据展现的容器1-->
+                    <div id="bar_net_value" style="width:100%; height:400px;"></div><!--数据展现的容器1-->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+        <!-- 资产变化日历 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card h-100 shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">资产变化日历</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <!-- 标题和按钮区域 -->
+                    <div class="row align-items-center mb-4">
+                        <div class="col-auto pr-0">
+                            <!-- 年月视图切换按钮 -->
+                            <div class="btn-group" id="viewSwitch">
+                                <button class="btn btn-outline-primary active" data-type="month">月</button>
+                                <button class="btn btn-outline-primary" data-type="year">年</button>
+                            </div>
+                        </div>
+                        <div class="col d-flex justify-content-end">
+                            <!-- 时间显示和按钮 -->
+                            <div class="d-flex align-items-center">
+                                <button class="btn" id="prevBtn">
+                                    <i class="fas fa-chevron-left"></i> <!-- 字体图标 -->
+                                </button>
+                                <div class="flex-grow-1 text-center px-1">
+                                    <span id="timeDisplay"></span>
+                                </div>
+                                <button class="btn" id="nextBtn">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 星期头 -->
+                    <div class="week-days" id="weekHeader">
+                        <div class="week-day">日</div>
+                        <div class="week-day">一</div>
+                        <div class="week-day">二</div>
+                        <div class="week-day">三</div>
+                        <div class="week-day">四</div>
+                        <div class="week-day">五</div>
+                        <div class="week-day">六</div>
+                    </div>
+                    <!-- 日期网格 -->
+                    <div class="date-grid" id="calendarGrid"></div>
+                    <!-- 摘要信息 -->
+                    <div class="summary" id="periodSummary"></div>
                 </div>
             </div>
         </div>
 
         <!-- 更新记录 -->
         <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card shadow mb-4">
+            <div class="card h-100 shadow mb-4">
                 <!-- Card Header - Dropdown -->
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">更新记录</h6>
@@ -128,7 +200,7 @@
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
-                    <div style="height:450px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                    <div style="height:100%; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
                         <div class="table-responsive">
                             <table id="dataTable_account" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
                                 <thead class="bg-gradient-secondary text-gray-100">
@@ -171,98 +243,6 @@
                             </table>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="row">
-        <!-- 资产变化日历 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">资产变化日历</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <!-- 标题和按钮区域 -->
-                    <div class="row align-items-center mb-4">
-                        <div class="col-auto pr-0">
-                            <!-- 年月视图切换按钮 -->
-                            <div class="btn-group" id="viewSwitch">
-                                <button class="btn btn-outline-primary active" data-type="month">月</button>
-                                <button class="btn btn-outline-primary" data-type="year">年</button>
-                            </div>
-                        </div>
-                        <div class="col d-flex justify-content-end">
-                            <!-- 时间显示和按钮 -->
-                            <div class="d-flex align-items-center">
-                                <button class="btn" id="prevBtn">
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                                <div class="flex-grow-1 text-center px-1">
-                                    <span id="timeDisplay"></span>
-                                </div>
-                                <button class="btn" id="nextBtn">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-{#                    <div class="row align-items-center mb-4">#}
-{#                        <div class="col-auto pr-0 d-flex align-items-center">#}
-{#                            <!-- 查看切换按钮 -->#}
-{#                            <div class="btn-group" id="viewSwitch">#}
-{#                                <button class="btn btn-outline-primary active" data-type="month">月</button>#}
-{#                                <button class="btn btn-outline-primary" data-type="year">年</button>#}
-{#                            </div>#}
-{#                        </div>#}
-{#                        <div class="col-auto flex-grow-1 text-center">#}
-{#                            <span id="timeDisplay"></span>#}
-{#                        </div>#}
-{#                        <div class="col-auto d-flex align-items-center">#}
-{#                            <button class="btn btn-primary" id="prevBtn">#}
-{#                                <i class="fas fa-chevron-left"></i> <!-- 字体图标 -->#}
-{#                            </button>#}
-{#                            <button class="btn btn-primary" id="nextBtn">#}
-{#                                <i class="fas fa-chevron-right"></i>#}
-{#                            </button>#}
-{#                        </div>#}
-{#                    </div>#}
-                    <!-- 星期头 -->
-                    <div class="week-days" id="weekHeader">
-                        <div class="week-day">一</div>
-                        <div class="week-day">二</div>
-                        <div class="week-day">三</div>
-                        <div class="week-day">四</div>
-                        <div class="week-day">五</div>
-                        <div class="week-day">六</div>
-                        <div class="week-day">日</div>
-                    </div>
-                    <!-- 日期网格 -->
-                    <div class="date-grid" id="calendarGrid"></div>
-                    <!-- 摘要信息 -->
-                    <div class="summary" id="periodSummary"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 更新记录 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">更新记录</h6>
-                    <div class="col-auto">
-                        <div class="h6 mb-0 text-gray-500">
-                            <a href="/benben/add_funds_details/{{ funds_id|safe }}/" style="color: inherit; text-decoration: none;">记一笔 ></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
                 </div>
             </div>
         </div>
@@ -607,24 +587,26 @@ function renderMonthView() {
 }
 
 // 渲染年视图
-/*
 function renderYearView() {
     const grid = document.getElementById('calendarGrid'); // 获取日期网格
     grid.className = 'date-grid month-grid'; // 设置网格样式
     document.getElementById('weekHeader').style.display = 'none'; // 隐藏星期头
 
-    for (let month = 0; month < 12; month++) { // 循环 12 个月
+    const today = new Date(); // 获取当前日期
+    const currentActualYear = today.getFullYear();
+    const currentActualMonth = today.getMonth();
+
+    for(let month = 0; month < 12; month++) { // 循环 12 个月
         const cell = document.createElement('div'); // 创建月份单元格
         cell.className = 'month-cell'; // 设置默认样式
         cell.dataset.year = currentYear; // 设置年份数据
         cell.dataset.month = month; // 设置月份数据
 
         const monthlyTotal = getMonthlyTotal(currentYear, month); // 获取该月的总资产变化
-
         // 总资产变化的样式处理
-        if (monthlyTotal > 0) {
+        if(monthlyTotal > 0) {
             cell.classList.add('positive'); // 添加正资产样式
-        } else if (monthlyTotal < 0) {
+        } else if(monthlyTotal < 0) {
             cell.classList.add('negative'); // 添加负资产样式
         }
 
@@ -634,43 +616,6 @@ function renderYearView() {
         valueSpan.className = 'asset-value'; // 设置样式
         valueSpan.textContent = formatAmount(monthlyTotal); // 显示格式化后的资产值
         cell.appendChild(valueSpan); // 将资产值添加到单元格
-
-        // 添加点击事件监听
-        cell.addEventListener('click', handleMonthClick);
-        grid.appendChild(cell); // 将单元格添加到网格
-    }
-
-    document.getElementById('timeDisplay').textContent = `${currentYear}年`; // 更新时间显示
-}
-*/
-function renderYearView() {
-    const grid = document.getElementById('calendarGrid');
-    grid.className = 'date-grid month-grid';
-    document.getElementById('weekHeader').style.display = 'none';
-
-    const today = new Date(); // 获取当前日期
-    const currentActualYear = today.getFullYear();
-    const currentActualMonth = today.getMonth();
-
-    for(let month = 0; month < 12; month++) {
-        const cell = document.createElement('div');
-        cell.className = 'month-cell';
-        cell.dataset.year = currentYear;
-        cell.dataset.month = month;
-
-        const monthlyTotal = getMonthlyTotal(currentYear, month);
-        if(monthlyTotal > 0) {
-            cell.classList.add('positive');
-        } else if(monthlyTotal < 0) {
-            cell.classList.add('negative');
-        }
-
-        cell.textContent = `${month + 1}月`;
-
-        const valueSpan = document.createElement('span');
-        valueSpan.className = 'asset-value';
-        valueSpan.textContent = formatAmount(monthlyTotal);
-        cell.appendChild(valueSpan);
 
         // 判断是否为当前年份的未来月份
         if (currentYear === currentActualYear && month > currentActualMonth) {
@@ -685,13 +630,14 @@ function renderYearView() {
             cell.style.cursor = 'pointer';
             cell.style.opacity = 1;
             cell.style.userSelect = 'text';
+            // 添加点击事件监听
             cell.addEventListener('click', handleMonthClick);
         }
 
-        grid.appendChild(cell);
+        grid.appendChild(cell); // 将单元格添加到网格
     }
 
-    document.getElementById('timeDisplay').textContent = `${currentYear}年`;
+    document.getElementById('timeDisplay').textContent = `${currentYear}年`; // 更新时间显示
 }
 
 
@@ -725,44 +671,28 @@ function updateSummary() {
 
     // 更新摘要信息
     document.getElementById('periodSummary').textContent = `${currentView === 'month' ? '本月' : '本年'}资产变化汇总：${formatAmount(total)}`;
-}
+    // 取消加粗
+    document.getElementById('periodSummary').style.fontWeight = "normal";}
 
 // 更新导航按钮的状态
-/*
 function updateNavigation() {
     const prevBtn = document.getElementById('prevBtn'); // 上一周期按钮
     const nextBtn = document.getElementById('nextBtn'); // 下一周期按钮
 
-    if (currentView === 'month') { // 月视图
-        prevBtn.textContent = '上一月'; // 设置按钮文本
-        nextBtn.textContent = '下一月';
-        const isCurrentMonth = currentYear === today.getFullYear() && currentMonth === today.getMonth(); // 是否为当前月
-        nextBtn.disabled = isCurrentMonth; // 禁用下一月按钮（如果当前月）
-    } else { // 年视图
-        prevBtn.textContent = '上一年'; // 设置按钮文本
-        nextBtn.textContent = '下一年';
-        nextBtn.disabled = currentYear >= today.getFullYear(); // 禁用下一年按钮（如果当前年）
-    }
-}
-*/
-function updateNavigation() {
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-
-    if(currentView === 'month') {
-        //prevBtn.textContent = '上一月';
+    if(currentView === 'month') { // 月视图
+        //prevBtn.textContent = '上一月'; // 设置按钮文本
         //nextBtn.textContent = '下一月';
-        prevBtn.title = '上一月';
+        prevBtn.title = '上一月'; // 设置按钮文本
         nextBtn.title = '下一月';
         const isCurrentMonth = currentYear === today.getFullYear() &&
-                            currentMonth === today.getMonth();
-        nextBtn.disabled = isCurrentMonth;
-    } else {
-        //prevBtn.textContent = '上一年';
+                            currentMonth === today.getMonth(); // 是否为当前月
+        nextBtn.disabled = isCurrentMonth; // 禁用下一月按钮（如果当前月）
+    } else { // 年视图
+        //prevBtn.textContent = '上一年'; // 设置按钮文本
         //nextBtn.textContent = '下一年';
-        prevBtn.title = '上一年';
+        prevBtn.title = '上一年'; // 设置按钮文本
         nextBtn.title = '下一年';
-        nextBtn.disabled = currentYear >= today.getFullYear();
+        nextBtn.disabled = currentYear >= today.getFullYear(); // 禁用下一年按钮（如果当前年）
     }
 }
 
@@ -770,27 +700,29 @@ function updateNavigation() {
 // 获取指定年份和月份的所有日期
 function getDaysOfMonth(year, month) {
     const firstDay = new Date(year, month, 1); // 本月第一天
+    const startDay = firstDay.getDay(); // 直接使用getDay()的值  // 计算本周的第一天是周几
     const daysInMonth = new Date(year, month + 1, 0).getDate(); // 获取本月天数
-    const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // 计算本周的第一天是周几
     const dates = []; // 存储日期的数组
 
-    // 添加前一个月的补齐日（如果需要）
-    for (let i = 0; i < startDay; i++) {
+    // 添加前一个月的补齐日（如果需要） // 填充空白日期（周日）
+    for(let i = 0; i < startDay; i++) {
         dates.push(new Date(year, month, -i));
     }
 
-    // 添加本月的所有日期
-    for (let i = 1; i <= daysInMonth; i++) {
+    // 生成当月所有日期（从周日开始）
+    for(let i = 1; i <= daysInMonth; i++) {
         dates.push(new Date(year, month, i));
     }
 
-    // 添加下一个月的补齐日（如果需要）
-    while (dates.length % 7 !== 0) {
+    // 添加下一个月的补齐日（如果需要） // 补全至7的倍数
+    while(dates.length % 7 !== 0) {
         dates.push(new Date(year, month + 1, dates.length % 7 + 1));
     }
 
     return dates; // 返回所有日期
 }
+
+
 
 // 上一周期导航
 function prevPeriod() {
