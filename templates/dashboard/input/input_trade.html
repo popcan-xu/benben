@@ -23,13 +23,24 @@
                             <label for="account_id" class="col-md-4 control-label text-right">证券账户：</label>
                             <div class="col-md-8">
                                 <select class="form-control" name="account_id" id="account_id">
-                                {% for account in account_list %}
-                                    {% if account.account_number == trade.account.account_number %}
-                                    <option value="{{ account.id }}" selected>{{ account.broker.broker_name }}({{ account.account_number }})</option>
-                                    {% else %}
-                                    <option value="{{ account.id }}">{{ account.broker.broker_name }}({{ account.account_number }})</option>
-                                    {% endif %}
-                                {% endfor %}
+                                    <optgroup label="有效">
+                                    {% for account in account_active %}
+                                        {% if account.account_number == trade.account.account_number %}
+                                        <option value="{{ account.id }}" selected>{{ account.broker.broker_name }}({{ account.account_number }})</option>
+                                        {% else %}
+                                        <option value="{{ account.id }}">{{ account.broker.broker_name }}({{ account.account_number }})</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                    </optgroup>
+                                    <optgroup label="停用">
+                                    {% for account in account_not_active %}
+                                        {% if account.account_number == trade.account.account_number %}
+                                        <option value="{{ account.id }}" selected>{{ account.broker.broker_name }}({{ account.account_number }})</option>
+                                        {% else %}
+                                        <option value="{{ account.id }}">{{ account.broker.broker_name }}({{ account.account_number }})</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                    </optgroup>
                                 </select>
                             </div>
                         </div>
@@ -37,13 +48,24 @@
                             <label for="stock_id" class="col-md-4 control-label text-right">股票：</label>
                             <div class="col-md-8">
                                 <select class="form-control" name="stock_id" id="stock_id">
-                                {% for stock in stock_list_order %}
-                                    {% if stock.stock_code == trade.stock.stock_code %}
-                                    <option value="{{ stock.id }}" selected>{{ stock.stock_name }}({{ stock.stock_code }})</option>
-                                    {% else %}
-                                    <option value="{{ stock.id }}">{{ stock.stock_name }}({{ stock.stock_code }})</option>
-                                    {% endif %}
-                                {% endfor %}
+                                    <optgroup label="持仓股票">
+                                    {% for stock in stock_hold %}
+                                        {% if stock.stock_code == trade.stock.stock_code %}
+                                        <option value="{{ stock.id }}" selected>{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                        {% else %}
+                                        <option value="{{ stock.id }}">{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                    </optgroup>
+                                    <optgroup label="未持仓股票">
+                                    {% for stock in stock_not_hold %}
+                                        {% if stock.stock_code == trade.stock.stock_code %}
+                                        <option value="{{ stock.id }}" selected>{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                        {% else %}
+                                        <option value="{{ stock.id }}">{{ stock.stock_name }}({{ stock.stock_code }})</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                    </optgroup>
                                 </select>
                             </div>
                         </div>

@@ -20,6 +20,7 @@
                             <th>账号</th>
                             <th>券商</th>
                             <th>简称</th>
+                            <th>是否有效</th>
                             <th>操作</th>
                             <th>操作</th>
                         </tr>
@@ -31,6 +32,7 @@
                                 <td>{{ account.account_number }}</td>
                                 <td>{{ account.broker.broker_name }}</td>
                                 <td>{{ account.account_abbreviation }}</td>
+                                <td>{{ account.is_active|yesno:"有效,停用" }}</td>
                                 <td>
                                     <a href="/benben/del_account/{{ account.id|safe }}/" class="btn btn-default btn-sm">
                                         删除
@@ -59,7 +61,9 @@ $(document).ready(function() {
     $('#dataTable').DataTable( {
         //先按第一列逆序排序，如果有相同，再按第二列顺序排序
         //order后面就是一个多维数组，可以自由增删
-        "order": [[ 1, "asc" ],[ 0, "asc" ]]
+        "order": []
+        //去掉表头默认排序
+        //"ordering": false
     } );
 } );
 </script>

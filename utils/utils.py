@@ -1313,9 +1313,11 @@ def classify_stock_code(code):
     else:
         return "未知类型"
 
-def get_stock_list_order():
+# 从股票表中获取持仓股票和未持仓股票集合
+def get_stock_hold_or_not():
     stock_list = stock.objects.all().order_by('stock_code')
-    stock_list_order = []
+    stock_hold = []
+    stock_not_hold = []
     code_hold = []
     code_not_hold = []
     for rs in stock_list:
@@ -1323,7 +1325,27 @@ def get_stock_list_order():
             code_hold.append(rs.stock_code)
         else:
             code_not_hold.append(rs.stock_code)
-    codes = code_hold + code_not_hold
-    for code in codes:
-        stock_list_order.append(stock.objects.get(stock_code = code))
-    return stock_list_order
+    for code in code_hold:
+        stock_hold.append(stock.objects.get(stock_code=code))
+    for code in code_not_hold:
+        stock_not_hold.append(stock.objects.get(stock_code=code))
+    return stock_hold, stock_not_hold
+
+# 从账户表中获取在用账户和未用账户集合
+def get_account_used_or_not():
+    stock_list = stock.objects.all().order_by('stock_code')
+    stock_hold = []
+    stock_not_hold = []
+    code_hold = []
+    code_not_hold = []
+    for rs in stock_list:
+        if position.objects.filter(stock=rs.id).exists():
+            code_hold.append(rs.stock_code)
+        else:
+            code_not_hold.append(rs.stock_code)
+    #codes = code_hold + code_not_hold
+    for code in code_hold:
+        stock_hold.append(stock.objects.get(stock_code=code))
+    for code in code_not_hold:
+        stock_not_hold.append(stock.objects.get(stock_code=code))
+    return stock_hold, stock_not_hold

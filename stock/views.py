@@ -363,8 +363,9 @@ def input_trade(request):
         (2, '港元'),
         (3, '美元'),
     )
-    account_list = account.objects.all()
-    stock_list_order = get_stock_list_order()
+    account_active = account.objects.filter(is_active=True)
+    account_not_active = account.objects.filter(is_active=False)
+    stock_hold, stock_not_hold = get_stock_hold_or_not()
 
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
@@ -426,8 +427,9 @@ def input_dividend(request):
         (2, '港元'),
         (3, '美元'),
     )
-    account_list = account.objects.all()
-    stock_list_order = get_stock_list_order()
+    account_active = account.objects.filter(is_active=True)
+    account_not_active = account.objects.filter(is_active=False)
+    stock_hold, stock_not_hold = get_stock_hold_or_not()
 
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
@@ -459,7 +461,8 @@ def input_subscription(request):
         (1, '股票'),
         (2, '可转债'),
     )
-    account_list = account.objects.all()
+    account_active = account.objects.filter(is_active=True)
+    account_not_active = account.objects.filter(is_active=False)
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
         subscription_name = request.POST.get('subscription_name')
@@ -940,15 +943,25 @@ def add_account(request):
         account_number = request.POST.get('account_number')
         broker_id = request.POST.get('broker_id')
         account_abbreviation = request.POST.get('account_abbreviation')
+        is_active = request.POST.get('is_active')
         if account_number.strip() == '':
             error_info = '账号不能为空！'
             return render(request, templates_path + 'backstage/add_account.html', locals())
         try:
-            p = account.objects.create(
-                account_number=account_number,
-                broker_id=broker_id,
-                account_abbreviation=account_abbreviation
-            )
+            if is_active == 'TRUE':
+                p = account.objects.create(
+                    account_number=account_number,
+                    broker_id=broker_id,
+                    account_abbreviation=account_abbreviation,
+                    is_active=True
+                )
+            else:
+                p = account.objects.create(
+                    account_number=account_number,
+                    broker_id=broker_id,
+                    account_abbreviation=account_abbreviation,
+                    is_active=False
+                )
             return redirect('/benben/list_account/')
         except Exception as e:
             error_info = '输入账号重复或信息有错误！'
@@ -971,11 +984,17 @@ def edit_account(request, account_id):
         account_number = request.POST.get('account_number')
         broker_id = request.POST.get('broker_id')
         account_abbreviation = request.POST.get('account_abbreviation')
+        is_active = request.POST.get('is_active')
+        print(is_active)
         account_object = account.objects.get(id=id)
         try:
             account_object.account_number = account_number
             account_object.broker_id = broker_id
             account_object.account_abbreviation = account_abbreviation
+            if is_active == 'TRUE':
+                account_object.is_active = True
+            else:
+                account_object.is_active = False
             account_object.save()
         except Exception as e:
             error_info = '输入账号重复或信息有错误！'
@@ -989,7 +1008,7 @@ def edit_account(request, account_id):
 
 
 def list_account(request):
-    account_list = account.objects.all()
+    account_list = account.objects.all().order_by("-is_active", "broker")
     return render(request, templates_path + 'backstage/list_account.html', locals())
 
 

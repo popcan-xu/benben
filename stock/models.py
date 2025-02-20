@@ -29,6 +29,7 @@ class account(models.Model):
     account_number = models.CharField(max_length=32, verbose_name='账号', unique=True, db_index=True)
     broker = models.ForeignKey(to="broker", on_delete=models.CASCADE, verbose_name='券商')
     account_abbreviation = models.CharField(max_length=32, verbose_name='账号简称')
+    is_active = models.BooleanField(default=True, verbose_name='是否有效')  # 默认启用状态
 
 
 # 行业数据模型

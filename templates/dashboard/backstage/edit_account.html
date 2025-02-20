@@ -45,6 +45,30 @@
                                 <input type="text" class="form-control"  name="account_abbreviation" id="account_abbreviation"  value="{{ account_object.account_abbreviation }}">
                             </div>
                         </div>
+                        <div class="row form-group">
+                            <label for="is_active" class="col-md-4 control-label text-right">是否有效：</label>
+                            <div class="col-md-8">
+                                {% if account_object.is_active %}
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" class="custom-control-input" name="is_active" id="true" value="TRUE" checked />
+                                    <label class="custom-control-label" for="true">有效</label>
+                                </div>
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" class="custom-control-input" name="is_active" id="false" value="FALSE" />
+                                    <label class="custom-control-label" for="false">停用</label>
+                                </div>
+                                {% else %}
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" class="custom-control-input" name="is_active" id="true" value="TRUE" />
+                                    <label class="custom-control-label" for="true">有效</label>
+                                </div>
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" class="custom-control-input" name="is_active" id="false" value="FALSE" checked />
+                                    <label class="custom-control-label" for="false">停用</label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
                         <div class="row form-group" style="text-align:center">
                             <div class="col-md-offset-4 col-md-12">
                                 <input type="submit" class="btn btn-primary" value="保存">
