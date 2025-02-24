@@ -223,7 +223,7 @@ def view_funds_details(request, funds_id):
     list1 = []
     list2 = []
 
-    funds_details_list = funds_details.objects.filter(funds=funds_id)
+    funds_details_list = funds_details.objects.filter(funds=funds_id).order_by("date")
     funds_name = funds.objects.get(id=funds_id).funds_name
     funds_baseline_name = funds.objects.get(id=funds_id).funds_baseline
     max_date = get_max_date(funds_id)
@@ -329,6 +329,17 @@ def view_funds_details(request, funds_id):
         date = rs.date.strftime("%Y-%m-%d")
         amount = float(rs.funds_current_profit)
         assetChanges[date] = amount
+
+    data = []
+    #funds_details_list = funds_details.objects.filter(funds=3)
+    for rs in funds_details_list:
+        date = str(rs.date)
+        value = float(rs.funds_net_value)
+        data.append({
+            "date": date,
+            "value": value
+        })
+
     return render(request,  templates_path + 'view_funds_details.html', locals())
 
 
@@ -1865,7 +1876,7 @@ def about(request):
 
 # 测试
 def test(request):
-    get_akshare()
+    # get_akshare()
     # price, increase, color = get_quote_akshare('00700')
     # print(price, increase, color)
     # price, increase, color = get_quote_akshare("511880")
@@ -1876,7 +1887,16 @@ def test(request):
     # print(price, increase, color)
     # price, increase, color = get_quote_akshare("000002")
     # print(price, increase, color)
-
+    data = []
+    funds_details_list = funds_details.objects.filter(funds=5).order_by("date")
+    for rs in funds_details_list:
+        date = str(rs.date)
+        value = float(rs.funds_net_value)
+        data.append({
+            "date": date,
+            "value": value
+        })
+    print(data)
     return render(request, templates_path + 'test.html', locals())
 
 # 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值

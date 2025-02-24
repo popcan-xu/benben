@@ -2,430 +2,207 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% block page_content %}
 
+<!-- 资产净值走势图 -->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>资产变化日历</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>市值管理系统</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+
     <style>
-        @media (max-width: 768px) {
-            #viewSwitch .btn {
-                padding: 0.25rem 0.5rem; /* 减小按钮内边距 */
-                font-size: 0.875rem; /* 减小字体大小 */
-            }
-            #prevBtn,
-            #nextBtn {
-                background-color: transparent; /* 透明背景 */
-                border: none; /* 移除边框 */
-                padding: 5px; /* 调整内边距 */
-            }
-
-            #prevBtn:hover,
-            #nextBtn:hover {
-                background-color: transparent; /* 保持透明背景 */
-                box-shadow: none; /* 移除悬停时的阴影 */
-            }
-
-            .text-center {
-                font-size: 0.875rem; /* 减小年月显示的字体大小 */
-            }
-
-            .row.align-items-center {
-                gap: 5px; /* 减小元素之间的间距 */
-            }
+        .chart-card {
+            margin: 20px auto;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
-
-        /* 保持原有样式不变 */
-        .date-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            margin-top: 10px;
+        #mainChart {
+            height: 450px;
+            width: 100%;
         }
-        .month-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-        .day-cell, .month-cell {
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #dee2e6;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            font-size: 14px;
-            min-height: 80px;
-            position: relative;
-            transition: transform 0.2s;
-            cursor: pointer;
-        }
-        .asset-value {
-            margin-top: 5px;
-            font-weight: bold;
-            font-size: 12px;
-        }
-        .week-days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        .week-day {
-            background-color: #f8f9fa;
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-        }
-        .summary {
-            margin-top: 20px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 16px;
-            color: #333;
-        }
-        .current-day {
-            background-color: #87bdd8 !important;
-            color: #333 !important;
-        }
-        .positive {
-            background-color: #ffe5e5 !important;
-            color: #b30000 !important;
-        }
-        .negative {
-            background-color: #e5ffe5 !important;
-            color: #008000 !important;
-        }
-        .btn:disabled {
-            cursor: not-allowed;
-            opacity: 0.65;
-        }
-        .day-cell:hover, .month-cell:hover {
-            transform: scale(1.05);
-            z-index: 2;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        .time-switch {
+            padding: 15px 0;
+            border-top: 1px solid rgba(0,0,0,.125);
         }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="card">
-            <div class="card-body">
-                <div class="row align-items-center mb-4">
-                    <div class="col-auto pr-0">
-                        <!-- 年月视图切换按钮 -->
-                        <div class="btn-group" id="viewSwitch">
-                            <button class="btn btn-outline-primary active" data-type="month">月</button>
-                            <button class="btn btn-outline-primary" data-type="year">年</button>
-                        </div>
-                    </div>
-                    <div class="col d-flex justify-content-end">
-                        <!-- 时间显示和按钮 -->
-                        <div class="d-flex align-items-center">
-                            <button class="btn" id="prevBtn">
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                            <div class="flex-grow-1 text-center px-1">
-                                <span id="timeDisplay"></span>
-                            </div>
-                            <button class="btn" id="nextBtn">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
-                        </div>
-                    </div>
+    <div class="col-xl-12 col-md-6 mb-4">
+        <div class="card chart-card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">资产净值走势图</h5>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-primary active" data-range="currentYear">今年</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-range="year">近一年</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-range="all">记账以来</button>
                 </div>
-                <div class="week-days" id="weekHeader">
-                    <div class="week-day">日</div>
-                    <div class="week-day">一</div>
-                    <div class="week-day">二</div>
-                    <div class="week-day">三</div>
-                    <div class="week-day">四</div>
-                    <div class="week-day">五</div>
-                    <div class="week-day">六</div>
+            </div>
+            <div class="card-body p-0">
+                <div class="container mt-4">
+                    <div id="mainChart"></div>
                 </div>
-                <div class="date-grid" id="calendarGrid"></div>
-                <div class="summary" id="periodSummary"></div>
+            </div>
+            <div class="card-footer bg-white text-muted small">
+                数据更新于：<span id="updateTime"></span>
             </div>
         </div>
     </div>
-
     <script>
-        // 每日资产变化数据
-        const assetChanges = {
-            "2024-10-15": 5000,
-            "2024-10-20": -3000,
-            "2024-11-05": 8000,
-            "2024-11-18": -4500,
-            "2024-12-10": 123456,
-            "2025-01-08": -75123,
-            "2025-02-14": 18000
-        };
+    'use strict';
 
-        // 初始化当前日期
-        const today = new Date();
-        let currentYear = today.getFullYear();
-        let currentMonth = today.getMonth();
-        let currentView = 'month';
+    document.addEventListener('DOMContentLoaded', function() {
+        const chart = echarts.init(document.getElementById('mainChart'));
+        const allData = {{ data|safe }};
+        let currentRange = 'currentYear';
 
-        function formatAmount(amount) {
-            const isNegative = amount < 0;
-            const absAmount = Math.abs(amount);
-            let formatted = absAmount >= 10000
-                ? `${(absAmount/10000).toFixed(2)}万`
-                : absAmount.toLocaleString();
-            return `${isNegative ? '-' : ''}${formatted}`;
+        // 更新时间显示
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('updateTime').textContent =
+                now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
         }
 
-        function getMonthlyTotal(year, month) {
-            const monthKey = `${year}-${String(month+1).padStart(2,'0')}`;
-            return Object.entries(assetChanges)
-                .filter(([date]) => date.startsWith(monthKey))
-                .reduce((sum, [_, amount]) => sum + amount, 0);
+        // 时间范围计算
+        function getDateRange(range) {
+            const now = new Date();
+            const ranges = {
+                all: new Date(0),
+                year: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
+                currentYear: new Date(now.getFullYear(), 0, 1)
+            };
+            return ranges[range] || ranges.all;
         }
 
-        function renderCalendar() {
-            const grid = document.getElementById('calendarGrid');
-            grid.innerHTML = '';
+        // 更新图表
+        function updateChart(range) {
+            const startDate = getDateRange(range);
+            const filteredData = allData.filter(d => new Date(d.date) >= startDate);
+            const option = {
+                xAxis: {
+                    type: 'time',
+                    axisLabel: {
+                        rotate: -35,
+                        margin: 15,
+                        interval: (index, timestamp) => {
+                            const axis = chart.getModel().getComponent('xAxis', 0).axis;
+                            const [min, max] = axis.scale.getExtent();
+                            const totalDays = (max - min) / (1000 * 3600 * 24);
 
-            if(currentView === 'month') {
-                renderMonthView();
-            } else {
-                renderYearView();
-            }
+                            if (totalDays <= 7) return index % 1 === 0;
+                            if (totalDays <= 30) return index % 2 === 0;
+                            return index % Math.ceil(totalDays/30) === 0;
+                        },
+                        formatter: function (value) {
+                            const date = new Date(value);
+                            // 处理闰年2月29日
+                            if (date.getMonth() === 1 && date.getDate() === 29) {
+                                return '02-29';
+                            }
+                            const rangeType = range;
 
-            updateNavigation();
-            updateSummary();
-        }
+                            if (rangeType === 'currentYear') {
+                                const axis = chart.getModel().getComponent('xAxis', 0).axis;
+                                const [min, max] = axis.scale.getExtent();
+                                const dayDiff = (max - min) / (1000 * 3600 * 24);
 
-        function renderMonthView() {
-            const grid = document.getElementById('calendarGrid');
-            grid.className = 'date-grid';
-            document.getElementById('weekHeader').style.display = 'grid';
+                                // 精确判断逻辑
+                                if (dayDiff <= 60) { // 调整为60天阈值
+                                    const month = (date.getMonth()+1).toString().padStart(2, '0');
+                                    const day = date.getDate().toString().padStart(2, '0');
+                                    return `${month}-${day}`;
+                                }
+                                return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
+                            }
 
-            const dates = getDaysOfMonth(currentYear, currentMonth);
-            dates.forEach(date => {
-                const cell = document.createElement('div');
-                cell.className = 'day-cell';
-
-                if(date.getMonth() === currentMonth) {
-                    const dateString = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-                    const dailyChange = assetChanges[dateString] || 0;
-
-                    if(dailyChange > 0) {
-                        cell.classList.add('positive');
-                    } else if(dailyChange < 0) {
-                        cell.classList.add('negative');
-                    }
-
-                    cell.textContent = date.getDate();
-
-                    const valueSpan = document.createElement('span');
-                    valueSpan.className = 'asset-value';
-                    valueSpan.textContent = formatAmount(dailyChange);
-                    cell.appendChild(valueSpan);
-
-                    if(date.toDateString() === today.toDateString()) {
-                        cell.classList.add('current-day');
-                    }
-                } else {
-                    cell.classList.add('bg-light', 'text-muted');
-                }
-
-                grid.appendChild(cell);
-            });
-
-            document.getElementById('timeDisplay').textContent =
-                `${currentYear}年 ${currentMonth + 1}月`;
-        }
-
-        function renderYearView() {
-            const grid = document.getElementById('calendarGrid');
-            grid.className = 'date-grid month-grid';
-            document.getElementById('weekHeader').style.display = 'none';
-
-            const today = new Date(); // 获取当前日期
-            const currentActualYear = today.getFullYear();
-            const currentActualMonth = today.getMonth();
-
-            for(let month = 0; month < 12; month++) {
-                const cell = document.createElement('div');
-                cell.className = 'month-cell';
-                cell.dataset.year = currentYear;
-                cell.dataset.month = month;
-
-                const monthlyTotal = getMonthlyTotal(currentYear, month);
-                if(monthlyTotal > 0) {
-                    cell.classList.add('positive');
-                } else if(monthlyTotal < 0) {
-                    cell.classList.add('negative');
-                }
-
-                cell.textContent = `${month + 1}月`;
-
-                const valueSpan = document.createElement('span');
-                valueSpan.className = 'asset-value';
-                valueSpan.textContent = formatAmount(monthlyTotal);
-                cell.appendChild(valueSpan);
-
-                // 判断是否为当前年份的未来月份
-                if (currentYear === currentActualYear && month > currentActualMonth) {
-                    // 禁用点击事件
-                    cell.style.cursor = 'not-allowed';
-                    cell.style.opacity = 0.5;
-                    cell.style.userSelect = 'none';
-                    // 移除悬停效果
-                    cell.classList.remove('hover-effect');
-                } else {
-                    // 允许点击
-                    cell.style.cursor = 'pointer';
-                    cell.style.opacity = 1;
-                    cell.style.userSelect = 'text';
-                    cell.addEventListener('click', handleMonthClick);
-                }
-
-                grid.appendChild(cell);
-            }
-
-            document.getElementById('timeDisplay').textContent = `${currentYear}年`;
-        }
-
-        function handleMonthClick(event) {
-            const cell = event.currentTarget;
-            currentYear = parseInt(cell.dataset.year);
-            currentMonth = parseInt(cell.dataset.month);
-            currentView = 'month';
-
-            // 手动更新视图切换按钮状态
-            document.querySelectorAll('#viewSwitch button').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.type === 'month');
-            });
-
-            renderCalendar();
-        }
-
-        function updateSummary() {
-            let total = 0;
-
-            if(currentView === 'month') {
-                total = getMonthlyTotal(currentYear, currentMonth);
-            } else {
-                for(let m = 0; m < 12; m++) {
-                    total += getMonthlyTotal(currentYear, m);
-                }
-            }
-
-            document.getElementById('periodSummary').textContent =
-                `${currentView === 'month' ? '本月' : '本年'}资产变化汇总：${formatAmount(total)}`;
-        }
-
-        function updateNavigation() {
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-
-            if(currentView === 'month') {
-                //prevBtn.textContent = '上一月';
-                //nextBtn.textContent = '下一月';
-                prevBtn.title = '上一月';
-                nextBtn.title = '下一月';
-                const isCurrentMonth = currentYear === today.getFullYear() &&
-                                    currentMonth === today.getMonth();
-                nextBtn.disabled = isCurrentMonth;
-            } else {
-                //prevBtn.textContent = '上一年';
-                //nextBtn.textContent = '下一年';
-                prevBtn.title = '上一年';
-                nextBtn.title = '下一年';
-                nextBtn.disabled = currentYear >= today.getFullYear();
-            }
-        }
-
-        function getDaysOfMonth(year, month) {
-            const firstDay = new Date(year, month, 1);
-            const startDay = firstDay.getDay(); // 直接使用getDay()的值
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const dates = [];
-
-            // 填充空白日期（周日）
-            for(let i = 0; i < startDay; i++) {
-                dates.push(new Date(year, month, -i));
-            }
-
-            // 生成当月日期（从周日开始）
-            for(let i = 1; i <= daysInMonth; i++) {
-                dates.push(new Date(year, month, i));
-            }
-
-            // 补全至7的倍数
-            while(dates.length % 7 !== 0) {
-                dates.push(new Date(year, month + 1, dates.length % 7 + 1));
-            }
-
-            return dates;
-        }
-
-        function prevPeriod() {
-                    if(currentView === 'month') {
-                        currentMonth--;
-                        if(currentMonth < 0) {
-                            currentMonth = 11;
-                            currentYear--;
+                            if (rangeType === 'all') {
+                                return `${date.getFullYear()}`;
+                            }
+                            return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
                         }
-                    } else {
-                        currentYear--;
+                    },
+                    axisTick: {
+                        alignWithLabel: true
                     }
-                    renderCalendar();
-                }
+                },
+                yAxis: {
+                    type: 'value',
+                    min: 'dataMin',
+                    axisLabel: {
+                        formatter: value => value.toFixed(2)
+                    }
+                },
+                series: [{
+                    data: filteredData.map(d => [
+                        new Date(d.date).getTime(), // 转换为时间戳
+                        d.value
+                    ]),
+                    //data: filteredData.map(d => [d.date, d.value]),
+                    type: 'line',
+                    smooth: true,
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(24,144,255,0.6)' },
+                            { offset: 1, color: 'rgba(24,144,255,0.01)' }
+                        ])
+                    },
+                    itemStyle: {
+                        color: '#1890ff'
+                    }
+                }],
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function (params) {
+                        // 获取原始时间戳（或日期字符串）
+                        const rawDate = params[0].axisValue;
 
-        function nextPeriod() {
-            if(currentView === 'month') {
-                const nextDate = new Date(currentYear, currentMonth + 1);
-                if(nextDate <= new Date(today.getFullYear(), today.getMonth() + 1)) {
-                    currentMonth++;
-                    if(currentMonth > 11) {
-                        currentMonth = 0;
-                        currentYear++;
+                        // 创建日期对象（兼容时间戳和字符串）
+                        const dateObj = new Date(typeof rawDate === 'number' ? rawDate : rawDate);
+
+                        // 使用echarts内置格式化工具
+                        const formattedDate = echarts.time.format(
+                            dateObj,
+                            '{yyyy}-{MM}-{dd}',
+                            false
+                        );
+
+                        // 使用更友好的中文格式（示例：2024年03月01日）
+                        // const formattedDate = `${dateObj.getFullYear()}年
+                        //                     ${(dateObj.getMonth()+1).toString().padStart(2, '0')}月
+                        //                     ${dateObj.getDate().toString().padStart(2, '0')}日`;
+
+                        return `${formattedDate}<br/>
+                                净值: ${params[0].data[1].toFixed(4)}`;
                     }
                 }
-            } else {
-                currentYear++;
-            }
-            renderCalendar();
+            };
+            chart.setOption(option, true);
+            updateTimestamp();
         }
 
-        // 事件监听
-        document.getElementById('prevBtn').addEventListener('click', prevPeriod);
-        document.getElementById('nextBtn').addEventListener('click', nextPeriod);
-
-        document.querySelectorAll('#viewSwitch button').forEach(btn => {
+        // 按钮事件
+        document.querySelectorAll('[data-range]').forEach(btn => {
             btn.addEventListener('click', function() {
-                const newView = this.dataset.type;
-                if(newView !== currentView) {
-                    currentView = newView;
-                    document.querySelectorAll('#viewSwitch button').forEach(b =>
-                        b.classList.remove('active'));
-                    this.classList.add('active');
-
-                    if(currentView === 'year') {
-                        // 保留当前年份
-                    } else {
-                        // 仅在主动切换视图时重置到当前年月
-                        if(this.dataset.type === 'month') {
-                            currentYear = today.getFullYear();
-                            currentMonth = today.getMonth();
-                        }
-                    }
-                    renderCalendar();
-                }
+                document.querySelectorAll('[data-range]').forEach(b =>
+                    b.classList.remove('active'));
+                this.classList.add('active');
+                updateChart(this.dataset.range);
             });
         });
 
-        // 初始渲染
-        renderCalendar();
+        // 初始加载
+        updateChart(currentRange);
+        window.addEventListener('resize', () => chart.resize());
+    });
+
+    //响应式调整：添加窗口resize监听，动态更新标签格式
+    window.addEventListener('resize', () => {
+        chart.resize();
+        updateChart(Range); // 重新应用格式
+    });
     </script>
 </body>
 </html>
+
+
 
 
 {% endblock %}

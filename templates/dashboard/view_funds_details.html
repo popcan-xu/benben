@@ -4,6 +4,146 @@
 {% load humanize %}
 
 {% block page_content %}
+<style>
+    // 净值曲线
+    .chart-card {
+        margin: 20px auto;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    #mainChart {
+        height: 300px;
+        width: 100%;
+    }
+    .time-switch {
+        padding: 15px 0;
+        border-top: 1px solid rgba(0,0,0,.125);
+    }
+
+    // 日历
+    @media (max-width: 768px) {
+        #viewSwitch .btn {
+            padding: 0.25rem 0.5rem; /* 减小按钮内边距 */
+            font-size: 0.875rem; /* 减小字体大小 */
+        }
+        #prevBtn,
+        #nextBtn {
+            background-color: transparent; /* 透明背景 */
+            border: none; /* 移除边框 */
+            padding: 5px; /* 调整内边距 */
+        }
+
+        #prevBtn:hover,
+        #nextBtn:hover {
+            background-color: transparent; /* 保持透明背景 */
+            box-shadow: none; /* 移除悬停时的阴影 */
+        }
+
+        .text-center {
+            font-size: 0.875rem; /* 减小年月显示的字体大小 */
+        }
+
+        .row.align-items-center {
+            gap: 5px; /* 减小元素之间的间距 */
+        }
+    }
+
+    /* 日期网格布局 */
+    .date-grid {
+        display: grid; /* 使用网格布局 */
+        grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
+        gap: 5px; /* 列间距 */
+        margin-top: 10px; /* 上边距 */
+        /*height: 445px;*/ /* 设置固定高度 */
+    }
+
+    /* 多月视图栅格布局 */
+    .month-grid {
+        grid-template-columns: repeat(4, 1fr); /* 每行 4 列 */
+    }
+
+    /* 日期单元格和月份单元格的共享样式 */
+    .day-cell, .month-cell {
+        padding: 10px; /* 内边距 */
+        text-align: center; /* 文本居中 */
+        border: 1px solid #dee2e6; /* 边框 */
+        display: flex; /* 使用 flex 布局 */
+        flex-direction: column; /* 垂直排列 */
+        align-items: center; /* 水平居中 */
+        justify-content: center; /* 垂直居中 */
+        border-radius: 4px; /* 圆角 */
+        font-size: 14px; /* 字体大小 */
+        min-height: 80px; /* 最小高度 */
+        position: relative; /* 相对定位 */
+        transition: transform 0.2s; /* 添加平滑过渡效果 */
+        cursor: pointer; /* 鼠标指针样式 */
+    }
+
+    /* 资产变化值的样式 */
+    .asset-value {
+        margin-top: 5px; /* 上边距 */
+        font-weight: bold; /* 加粗 */
+        font-size: 12px; /* 字体大小 */
+    }
+
+    /* 星期头的样式 */
+    .week-days {
+        display: grid; /* 网格布局 */
+        grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
+        gap: 5px; /* 列间距 */
+        margin-bottom: 10px; /* 下边距 */
+    }
+
+    /* 星期天的样式 */
+    .week-day {
+        background-color: #f8f9fa; /* 背景颜色 */
+        padding: 10px; /* 内边距 */
+        text-align: center; /* 文本居中 */
+        border: 1px solid #dee2e6; /* 边框 */
+        border-radius: 4px; /* 圆角 */
+    }
+
+    /* 摘要信息的样式 */
+    .summary {
+        margin-top: 20px; /* 上边距 */
+        text-align: center; /* 文本居中 */
+        font-weight: bold; /* 加粗 */
+        font-size: 16px; /* 字体大小 */
+        color: #333; /* 文字颜色 */
+    }
+
+    /* 当前日期的样式 */
+    .current-day {
+        background-color: #73a3de !important; /* 背景颜色 */
+        color: #333 !important; /* 文字颜色 */
+        font-weight: bold; /* 当前日期字体加粗 */
+    }
+
+    /* 正资产变化的样式 */
+    .positive {
+        background-color: #ffe5e5 !important; /* 背景颜色 */
+        color: #b30000 !important; /* 文字颜色 */
+    }
+
+    /* 负资产变化的样式 */
+    .negative {
+        background-color: #e5ffe5 !important; /* 背景颜色 */
+        color: #008000 !important; /* 文字颜色 */
+    }
+
+    /* 按钮禁用样式 */
+    .btn:disabled {
+        cursor: not-allowed; /* 鼠标禁用样式 */
+        opacity: 0.65; /* 透明度 */
+    }
+
+    /* 鼠标悬停效果 */
+    .day-cell:hover, .month-cell:hover {
+        transform: scale(1.05); /* 放大效果 */
+        z-index: 2; /* 提升层级 */
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15); /* 添加阴影 */
+    }
+</style>
+
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
@@ -82,20 +222,25 @@
             </div>
         </div>
 
-        <!-- 近一年收益 -->
+        <!-- 净值曲线 -->
         <div class="col-xl-6 col-md-6 mb-4">
             <div class="card h-100 shadow mb-4">
-                <!-- Card Header - Dropdown -->
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">近一年收益</h6>
-                    <div class="col-auto">
-                        <div class="h6 mb-0 text-gray-500">
-                            <a href="/benben/add_funds_details/{{ funds_id|safe }}/" style="color: inherit; text-decoration: none;">记一笔 ></a>
-                        </div>
+{#                <div class="card-header bg-white d-flex justify-content-between align-items-center">#}
+                    <h6 class="m-0 font-weight-bold text-primary">净值曲线</h6>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-primary active" data-range="currentYear">今年</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-range="year">近一年</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-range="all">全部</button>
                     </div>
                 </div>
-                <!-- Card Body -->
-                <div class="card-body">
+                <div class="card-body p-0">
+                    <div class="container mt-4">
+                        <div id="mainChart"></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-muted small">
+                    数据更新于：<span id="updateTime"></span>
                 </div>
             </div>
         </div>
@@ -103,13 +248,13 @@
     </div>
 
     <div class="row">
-        <!-- 净值曲线 -->
+        <!-- 年度收益率曲线 -->
         <div class="col-xl-6 col-md-6 mb-4">
             <div class="card h-100 shadow mb-4">
                 <!-- Card Header - Dropdown -->
                 <div
                     class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">净值曲线</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">年度收益率曲线</h6>
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
@@ -170,13 +315,13 @@
                     </div>
                     <!-- 星期头 -->
                     <div class="week-days" id="weekHeader">
-                        <div class="week-day">日</div>
+{#                        <div class="week-day">日</div>#}
                         <div class="week-day">一</div>
                         <div class="week-day">二</div>
                         <div class="week-day">三</div>
                         <div class="week-day">四</div>
                         <div class="week-day">五</div>
-                        <div class="week-day">六</div>
+{#                        <div class="week-day">六</div>#}
                     </div>
                     <!-- 日期网格 -->
                     <div class="date-grid" id="calendarGrid"></div>
@@ -316,176 +461,355 @@
 </div>
 
 <script>
-    line_container = document.getElementById('line_net_value');
-    line = echarts.init(line_container, 'white', {renderer: 'canvas'});
-    line_data = {{ line_data|safe }};
+'use strict';
 
-	bar_container = document.getElementById('bar_net_value');
-	bar = echarts.init(bar_container, 'white', {renderer: 'canvas'});
-    //bar_name = {{ year_end_date_array }};
-    //bar_value = {{ bar_value }};
-	//bar_name = JSON.parse('{{ name_array|safe }}');
-	//bar_value = {{ value_array|safe }};
-    bar_data = {{ bar_data|safe }};
+// 数据表dataTable......
+$(document).ready(function() {
+    $('#dataTable_account').DataTable( {
+        // l = length changing input control, f = filtering input, r = paging information, t = the table itself, i = table information, p = paging control, B = Buttons
+        //dom: 'lfrtip',
+        //先按第一列逆序排序，如果有相同，再按第二列顺序排序
+        //order后面就是一个多维数组，可以自由增删
+        "order": [[ 0, "desc" ]],
+        // 设置每页长度为5条记录
+        "pageLength": 5,
+        //"lengthChange": false, //隐藏每页长度选择下拉列表
+        "lengthMenu": [[5], [5]]
+        //"lengthMenu": [[5, 10, 25], [5, 10, 25]]
+    } );
+    //$('#dataTable_filter').hide(); // 隐藏搜索框
 
-    window.onload = function() {
-        draw_line(line, line_container, line_data);
-        draw_bar(bar, bar_container, bar_data);
+    $('#dataTable_profit').DataTable( {
+        "order": [[ 0, "asc" ]],
+        "pageLength": 5,
+        "lengthMenu": [[5], [5]]
+    } );
+} );
+
+// echarts图表......
+//年度收益率及曲线
+const line_container = document.getElementById('line_net_value');
+const line = echarts.init(line_container, 'white', {renderer: 'canvas'});
+const line_data = {{ line_data|safe }};
+const bar_container = document.getElementById('bar_net_value');
+const bar = echarts.init(bar_container, 'white', {renderer: 'canvas'});
+const bar_data = {{ bar_data|safe }};
+
+window.onload = function() {
+    draw_line(line, line_container, line_data);
+    draw_bar(bar, bar_container, bar_data);
+};
+
+function draw_line(chart_line, container, line_data) {
+    var option = {
+        title: {
+            text: '',
+            subtext: '',
+            x: 'center'
+        },
+        tooltip: {
+            trigger: 'axis'
+        },
+        legend: {
+            //orient: 'horizontal',
+            //x: 'left',
+            //y: 'top',
+            //data: ['人民币账户','沪深300全收益指数','上证指数']
+            //data: line_data['name_array']
+        },
+        grid: {
+            top: '10%',
+            left: '3%',
+            right: '5%',
+            bottom: '0%',
+            containLabel: true
+        },
+        xAxis: {
+            //name: '年份',
+            type: 'category',
+            boundaryGap: false,
+            //data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月',]
+            data: line_data[2],
+            axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                show: true,
+                interval: 'auto',
+                rotate: -35,
+                margin: 8,
+                // formatter: null,
+                textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                    color: '#333'
+                }
+            }
+        },
+        yAxis: {
+            //name: '净值',
+            type: 'value',
+            min:0, // 配置 Y 轴刻度最小值
+            //max:line_data['max_net_value'],  // 配置 Y 轴刻度最大值
+            splitNumber:7,  // 配置 Y 轴数值间隔
+        },
+        series: [ // 多组折线图数据
+            {
+                //name: '人民币账户',
+                name: line_data[0][0],
+                //data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
+                data: line_data[1][0],
+                type: 'line',
+                smooth: true
+            },
+
+            {
+                //name: '沪深300全收益指数',
+                name: line_data[0][1],
+                //data: [1.0000,0.8842,0.6716,0.7374,0.6981,1.0879,1.1664,1.0584,1.3151,1.0043,1.3978,1.8156,1.7518,1.4043,1.2760,1.5087,1.5087],
+                data: line_data[1][1],
+                type: 'line',
+                smooth: true
+            },
+
+            /*
+            {
+                //name: '上证指数',
+                name: line_data[0][2],
+                //data: [1.0000,0.8569,0.6711,0.6924,0.6457,0.9870,1.0800,0.9471,1.0092,0.7610,0.9307,1.0598,1.1107,0.9427,0.9078,1.0228,1.0228],
+                data: line_data[1][2],
+                type: 'line'
+            }
+            */
+        ],
+        color: ['#3366CC', '#FFCC99','#99CC33']
     };
+    chart_line.setOption(option);
+}
+
+function draw_bar(chart_bar, container, bar_data) {
+    //resize_chart(chart_bar, container);
+    var option = {
+        title: {
+            text: ''
+        },
+        tooltip: {
+            trigger: "item",
+            formatter: "{a} <br/>{b} : {c}%",
+            //backgroundColor: '#ffffff',   // 白色背景
+            borderColor: 'transparent',
+            borderWidth: 0
+        },
+        legend: {
+            //data:bar_data['name_array']
+        },
+        grid: {
+            top: '10%',
+            left: '3%',
+            right: '5%',
+            bottom: '0%',
+            containLabel: true
+        },
+        xAxis: {
+            //name: '年份',
+            data: bar_data[2],
+            axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                show: true,
+                interval: 'auto',
+                rotate: -35,
+                margin: 8,
+                // formatter: null,
+                textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                    color: '#333'
+                }
+            }
+        },
+        //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
+        yAxis: {
+            //name: '百分比',
+        },
+        series: [
+            {
+                name: bar_data[0][0],
+                type: 'bar',
+                data: bar_data[1][0],
+                color: ['#ac2159']
+            },
+            {
+                name:  bar_data[0][1],
+                type: 'bar',
+                data: bar_data[1][1],
+                color: ['#3366CC']
+            }
+        ]
+    };
+    chart_bar.setOption(option);
+    //window.onresize = function () { resize_chart(chart_bar, container); };
+}
+
+function resize_chart(chart, container){
+    container.style.width = (window.innerWidth - 1150) + 'px';
+    chart.resize();
+}
 
 
-    function draw_line(chart_line, container, line_data) {
-        var option = {
-            title: {
-                text: '',
-                subtext: '',
-                x: 'center'
-            },
-            tooltip: {
-                trigger: 'axis'
-            },
-            legend: {
-                orient: 'horizontal',
-                x: 'left',
-                y: 'top',
-                //data: ['人民币账户','沪深300全收益指数','上证指数']
-                //data: line_data['name_array']
-            },
+// 资产净值走势图
+document.addEventListener('DOMContentLoaded', function() {
+    const chart = echarts.init(document.getElementById('mainChart'));
+    const allData = {{ data|safe }};
+    let currentRange = 'currentYear';
+
+    // 更新时间显示
+    function updateTimestamp() {
+        const now = new Date();
+        document.getElementById('updateTime').textContent =
+            now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+    }
+
+    // 时间范围计算
+    function getDateRange(range) {
+        const now = new Date();
+        const ranges = {
+            all: new Date(0),
+            year: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
+            currentYear: new Date(now.getFullYear(), 0, 1)
+        };
+        return ranges[range] || ranges.all;
+    }
+
+    // 更新图表
+    function updateChart(range) {
+        const startDate = getDateRange(range);
+        const filteredData = allData.filter(d => new Date(d.date) >= startDate);
+        const option = {
             grid: {
-                top: '20%',
-                left: '3%',
-                right: '6%',
-                bottom: '3%',
+                left: '2%',    // 调整为更小的值
+                right: '2%',
+                top: '3%',
+                bottom: '0%',
                 containLabel: true
             },
             xAxis: {
-                name: '年份',
-                type: 'category',
-                boundaryGap: false,
-                //data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月',]
-                data: line_data[2]
+                type: 'time',
+                axisLabel: {
+                    rotate: -35,
+                    margin: 15,
+                    interval: (index, timestamp) => {
+                        const axis = chart.getModel().getComponent('xAxis', 0).axis;
+                        const [min, max] = axis.scale.getExtent();
+                        const totalDays = (max - min) / (1000 * 3600 * 24);
+
+                        if (totalDays <= 7) return index % 1 === 0;
+                        if (totalDays <= 30) return index % 2 === 0;
+                        return index % Math.ceil(totalDays/30) === 0;
+                    },
+                    formatter: function (value) {
+                        const date = new Date(value);
+                        // 处理闰年2月29日
+                        if (date.getMonth() === 1 && date.getDate() === 29) {
+                            return '02-29';
+                        }
+                        const rangeType = range;
+
+                        if (rangeType === 'currentYear') {
+                            const axis = chart.getModel().getComponent('xAxis', 0).axis;
+                            const [min, max] = axis.scale.getExtent();
+                            const dayDiff = (max - min) / (1000 * 3600 * 24);
+
+                            // 精确判断逻辑
+                            if (dayDiff <= 60) { // 调整为60天阈值
+                                const month = (date.getMonth()+1).toString().padStart(2, '0');
+                                const day = date.getDate().toString().padStart(2, '0');
+                                return `${month}-${day}`;
+                            }
+                            //return `${date.getFullYear().slice(-2)}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
+                            return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
+                        }
+
+                        if (rangeType === 'all') {
+                            return `${date.getFullYear()}`;
+                        }
+                        return `${date.getFullYear().toString().slice(-2)}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
+                    }
+                },
+                axisTick: {
+                    alignWithLabel: true
+                }
             },
             yAxis: {
-                name: '净值',
                 type: 'value',
-                min:0, // 配置 Y 轴刻度最小值
-                //max:line_data['max_net_value'],  // 配置 Y 轴刻度最大值
-                splitNumber:7,  // 配置 Y 轴数值间隔
-            },
-            series: [ // 多组折线图数据
-                {
-                    //name: '人民币账户',
-                    name: line_data[0][0],
-                    //data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
-                    data: line_data[1][0],
-                    type: 'line'
-                },
-
-                {
-                    //name: '沪深300全收益指数',
-                    name: line_data[0][1],
-                    //data: [1.0000,0.8842,0.6716,0.7374,0.6981,1.0879,1.1664,1.0584,1.3151,1.0043,1.3978,1.8156,1.7518,1.4043,1.2760,1.5087,1.5087],
-                    data: line_data[1][1],
-                    type: 'line'
-                },
-
-                /*
-                {
-                    //name: '上证指数',
-                    name: line_data[0][2],
-                    //data: [1.0000,0.8569,0.6711,0.6924,0.6457,0.9870,1.0800,0.9471,1.0092,0.7610,0.9307,1.0598,1.1107,0.9427,0.9078,1.0228,1.0228],
-                    data: line_data[1][2],
-                    type: 'line'
+                min: 'dataMin',
+                axisLabel: {
+                    formatter: value => value.toFixed(2)
                 }
-                */
-            ],
-            color: ['#3366CC', '#FFCC99','#99CC33']
+            },
+            series: [{
+                data: filteredData.map(d => [
+                    new Date(d.date).getTime(), // 转换为时间戳
+                    d.value
+                ]),
+                //data: filteredData.map(d => [d.date, d.value]),
+                type: 'line',
+                smooth: true,
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(24,144,255,0.6)' },
+                        { offset: 1, color: 'rgba(24,144,255,0.01)' }
+                    ])
+                },
+                itemStyle: {
+                    color: '#1890ff'
+                }
+            }],
+            tooltip: {
+                trigger: 'axis',
+                formatter: function (params) {
+                    // 获取原始时间戳（或日期字符串）
+                    const rawDate = params[0].axisValue;
+
+                    // 创建日期对象（兼容时间戳和字符串）
+                    const dateObj = new Date(typeof rawDate === 'number' ? rawDate : rawDate);
+
+                    // 使用echarts内置格式化工具
+                    const formattedDate = echarts.time.format(
+                        dateObj,
+                        '{yyyy}-{MM}-{dd}',
+                        false
+                    );
+
+                    // 使用更友好的中文格式（示例：2024年03月01日）
+                    // const formattedDate = `${dateObj.getFullYear()}年
+                    //                     ${(dateObj.getMonth()+1).toString().padStart(2, '0')}月
+                    //                     ${dateObj.getDate().toString().padStart(2, '0')}日`;
+
+                    return `${formattedDate}<br/>
+                            净值: ${params[0].data[1].toFixed(4)}`;
+                }
+            }
         };
-        chart_line.setOption(option);
+        chart.setOption(option, true);
+        updateTimestamp();
     }
 
-	function draw_bar(chart_bar, container, bar_data) {
-        //resize_chart(chart_bar, container);
-		var option = {
-			title: {
-				text: ''
-			},
-			tooltip: {
-				trigger: "item",
-				formatter: "{a} <br/>{b} : {c}"
-			},
-			legend: {
-				//data:bar_data['name_array']
-			},
-			xAxis: {
-                name: '年份',
-				data: bar_data[2],
-				axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
-					show: true,
-					interval: 'auto',
-					rotate: -35,
-					margin: 8,
-					// formatter: null,
-					textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
-						color: '#333'
-					}
-				}
-			},
-			//xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-			yAxis: {
-                name: '百分比',
-            },
-			series: [
-                {
-                    name: bar_data[0][0],
-                    type: 'bar',
-                    data: bar_data[1][0]
-                },
-                {
-                    name:  bar_data[0][1],
-                    type: 'bar',
-                    data: bar_data[1][1],
-                    color: ['#3366CC']
-                }
-            ]
-		};
-        chart_bar.setOption(option);
-        //window.onresize = function () { resize_chart(chart_bar, container); };
-	}
+    // 按钮事件
+    document.querySelectorAll('[data-range]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-range]').forEach(b =>
+                b.classList.remove('active'));
+            this.classList.add('active');
+            updateChart(this.dataset.range);
+        });
+    });
 
-    function resize_chart(chart, container){
-        container.style.width = (window.innerWidth - 1150) + 'px';
-        chart.resize();
-    }
+    // 初始加载
+    updateChart(currentRange);
+    window.addEventListener('resize', () => chart.resize());
+});
+
+//响应式调整：添加窗口resize监听，动态更新标签格式
+window.addEventListener('resize', () => {
+    chart.resize();
+    updateChart(Range); // 重新应用格式
+});
 
 
 
-    $(document).ready(function() {
-        $('#dataTable_account').DataTable( {
-            // l = length changing input control, f = filtering input, r = paging information, t = the table itself, i = table information, p = paging control, B = Buttons
-            //dom: 'lfrtip',
-            //先按第一列逆序排序，如果有相同，再按第二列顺序排序
-            //order后面就是一个多维数组，可以自由增删
-            "order": [[ 0, "desc" ]],
-            // 设置每页长度为5条记录
-            "pageLength": 5,
-            //"lengthChange": false, //隐藏每页长度选择下拉列表
-            "lengthMenu": [[5], [5]]
-            //"lengthMenu": [[5, 10, 25], [5, 10, 25]]
-        } );
-        //$('#dataTable_filter').hide(); // 隐藏搜索框
-
-        $('#dataTable_profit').DataTable( {
-            "order": [[ 0, "asc" ]],
-            "pageLength": 5,
-            "lengthMenu": [[5], [5]]
-        } );
-    } );
-
-
-
-
-
+// 资产日历......
 // 每日资产变化数据，key 为日期（格式：YYYY-MM-DD），value 为资产变化值
 /*const assetChanges = {
     "2024-10-15": 5000,
@@ -578,6 +902,7 @@ function renderMonthView() {
             }
         } else { // 如果是前一个月或下一个月的日期
             cell.classList.add('bg-light', 'text-muted'); // 添加灰度样式
+            cell.textContent = ''; // 非当前月日期显示为空
         }
 
         grid.appendChild(cell); // 将单元格添加到网格
@@ -640,8 +965,6 @@ function renderYearView() {
     document.getElementById('timeDisplay').textContent = `${currentYear}年`; // 更新时间显示
 }
 
-
-
 // 处理月份点击事件
 function handleMonthClick(event) {
     const cell = event.currentTarget; // 获取被点击的单元格元素
@@ -672,7 +995,8 @@ function updateSummary() {
     // 更新摘要信息
     document.getElementById('periodSummary').textContent = `${currentView === 'month' ? '本月' : '本年'}资产变化汇总：${formatAmount(total)}`;
     // 取消加粗
-    document.getElementById('periodSummary').style.fontWeight = "normal";}
+    document.getElementById('periodSummary').style.fontWeight = "normal";
+}
 
 // 更新导航按钮的状态
 function updateNavigation() {
@@ -696,8 +1020,8 @@ function updateNavigation() {
     }
 }
 
-
 // 获取指定年份和月份的所有日期
+/*
 function getDaysOfMonth(year, month) {
     const firstDay = new Date(year, month, 1); // 本月第一天
     const startDay = firstDay.getDay(); // 直接使用getDay()的值  // 计算本周的第一天是周几
@@ -721,8 +1045,51 @@ function getDaysOfMonth(year, month) {
 
     return dates; // 返回所有日期
 }
+*/
 
+// 修改后的 getDaysOfMonth 函数
+function getDaysOfMonth(year, month) {
+    const firstDay = new Date(year, month, 1);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const dates = [];
 
+    // 计算需要补全的前置工作日
+    let prependDays = 0;
+    if (firstDay.getDay() !== 0 && firstDay.getDay() !== 6) {
+        prependDays = firstDay.getDay() - 1;
+    }
+
+    // 生成前置日期（上月）
+    for (let i = prependDays; i > 0; i--) {
+        dates.push(new Date(year, month, 1 - i));
+    }
+
+    // 生成当前月工作日
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        if (date.getDay() !== 0 && date.getDay() !== 6) {
+            dates.push(date);
+        }
+    }
+
+    // 补全后续日期（下月）
+    const total = dates.length;
+    const remainder = total % 5;
+    const appendDays = remainder === 0 ? 0 : 5 - remainder;
+
+    let nextMonthDay = 1;
+    let appended = 0;
+    while (appended < appendDays) {
+        const date = new Date(year, month + 1, nextMonthDay);
+        if (date.getDay() !== 0 && date.getDay() !== 6) {
+            dates.push(date);
+            appended++;
+        }
+        nextMonthDay++;
+    }
+
+    return dates;
+}
 
 // 上一周期导航
 function prevPeriod() {

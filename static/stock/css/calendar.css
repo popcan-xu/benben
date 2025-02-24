@@ -30,7 +30,7 @@
 /* 日期网格布局 */
 .date-grid {
     display: grid; /* 使用网格布局 */
-    grid-template-columns: repeat(7, 1fr); /* 每行 7 列 */
+    grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
     gap: 5px; /* 列间距 */
     margin-top: 10px; /* 上边距 */
     /*height: 445px;*/ /* 设置固定高度 */
@@ -68,7 +68,7 @@
 /* 星期头的样式 */
 .week-days {
     display: grid; /* 网格布局 */
-    grid-template-columns: repeat(7, 1fr); /* 每行 7 列 */
+    grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
     gap: 5px; /* 列间距 */
     margin-bottom: 10px; /* 下边距 */
 }
