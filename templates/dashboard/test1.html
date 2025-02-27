@@ -936,7 +936,7 @@ function getDaysOfMonth(year, month) {
             margin: 20px auto;
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
-        #mainChart {
+        #chart_net_value {
             height: 450px;
             width: 100%;
         }
@@ -944,6 +944,19 @@ function getDaysOfMonth(year, month) {
             padding: 15px 0;
             border-top: 1px solid rgba(0,0,0,.125);
         }
+/* 覆盖按钮组字体 */
+.chart-card .btn-group .btn {
+    font-size: 12px !important;
+    padding: 0.25rem 0.75rem;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .chart-card .btn-group .btn {
+        font-size: 10px !important;
+        padding: 0.2rem 0.5rem;
+    }
+}
     </style>
 </head>
 <body>
@@ -959,7 +972,7 @@ function getDaysOfMonth(year, month) {
             </div>
             <div class="card-body p-0">
                 <div class="container mt-4">
-                    <div id="mainChart"></div>
+                    <div id="chart_net_value"></div>
                 </div>
             </div>
             <div class="card-footer bg-white text-muted small">
@@ -971,7 +984,7 @@ function getDaysOfMonth(year, month) {
     'use strict';
 
     document.addEventListener('DOMContentLoaded', function() {
-        const chart = echarts.init(document.getElementById('mainChart'));
+        const chart1 = echarts.init(document.getElementById('chart_net_value'));
         const allData = {{ data|safe }};
         let currentRange = 'currentYear';
 
@@ -1004,7 +1017,7 @@ function getDaysOfMonth(year, month) {
                         rotate: -35,
                         margin: 15,
                         interval: (index, timestamp) => {
-                            const axis = chart.getModel().getComponent('xAxis', 0).axis;
+                            const axis = chart1.getModel().getComponent('xAxis', 0).axis;
                             const [min, max] = axis.scale.getExtent();
                             const totalDays = (max - min) / (1000 * 3600 * 24);
 
@@ -1021,7 +1034,7 @@ function getDaysOfMonth(year, month) {
                             const rangeType = range;
 
                             if (rangeType === 'currentYear') {
-                                const axis = chart.getModel().getComponent('xAxis', 0).axis;
+                                const axis = chart1.getModel().getComponent('xAxis', 0).axis;
                                 const [min, max] = axis.scale.getExtent();
                                 const dayDiff = (max - min) / (1000 * 3600 * 24);
 
@@ -1095,7 +1108,7 @@ function getDaysOfMonth(year, month) {
                     }
                 }
             };
-            chart.setOption(option, true);
+            chart1.setOption(option, true);
             updateTimestamp();
         }
 
@@ -1111,13 +1124,120 @@ function getDaysOfMonth(year, month) {
 
         // 初始加载
         updateChart(currentRange);
-        window.addEventListener('resize', () => chart.resize());
+        window.addEventListener('resize', () => {
+            chart1.resize();
+        });
     });
 
     //响应式调整：添加窗口resize监听，动态更新标签格式
-    window.addEventListener('resize', () => {
-        chart.resize();
-        updateChart(Range); // 重新应用格式
+    //window.addEventListener('resize', () => {
+    //    chart1.resize();
+    //    updateChart(currentRange); // 重新应用格式
+    //});
+    </script>
+</body>
+</html>
+
+<!-- 净值折线图和增长率柱图 -->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>净值与增长率组合图</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <style>
+        #mainChart {
+            width: 100%;
+            height: 600px;
+            margin: 20px auto;
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div id="mainChart"></div>
+
+    <script>
+    'use strict';
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化图表实例
+        const chart = echarts.init(document.getElementById('mainChart'));
+
+        // 模拟数据（可根据实际数据替换）
+        const option = {
+            title: {
+                text: '年度净值与增长率分析',
+                subtext: '数据来源：企业年报',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross'
+                }
+            },
+            legend: {
+                data: ['净值（万元）', '增长率'],
+                top: 30
+            },
+            grid: {
+                left: '10%',
+                right: '10%',
+                bottom: '15%'
+            },
+            xAxis: [{
+                type: 'category',
+                data: ['2018', '2019', '2020', '2021', '2022', '2023'], // 年份数据
+                axisLabel: {
+                    rotate: 45
+                }
+            }],
+            yAxis: [
+                { // 左侧Y轴（净值）
+                    type: 'value',
+                    name: '净值（万元）',
+                    axisLabel: {
+                        formatter: '{value}'
+                    }
+                },
+                { // 右侧Y轴（增长率）
+                    type: 'value',
+                    name: '增长率',
+                    axisLabel: {
+                        formatter: '{value}%'
+                    },
+                    splitLine: {show: false}  // 隐藏辅助线
+                }
+            ],
+            series: [
+                { // 净值折线系列
+                    name: '净值（万元）',
+                    type: 'line',
+                    smooth: true,
+                    yAxisIndex: 0, // 绑定左侧Y轴
+                    data: [120, 135, 165, 198, 210, 245],
+                    itemStyle: {
+                        color: '#1890ff' // 蓝色折线
+                    },
+                    lineStyle: {
+                        width: 3
+                    }
+                },
+                { // 增长率柱图系列
+                    name: '增长率',
+                    type: 'bar',
+                    yAxisIndex: 1, // 绑定右侧Y轴
+                    data: [12.5, 22.2, -18.3, 20.0, 15.8, 16.7],
+                    itemStyle: {
+                        color: '#52c41a', // 绿色柱图
+                        borderRadius: [5, 5, 0, 0] // 顶部圆角
+                    },
+                    barWidth: '30%' // 柱宽设置
+                }
+            ]
+        };
+
+        chart.setOption(option);
+        window.addEventListener('resize', () => chart.resize());
     });
     </script>
 </body>

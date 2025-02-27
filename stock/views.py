@@ -340,6 +340,10 @@ def view_funds_details(request, funds_id):
             "value": value
         })
 
+    funds_details_list_TOP5 = funds_details.objects.filter(funds=funds_id).order_by("-date")[:5]
+
+    updating_time = datetime.datetime.now()
+
     return render(request,  templates_path + 'view_funds_details.html', locals())
 
 
@@ -1668,15 +1672,23 @@ def add_funds_details(request, funds_id):
             latest_funds_principal = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_principal)
             latest_funds_PHR = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_PHR)
             latest_funds_net_value = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_net_value)
+            latest_funds_profit_rate = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_profit_rate)
             #print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR)
 
             funds_principal = latest_funds_principal + funds_in_out
-            funds_net_value = (funds_value - funds_in_out) / latest_funds_PHR
+            if latest_funds_PHR == 0: # 如果份数为0，则基金已经关闭，净值保持不变
+                funds_net_value = latest_funds_net_value
+            else:
+                funds_net_value = (funds_value - funds_in_out) / latest_funds_PHR
             funds_PHR = funds_value / funds_net_value
             funds_current_profit = funds_value - funds_in_out - latest_funds_value
             funds_current_profit_rate = (funds_net_value - latest_funds_net_value) / latest_funds_net_value
             funds_profit = funds_value - funds_principal
-            funds_profit_rate = funds_profit / funds_principal
+            if latest_funds_PHR == 0: # 如果份数为0，则基金已经关闭，累计收益率保持不变
+                funds_profit_rate = latest_funds_profit_rate
+            else:
+                funds_profit_rate = funds_profit / funds_principal
+
             #print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR,funds_principal,funds_net_value,funds_PHR,funds_profit,funds_profit_rate)
             #print(date, earliest_date)
             years = float((date - earliest_date).days / 365)
@@ -1713,7 +1725,7 @@ def add_funds_details(request, funds_id):
             return redirect('/benben/list_funds_details/')
         except Exception as e:
             error_info = "输入信息有错误！"
-            #print(latest_date, earliest_date, latest_funds_principal, latest_funds_PHR, funds_principal,funds_net_value, funds_PHR, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
+            print(latest_date, earliest_date, latest_funds_principal, latest_funds_PHR, funds_principal,funds_net_value, funds_PHR, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
             return render(request, templates_path + 'backstage/add_funds_details.html', locals())
         finally:
             pass
@@ -1887,16 +1899,19 @@ def test(request):
     # print(price, increase, color)
     # price, increase, color = get_quote_akshare("000002")
     # print(price, increase, color)
-    data = []
-    funds_details_list = funds_details.objects.filter(funds=5).order_by("date")
-    for rs in funds_details_list:
-        date = str(rs.date)
-        value = float(rs.funds_net_value)
-        data.append({
-            "date": date,
-            "value": value
-        })
-    print(data)
+    # echarts图表
+    # data = []
+    # funds_details_list = funds_details.objects.filter(funds=3).order_by("date")
+    # for rs in funds_details_list:
+    #     date = str(rs.date)
+    #     value = float(rs.funds_net_value)
+    #     data.append({
+    #         "date": date,
+    #         "value": value
+    #     })
+    # print(data)
+
+    #trade_list = trade.objects.order_by("trade_date")
     return render(request, templates_path + 'test.html', locals())
 
 # 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值

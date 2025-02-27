@@ -5,21 +5,7 @@
 
 {% block page_content %}
 <style>
-    // 净值曲线
-    .chart-card {
-        margin: 20px auto;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-    #mainChart {
-        height: 300px;
-        width: 100%;
-    }
-    .time-switch {
-        padding: 15px 0;
-        border-top: 1px solid rgba(0,0,0,.125);
-    }
-
-    // 日历
+    // 资产变化日历
     @media (max-width: 768px) {
         #viewSwitch .btn {
             padding: 0.25rem 0.5rem; /* 减小按钮内边距 */
@@ -185,12 +171,12 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">当期收益（元）</div>
-                            <div class="small mb-0 text-gray-500">注：{{ second_max_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
+                            <div class="small mb-0 text-gray-500">{{ second_max_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>
                             <div class="h4 mb-0 text-gray-800 font"><span style="color: {{ current_funds_details_object.funds_current_profit|text_color }}">{{ current_funds_details_object.funds_current_profit|floatformat:0 }}</span></div>
                         </div>
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">当期收益率（%）</div>
-                            <div class="small mb-0 text-gray-500">注：{{ second_max_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
+                            <div class="small mb-0 text-gray-500">{{ second_max_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>
                             <div class="h4 mb-0  text-gray-800"><span style="color: {{ current_funds_details_object.funds_current_profit_rate|text_color }}">{{ current_funds_details_object.funds_current_profit_rate|percent }}</span></div>
                         </div>
                     </div>
@@ -198,12 +184,12 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">累计收益（元）</div>
-                            <div class="small mb-0 text-gray-500">注：{{ min_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
+                            <div class="small mb-0 text-gray-500">{{ min_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>
                             <div class="h4 mb-0 text-gray-800 font">{{ current_funds_details_object.funds_profit|floatformat:0 }}</div>
                         </div>
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">累计收益率（%）</div>
-                            <div class="small mb-0 text-gray-500">注：{{ min_date|date:'Y/m/d' }}-{{ max_date|date:'Y/m/d' }}</div>
+                            <div class="small mb-0 text-gray-500">{{ min_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>
                             <div class="h4 mb-0  text-gray-800">{{ current_funds_details_object.funds_profit_rate|percent }}</div>
                         </div>
                     </div>
@@ -219,24 +205,41 @@
                         </div>
                     </div>
                 </div>
+                <div class="card-footer bg-white text-muted small">
+                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                </div>
             </div>
         </div>
 
         <!-- 净值曲线 -->
         <div class="col-xl-6 col-md-6 mb-4">
             <div class="card h-100 shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-{#                <div class="card-header bg-white d-flex justify-content-between align-items-center">#}
+                <div class="card-header d-flex align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">净值曲线</h6>
                     <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-outline-primary active" data-range="currentYear">今年</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary" data-range="year">近一年</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary" data-range="all">全部</button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary active"
+                            data-range="currentYear"
+                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                        >今年</button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-range="year"
+                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                        >近一年</button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-range="all"
+                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                        >全部</button>
                     </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="container mt-4">
-                        <div id="mainChart"></div>
+                        <div id="Chart_net_value" style="width:100%; height:300px;"></div>
                     </div>
                 </div>
                 <div class="card-footer bg-white text-muted small">
@@ -258,7 +261,10 @@
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
-                    <div id="line_net_value" style="width:100%; height:400px;"></div>
+                    <div id="line_net_value" style="width:100%; height:300px; display:block;"></div>
+                </div>
+                <div class="card-footer bg-white text-muted small">
+                    数据更新于：<span id="updateTime_line_net_value"></span>
                 </div>
             </div>
         </div>
@@ -272,7 +278,10 @@
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
-                    <div id="bar_net_value" style="width:100%; height:400px;"></div><!--数据展现的容器1-->
+                    <div id="bar_net_value" style="width:100%; height:300px;"></div><!--数据展现的容器1-->
+                </div>
+                <div class="card-footer bg-white text-muted small">
+                    数据更新于：<span id="updateTime_bar_net_value"></span>
                 </div>
             </div>
         </div>
@@ -294,8 +303,16 @@
                         <div class="col-auto pr-0">
                             <!-- 年月视图切换按钮 -->
                             <div class="btn-group" id="viewSwitch">
-                                <button class="btn btn-outline-primary active" data-type="month">月</button>
-                                <button class="btn btn-outline-primary" data-type="year">年</button>
+                                <button
+                                    class="btn btn-outline-primary active"
+                                    data-type="month"
+                                    style="font-size: 14px !important; padding: 0.25rem 0.75rem;"
+                                >月</button>
+                                <button
+                                    class="btn btn-outline-primary"
+                                    data-type="year"
+                                    style="font-size: 14px !important; padding: 0.25rem 0.75rem;"
+                                >年</button>
                             </div>
                         </div>
                         <div class="col d-flex justify-content-end">
@@ -328,6 +345,9 @@
                     <!-- 摘要信息 -->
                     <div class="summary" id="periodSummary"></div>
                 </div>
+                <div class="card-footer bg-white text-muted small">
+                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                </div>
             </div>
         </div>
 
@@ -336,7 +356,7 @@
             <div class="card h-100 shadow mb-4">
                 <!-- Card Header - Dropdown -->
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">更新记录</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">最近更新</h6>
                     <div class="col-auto">
                         <div class="h6 mb-0 text-gray-500">
                             <a href="/benben/add_funds_details/{{ funds_id|safe }}/" style="color: inherit; text-decoration: none;">记一笔 ></a>
@@ -345,9 +365,9 @@
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
-                    <div style="height:100%; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                    <div style="height:450px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
                         <div class="table-responsive">
-                            <table id="dataTable_account" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                            <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
                                 <thead class="bg-gradient-secondary text-gray-100">
                                     <tr>
                                         <th>日期</th>
@@ -360,13 +380,12 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                                    {% for funds_details in funds_details_list %}
+                                    {% for funds_details in funds_details_list_TOP5 %}
                                         <tr>
                                             <td>{{ funds_details.date|date:'Y-m-d' }}</td>
-                                            <td>{{ funds_details.funds_value }}</td>
-                                            <td>{{ funds_details.funds_in_out }}</td>
-                                            <td style="color: {{ funds_details.funds_current_profit|text_color }}">{{ funds_details.funds_current_profit }}</td>
+                                            <td>{{ funds_details.funds_value|floatformat:0 }}</td>
+                                            <td>{{ funds_details.funds_in_out|floatformat:0 }}</td>
+                                            <td style="color: {{ funds_details.funds_current_profit|text_color }}">{{ funds_details.funds_current_profit|floatformat:0 }}</td>
                                             <td style="color: {{ funds_details.funds_current_profit_rate|text_color }}">{{ funds_details.funds_current_profit_rate|percent }}%</td>
                                             <td>
                                                 <a href="/benben/del_funds_details/{{ funds_details.id|safe }}/" class="btn btn-default btn-sm">
@@ -388,6 +407,9 @@
                             </table>
                         </div>
                     </div>
+                </div>
+                <div class="card-footer bg-white text-muted small">
+                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
                 </div>
             </div>
         </div>
@@ -457,208 +479,33 @@
                 </div>
             </div>
         </div>
+        <div class="card-footer bg-white text-muted small">
+            数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+        </div>
     </div>
 </div>
 
 <script>
 'use strict';
 
-// 数据表dataTable......
-$(document).ready(function() {
-    $('#dataTable_account').DataTable( {
-        // l = length changing input control, f = filtering input, r = paging information, t = the table itself, i = table information, p = paging control, B = Buttons
-        //dom: 'lfrtip',
-        //先按第一列逆序排序，如果有相同，再按第二列顺序排序
-        //order后面就是一个多维数组，可以自由增删
-        "order": [[ 0, "desc" ]],
-        // 设置每页长度为5条记录
-        "pageLength": 5,
-        //"lengthChange": false, //隐藏每页长度选择下拉列表
-        "lengthMenu": [[5], [5]]
-        //"lengthMenu": [[5, 10, 25], [5, 10, 25]]
-    } );
-    //$('#dataTable_filter').hide(); // 隐藏搜索框
-
-    $('#dataTable_profit').DataTable( {
-        "order": [[ 0, "asc" ]],
-        "pageLength": 5,
-        "lengthMenu": [[5], [5]]
-    } );
-} );
-
 // echarts图表......
-//年度收益率及曲线
-const line_container = document.getElementById('line_net_value');
-const line = echarts.init(line_container, 'white', {renderer: 'canvas'});
-const line_data = {{ line_data|safe }};
-const bar_container = document.getElementById('bar_net_value');
-const bar = echarts.init(bar_container, 'white', {renderer: 'canvas'});
-const bar_data = {{ bar_data|safe }};
 
-window.onload = function() {
-    draw_line(line, line_container, line_data);
-    draw_bar(bar, bar_container, bar_data);
-};
-
-function draw_line(chart_line, container, line_data) {
-    var option = {
-        title: {
-            text: '',
-            subtext: '',
-            x: 'center'
-        },
-        tooltip: {
-            trigger: 'axis'
-        },
-        legend: {
-            //orient: 'horizontal',
-            //x: 'left',
-            //y: 'top',
-            //data: ['人民币账户','沪深300全收益指数','上证指数']
-            //data: line_data['name_array']
-        },
-        grid: {
-            top: '10%',
-            left: '3%',
-            right: '5%',
-            bottom: '0%',
-            containLabel: true
-        },
-        xAxis: {
-            //name: '年份',
-            type: 'category',
-            boundaryGap: false,
-            //data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月',]
-            data: line_data[2],
-            axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
-                show: true,
-                interval: 'auto',
-                rotate: -35,
-                margin: 8,
-                // formatter: null,
-                textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
-                    color: '#333'
-                }
-            }
-        },
-        yAxis: {
-            //name: '净值',
-            type: 'value',
-            min:0, // 配置 Y 轴刻度最小值
-            //max:line_data['max_net_value'],  // 配置 Y 轴刻度最大值
-            splitNumber:7,  // 配置 Y 轴数值间隔
-        },
-        series: [ // 多组折线图数据
-            {
-                //name: '人民币账户',
-                name: line_data[0][0],
-                //data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
-                data: line_data[1][0],
-                type: 'line',
-                smooth: true
-            },
-
-            {
-                //name: '沪深300全收益指数',
-                name: line_data[0][1],
-                //data: [1.0000,0.8842,0.6716,0.7374,0.6981,1.0879,1.1664,1.0584,1.3151,1.0043,1.3978,1.8156,1.7518,1.4043,1.2760,1.5087,1.5087],
-                data: line_data[1][1],
-                type: 'line',
-                smooth: true
-            },
-
-            /*
-            {
-                //name: '上证指数',
-                name: line_data[0][2],
-                //data: [1.0000,0.8569,0.6711,0.6924,0.6457,0.9870,1.0800,0.9471,1.0092,0.7610,0.9307,1.0598,1.1107,0.9427,0.9078,1.0228,1.0228],
-                data: line_data[1][2],
-                type: 'line'
-            }
-            */
-        ],
-        color: ['#3366CC', '#FFCC99','#99CC33']
-    };
-    chart_line.setOption(option);
-}
-
-function draw_bar(chart_bar, container, bar_data) {
-    //resize_chart(chart_bar, container);
-    var option = {
-        title: {
-            text: ''
-        },
-        tooltip: {
-            trigger: "item",
-            formatter: "{a} <br/>{b} : {c}%",
-            //backgroundColor: '#ffffff',   // 白色背景
-            borderColor: 'transparent',
-            borderWidth: 0
-        },
-        legend: {
-            //data:bar_data['name_array']
-        },
-        grid: {
-            top: '10%',
-            left: '3%',
-            right: '5%',
-            bottom: '0%',
-            containLabel: true
-        },
-        xAxis: {
-            //name: '年份',
-            data: bar_data[2],
-            axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
-                show: true,
-                interval: 'auto',
-                rotate: -35,
-                margin: 8,
-                // formatter: null,
-                textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
-                    color: '#333'
-                }
-            }
-        },
-        //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-        yAxis: {
-            //name: '百分比',
-        },
-        series: [
-            {
-                name: bar_data[0][0],
-                type: 'bar',
-                data: bar_data[1][0],
-                color: ['#ac2159']
-            },
-            {
-                name:  bar_data[0][1],
-                type: 'bar',
-                data: bar_data[1][1],
-                color: ['#3366CC']
-            }
-        ]
-    };
-    chart_bar.setOption(option);
-    //window.onresize = function () { resize_chart(chart_bar, container); };
-}
-
-function resize_chart(chart, container){
-    container.style.width = (window.innerWidth - 1150) + 'px';
-    chart.resize();
-}
-
-
-// 资产净值走势图
+// 净值曲线
 document.addEventListener('DOMContentLoaded', function() {
-    const chart = echarts.init(document.getElementById('mainChart'));
+    const chart = echarts.init(document.getElementById('Chart_net_value'));
     const allData = {{ data|safe }};
     let currentRange = 'currentYear';
 
     // 更新时间显示
     function updateTimestamp() {
-        const now = new Date();
-        document.getElementById('updateTime').textContent =
-            now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        document.getElementById('updateTime').textContent = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
 
     // 时间范围计算
@@ -680,14 +527,14 @@ document.addEventListener('DOMContentLoaded', function() {
             grid: {
                 left: '2%',    // 调整为更小的值
                 right: '2%',
-                top: '3%',
+                top: '2%',
                 bottom: '0%',
                 containLabel: true
             },
             xAxis: {
                 type: 'time',
                 axisLabel: {
-                    rotate: -35,
+                    rotate: 45,
                     margin: 15,
                     interval: (index, timestamp) => {
                         const axis = chart.getModel().getComponent('xAxis', 0).axis;
@@ -801,26 +648,205 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', () => chart.resize());
 });
 
-//响应式调整：添加窗口resize监听，动态更新标签格式
-window.addEventListener('resize', () => {
-    chart.resize();
-    updateChart(Range); // 重新应用格式
+// 年度收益率折线图
+document.addEventListener('DOMContentLoaded', function() {
+    const chart = echarts.init(document.getElementById('line_net_value'));
+    const line_data = {{ line_data|safe }};
+    //let currentRange = 'currentYear';
+
+    // 更新时间显示
+    function updateTimestamp() {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        document.getElementById('updateTime_line_net_value').textContent = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // 更新图表
+    function updateChart() {
+        const option = {
+        title: {
+            text: '',
+            subtext: '',
+            x: 'center'
+        },
+        tooltip: {
+            trigger: 'axis'
+        },
+        legend: {
+            //orient: 'horizontal',
+            //x: 'left',
+            //y: 'top',
+            //data: ['人民币账户','沪深300全收益指数','上证指数']
+            //data: line_data['name_array']
+        },
+        grid: {
+            top: '10%',
+            left: '3%',
+            right: '5%',
+            bottom: '0%',
+            containLabel: true
+        },
+        xAxis: {
+            //name: '年份',
+            type: 'category',
+            boundaryGap: false,
+            //data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月',]
+            data: line_data[2],
+            axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                show: true,
+                interval: 'auto',
+                rotate: 45,
+                margin: 15,
+                // formatter: null,
+                textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                    color: '#333'
+                }
+            }
+        },
+        yAxis: {
+            //name: '净值',
+            type: 'value',
+            min:0, // 配置 Y 轴刻度最小值
+            //max:line_data['max_net_value'],  // 配置 Y 轴刻度最大值
+            splitNumber:7,  // 配置 Y 轴数值间隔
+        },
+        series: [ // 多组折线图数据
+            {
+                //name: '人民币账户',
+                name: line_data[0][0],
+                //data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
+                data: line_data[1][0],
+                type: 'line',
+                smooth: true,
+                itemStyle: {
+                    color: '#1890ff'
+                }
+            },
+
+            {
+                //name: '沪深300全收益指数',
+                name: line_data[0][1],
+                //data: [1.0000,0.8842,0.6716,0.7374,0.6981,1.0879,1.1664,1.0584,1.3151,1.0043,1.3978,1.8156,1.7518,1.4043,1.2760,1.5087,1.5087],
+                data: line_data[1][1],
+                type: 'line',
+                smooth: true,
+                itemStyle: {
+                    color: '#ee9945'
+                }
+            },
+
+            /*
+            {
+                //name: '上证指数',
+                name: line_data[0][2],
+                //data: [1.0000,0.8569,0.6711,0.6924,0.6457,0.9870,1.0800,0.9471,1.0092,0.7610,0.9307,1.0598,1.1107,0.9427,0.9078,1.0228,1.0228],
+                data: line_data[1][2],
+                type: 'line'
+            }
+            */
+        ],
+        color: ['#1890ff', '#ee9945']
+    };
+        chart.setOption(option, true);
+        updateTimestamp();
+    }
+
+    // 初始加载
+    updateChart();
+    window.addEventListener('resize', () => chart.resize());
+});
+
+// 年度收益率柱图
+document.addEventListener('DOMContentLoaded', function() {
+    const chart = echarts.init(document.getElementById('bar_net_value'));
+    const bar_data = {{ bar_data|safe }};
+
+    // 更新时间显示
+    function updateTimestamp() {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        document.getElementById('updateTime_bar_net_value').textContent = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // 更新图表
+    function updateChart() {
+        const option = {
+        title: {
+            text: ''
+        },
+        tooltip: {
+            trigger: "item",
+            formatter: "{a} <br/>{b} : {c}%",
+            //backgroundColor: '#ffffff',   // 白色背景
+            borderColor: 'transparent',
+            borderWidth: 0
+        },
+        legend: {
+            //data:bar_data['name_array']
+        },
+        grid: {
+            top: '10%',
+            left: '3%',
+            right: '5%',
+            bottom: '0%',
+            containLabel: true
+        },
+        xAxis: {
+            //name: '年份',
+            data: bar_data[2],
+            axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                show: true,
+                interval: 'auto',
+                rotate: 45,
+                margin: 15,
+                // formatter: null,
+                textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                    color: '#333'
+                }
+            }
+        },
+        //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
+        yAxis: {
+            //name: '百分比',
+        },
+        series: [
+            {
+                name: bar_data[0][0],
+                type: 'bar',
+                data: bar_data[1][0],
+                color: ['#1890ff']
+            },
+            {
+                name:  bar_data[0][1],
+                type: 'bar',
+                data: bar_data[1][1],
+                color: ['#ee9945']
+            }
+        ]
+    };
+        chart.setOption(option, true);
+        updateTimestamp();
+    }
+
+    // 初始加载
+    updateChart();
+    window.addEventListener('resize', () => chart.resize());
 });
 
 
 
 // 资产日历......
-// 每日资产变化数据，key 为日期（格式：YYYY-MM-DD），value 为资产变化值
-/*const assetChanges = {
-    "2024-10-15": 5000,
-    "2024-10-20": -3000,
-    "2024-11-05": 80765,
-    "2024-11-18": -4500,
-    "2024-12-10": 123456,
-    "2025-01-08": -75123,
-    "2025-02-14": 175123,
-    "2025-02-15": 0
-};*/
+
 const assetChanges = {{ assetChanges|safe }};
 
 // 初始化当前日期
