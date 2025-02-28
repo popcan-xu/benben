@@ -69,8 +69,35 @@ class position(models.Model):
     created_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
 
+# 历史持仓数据模型
+class historical_position(models.Model):
+    # 定义持仓货币数据字典
+    CNY = 1
+    HKD = 2
+    USD = 3
+    POSITION_CURRENCY_ITEMS = (
+        (CNY, '人民币'),
+        (HKD, '港元'),
+        (USD, '美元'),
+    )
+    date = models.DateField(verbose_name='日期')
+    stock = models.ForeignKey(to="stock", on_delete=models.CASCADE, verbose_name='股票', db_index=True)
+    quantity = models.IntegerField(default=0, verbose_name='持仓数量')
+    currency = models.PositiveIntegerField(default=CNY, choices=POSITION_CURRENCY_ITEMS, verbose_name='持仓货币')
+    created_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['date', 'stock_id', 'currency'],
+                name='unique_daily_position'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['stock_id', 'currency'], name='idx_stock_currency')
+        ]
 
-# 交易数据类型
+# 交易数据模型
 class trade(models.Model):
     # 定义交易类型数据字典
     BUY = 1
@@ -98,7 +125,6 @@ class trade(models.Model):
     filed_time = models.DateTimeField(default=datetime.datetime(1970, 1, 1, 0, 0, 0), verbose_name='归档时间')
     created_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
-
 
 # 分红数据模型
 class dividend(models.Model):

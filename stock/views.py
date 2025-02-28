@@ -1,5 +1,9 @@
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 from django.shortcuts import render, redirect, HttpResponse
-from .models import broker, market, account, industry, stock, position, trade, dividend, subscription, dividend_history, funds, funds_details
+from django.db import models
+from .models import broker, market, account, industry, stock, position, trade, dividend, subscription, dividend_history, \
+    funds, funds_details, historical_position
 from utils.excel2db import *
 from utils.statistics import *
 from utils.utils import *
@@ -13,7 +17,10 @@ import pathlib
 
 import json
 
-
+from django.db import transaction, IntegrityError, OperationalError
+from django.db.models import Case, When, Sum, F, Q
+import logging
+logger = logging.getLogger(__name__)
 
 templates_path = 'dashboard/'
 
@@ -1226,6 +1233,19 @@ def list_position(request):
     position_list = position.objects.all()
     return render(request,  templates_path + 'backstage/list_position.html', locals())
 
+def add_historical_position(request):
+    return render(request, templates_path + 'backstage/add_historical_position.html', locals())
+
+def del_historical_position(request, historical_position_id):
+    return redirect('/benben/list_historical_position/')
+
+def edit_historical_position(request, historical_position_id):
+    return render(request, templates_path + 'backstage/edit_historical_position.html', locals())
+
+def list_historical_position(request):
+    # historical_position_list = historical_position.objects.filter(date='2025-02-27')
+    historical_position_list = historical_position.objects.all()
+    return render(request,  templates_path + 'backstage/list_historical_position.html', locals())
 
 # 交易表增删改查
 def add_trade(request):
@@ -1912,7 +1932,266 @@ def test(request):
     # print(data)
 
     #trade_list = trade.objects.order_by("trade_date")
+
+    try:
+        result = reverse_generate_positions(
+            start_date=datetime.date(2025, 2, 22),
+            current_positions=[
+                {'stock': '511880', 'currency': 1, 'quantity': 18500},
+                {'stock': '00817', 'currency': 1, 'quantity': 8000}
+            ]
+        )
+        print(result)
+    except ValueError as e:
+        print(f"输入错误: {e}")
+    except RuntimeError as e:
+        print(f"处理失败: {e}")
+
     return render(request, templates_path + 'test.html', locals())
+
+
+
+def is_weekday(date_obj):
+    """判断是否为工作日（周一至周五）"""
+    return date_obj.weekday() < 5  # 0-4为周一到周五
+
+
+def reverse_generate_positions(start_date, current_positions):
+    """
+    最终修复版逆向持仓生成（解决外键类型问题）
+
+    :param start_date: datetime.date 终止日期
+    :param current_positions: list格式示例：
+        [{'stock': '511880', 'currency': 1, 'quantity': 18500}, ...]
+    """
+    logger.info("启动逆向持仓生成流程...")
+
+    # ================== 参数校验阶段 ==================
+    try:
+        # 获取有效股票ID集合
+        valid_stock_ids = set(stock.objects.values_list('id', flat=True))
+        logger.debug(f"系统有效股票ID示例：{list(valid_stock_ids)[:5]}...（共{len(valid_stock_ids)}条）")
+
+        # 创建股票代码到ID的映射
+        stock_code_map = dict(stock.objects.values_list('stock_code', 'id'))
+        logger.debug(f"股票代码映射表示例：{dict(list(stock_code_map.items())[:3])}...")
+
+        # 动态获取货币类型
+        currency_items = trade.SETTLEMENT_CURRENCY_ITEMS
+        valid_currencies = {k for k, _ in currency_items}
+        logger.debug(f"有效货币代码：{valid_currencies}")
+
+        # 校验并转换持仓参数
+        checked_positions = []
+        for idx, pos in enumerate(current_positions, 1):
+            # 字段完整性检查
+            required_fields = {'stock', 'currency', 'quantity'}
+            if missing := required_fields - pos.keys():
+                raise ValueError(f"第{idx}条记录缺少字段：{missing}")
+
+            stock_code = pos['stock']
+            currency = pos['currency']
+            quantity = pos['quantity']
+
+            # 股票代码转换ID
+            try:
+                stock_id = stock_code_map[stock_code]
+            except KeyError:
+                valid_codes = list(stock_code_map.keys())[:5]
+                raise ValueError(f"第{idx}条记录股票代码无效：{stock_code}，有效示例：{valid_codes}...")
+
+            # 货币类型校验
+            if currency not in valid_currencies:
+                allowed = ', '.join([f"{v}({k})" for k, v in currency_items])
+                raise ValueError(f"第{idx}条记录货币类型无效：{currency}，允许值：{allowed}")
+
+            # 数量校验
+            if not isinstance(quantity, int) or quantity < 0:
+                raise ValueError(f"第{idx}条记录数量无效，必须为非负整数：{quantity}")
+
+            checked_positions.append({
+                'stock_id': stock_id,
+                'currency': currency,
+                'quantity': quantity
+            })
+
+        logger.info(f"参数校验通过，共转换{len(checked_positions)}条持仓记录")
+
+    except Exception as e:
+        logger.error("参数校验失败，错误详情：", exc_info=True)
+        raise ValueError(f"输入参数错误：{str(e)}") from e
+
+    # ================== 数据处理阶段 ==================
+    create_buffer = []  # 批量创建缓存
+    update_buffer = []  # 批量更新缓存
+    delete_conditions = []  # 删除条件缓存
+    position_dict = {
+        (p['stock_id'], p['currency']): p['quantity']
+        for p in checked_positions
+    }
+
+    try:
+        with transaction.atomic():
+            logger.info("事务启动，开始数据处理...")
+
+            # 生成倒序日期序列
+            end_date = timezone.now().date()
+            date_sequence = []
+            current_day = end_date
+            while current_day >= start_date:
+                if is_weekday(current_day):
+                    date_sequence.append(current_day)
+                current_day -= datetime.timedelta(days=1)
+            logger.info("日期范围：%s 至 %s，共%d个工作日",
+                        start_date, end_date, len(date_sequence))
+
+            # 获取有效交易数据（使用股票ID过滤）
+            valid_trades = trade.objects.filter(
+                stock_id__in=valid_stock_ids,  # 使用整型ID过滤
+                settlement_currency__in=valid_currencies
+            ).select_related('stock')
+            logger.info("加载有效交易记录：%d条", valid_trades.count())
+
+            # 逆向处理每个工作日
+            for idx, current_date in enumerate(date_sequence, 1):
+                logger.debug("[%d/%d] 处理日期：%s", idx, len(date_sequence), current_date)
+
+                # 获取当日交易数据
+                daily_trans = (
+                    valid_trades.filter(trade_date=current_date)
+                        .values('stock_id', 'settlement_currency')
+                        .annotate(
+                        reverse_qty=Sum(
+                            Case(
+                                When(trade_type=trade.BUY, then=-F('trade_quantity')),
+                                When(trade_type=trade.SELL, then=F('trade_quantity')),
+                                output_field=models.IntegerField()
+                            )
+                        )
+                    )
+                )
+                logger.debug("当日交易影响组合数：%d", len(daily_trans))
+
+                # 处理交易影响
+                processed_keys = set()
+                for trans in daily_trans:
+                    stock_id = trans['stock_id']
+                    currency = trans['settlement_currency']
+                    reverse_qty = trans['reverse_qty'] or 0
+                    key = (stock_id, currency)
+
+                    # 逆向计算持仓
+                    current_qty = position_dict.get(key, 0)
+                    new_qty = current_qty + reverse_qty
+                    position_dict[key] = new_qty
+                    processed_keys.add(key)
+                    logger.debug("组合%s 持仓变化：%d → %d", key, current_qty, new_qty)
+
+                # 处理延续持仓
+                for key in list(position_dict.keys()):
+                    if key not in processed_keys:
+                        new_qty = position_dict[key]
+                        logger.debug("组合%s 持仓延续：%d", key, new_qty)
+                    else:
+                        continue
+
+                    # 零持仓处理
+                    if new_qty == 0:
+                        delete_conditions.append(
+                            Q(date=current_date, stock_id=key[0], currency=key[1])
+                        )
+                        del position_dict[key]
+                        logger.debug("标记零持仓组合：%s", key)
+                        continue
+
+                    # 准备数据库操作
+                    exists = historical_position.objects.filter(
+                        date=current_date,
+                        stock_id=key[0],
+                        currency=key[1]
+                    ).exists()
+
+                    if exists:
+                        update_buffer.append({
+                            'date': current_date,
+                            'stock_id': key[0],
+                            'currency': key[1],
+                            'quantity': new_qty
+                        })
+                    else:
+                        create_buffer.append(
+                            historical_position(
+                                date=current_date,
+                                stock_id=key[0],
+                                currency=key[1],
+                                quantity=new_qty
+                            )
+                        )
+
+                # 批量操作（每200条执行一次）
+                if len(create_buffer) >= 200:
+                    logger.info("执行批量创建：%d条", len(create_buffer))
+                    historical_position.objects.bulk_create(create_buffer)
+                    create_buffer = []
+
+                if len(update_buffer) >= 200:
+                    logger.info("执行批量更新：%d条", len(update_buffer))
+                    update_queries = [
+                        models.When(
+                            Q(date=item['date']) &
+                            Q(stock_id=item['stock_id']) &
+                            Q(currency=item['currency']),
+                            then=models.Value(item['quantity'])
+                        ) for item in update_buffer
+                    ]
+                    historical_position.objects.update(
+                        quantity=Case(*update_queries, default=F('quantity'))
+                    )
+                    update_buffer = []
+
+            # 处理剩余缓存
+            if create_buffer:
+                logger.info("执行剩余创建：%d条", len(create_buffer))
+                historical_position.objects.bulk_create(create_buffer)
+            if update_buffer:
+                logger.info("执行剩余更新：%d条", len(update_buffer))
+                update_queries = [
+                    models.When(
+                        Q(date=item['date']) &
+                        Q(stock_id=item['stock_id']) &
+                        Q(currency=item['currency']),
+                        then=models.Value(item['quantity'])
+                    ) for item in update_buffer
+                ]
+                historical_position.objects.update(
+                    quantity=Case(*update_queries, default=F('quantity'))
+                )
+
+            # 删除零持仓记录
+            if delete_conditions:
+                logger.info("删除零持仓记录：%d条", len(delete_conditions))
+                combined_query = Q()
+                for q in delete_conditions:
+                    combined_query |= q
+                historical_position.objects.filter(combined_query).delete()
+
+            result = {
+                "status": "success",
+                "processed_days": len(date_sequence),
+                "created": len(create_buffer),
+                "updated": len(update_buffer),
+                "deleted": len(delete_conditions)
+            }
+            logger.info("处理完成，结果：%s", result)
+            return result
+
+    except IntegrityError as e:
+        logger.error("数据库完整性错误：%s", str(e))
+        raise RuntimeError(f"数据冲突，请检查唯一性约束: {e}") from e
+    except Exception as e:
+        logger.exception("处理过程中发生未预期错误")
+        raise RuntimeError(f"系统异常: {str(e)}") from e
+
 
 # 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值
 @register.filter

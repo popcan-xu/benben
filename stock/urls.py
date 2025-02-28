@@ -66,6 +66,11 @@ urlpatterns = [
     path('edit_position/<int:position_id>/', edit_position),
     path('list_position/', list_position),
 
+    path('add_historical_position/', add_historical_position),
+    path('del_historical_position/<int:historical_position_id>/', del_historical_position),
+    path('edit_historical_position/<int:historical_position_id>/', edit_historical_position),
+    path('list_historical_position/', list_historical_position),
+
     path('add_trade/', add_trade),
     path('del_trade/<int:trade_id>/', del_trade),
     path('edit_trade/<int:trade_id>/', edit_trade),
