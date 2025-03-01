@@ -158,3 +158,35 @@ CACHES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        # 控制台输出处理器
+        'console': {
+            'level': 'DEBUG',  # 设置处理器的接收级别
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
+    },
+    'loggers': {
+        # Django 核心日志
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',  # 设置记录器级别
+            'propagate': False,
+        },
+        # 应用专用日志
+        'myapp': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    }
+}
