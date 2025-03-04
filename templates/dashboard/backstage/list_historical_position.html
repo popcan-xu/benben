@@ -21,6 +21,7 @@
                             <th>股票/代码</th>
                             <th>数量</th>
                             <th>持仓货币</th>
+                            <th>收盘价格</th>
                             <th>修改时间</th>
                             <th>操作</th>
                             <th>操作</th>
@@ -30,10 +31,11 @@
                         <!--#trade_list即为视图函数list_trade中render传入参数//-->
                         {% for historical_position in historical_position_list %}
                             <tr>
-                                <td>{{ historical_position.date }}</td>
+                                <td>{{ historical_position.date|date:'Y-m-d' }}</td>
                                 <td>{{ historical_position.stock.stock_name }}({{ historical_position.stock.stock_code }})</td>
                                 <td>{{ historical_position.quantity }}</td>
                                 <td>{{ historical_position.get_currency_display }}</td>
+                                <td>{{ historical_position.closing_price|floatformat:3 }}</td>
                                 <td>{{ historical_position.modified_time|date:'Y-m-d H:i' }}</td>
                                 <td>
                                     <a href="/benben/del_position/{{ historical_position.id|safe }}/" class="btn btn-default btn-sm">
