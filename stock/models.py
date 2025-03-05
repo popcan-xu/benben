@@ -69,45 +69,6 @@ class position(models.Model):
     created_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
 
-# 历史持仓数据模型
-class historical_position(models.Model):
-    # 定义持仓货币数据字典
-    CNY = 1
-    HKD = 2
-    USD = 3
-    CURRENCY_ITEMS = (
-        (CNY, '人民币'),
-        (HKD, '港元'),
-        (USD, '美元'),
-    )
-    date = models.DateField(verbose_name='日期')
-    stock = models.ForeignKey(to="stock", on_delete=models.CASCADE, verbose_name='股票')
-    quantity = models.IntegerField(default=0, verbose_name='持仓数量')
-    currency = models.PositiveIntegerField(default=CNY, choices=CURRENCY_ITEMS, verbose_name='持仓货币')
-    closing_price = models.DecimalField(default=0.0, max_digits=8, decimal_places=3, verbose_name='收盘价格')
-    created_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['date', 'stock_id', 'currency'],
-                name='unique_daily_position'
-            )
-        ]
-        indexes = [
-            models.Index(fields=['stock_id', 'currency'], name='idx_stock_currency')
-        ]
-
-# 历史汇率数据模型
-class historical_rate(models.Model):
-    date = models.DateField(verbose_name='日期')
-    currency = models.CharField(max_length=16, verbose_name='货币')
-    rate = models.DecimalField(max_digits=8, decimal_places=4, verbose_name='汇率')
-    class Meta:
-        indexes = [
-            models.Index(fields=['date', 'currency'], name='idx_date_currency')
-        ]
-
 # 交易数据模型
 class trade(models.Model):
     # 定义交易类型数据字典
@@ -220,3 +181,55 @@ class funds_details(models.Model):
     funds_profit_rate = models.DecimalField(default=0.0, max_digits=12, decimal_places=4, verbose_name='基金收益率')
     funds_annualized_profit_rate = models.DecimalField(default=0.0, max_digits=12, decimal_places=4, verbose_name='基金年化收益率')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
+
+# 历史持仓数据模型
+class historical_position(models.Model):
+    # 定义持仓货币数据字典
+    CNY = 1
+    HKD = 2
+    USD = 3
+    CURRENCY_ITEMS = (
+        (CNY, '人民币'),
+        (HKD, '港元'),
+        (USD, '美元'),
+    )
+    date = models.DateField(verbose_name='日期')
+    stock = models.ForeignKey(to="stock", on_delete=models.CASCADE, verbose_name='股票')
+    quantity = models.IntegerField(default=0, verbose_name='持仓数量')
+    currency = models.PositiveIntegerField(default=CNY, choices=CURRENCY_ITEMS, verbose_name='持仓货币')
+    closing_price = models.DecimalField(default=0.0, max_digits=8, decimal_places=3, verbose_name='收盘价格')
+    created_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['date', 'stock_id', 'currency'],
+                name='unique_daily_position'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['stock_id', 'currency'], name='idx_stock_currency'),
+        ]
+
+# 历史汇率数据模型
+class historical_rate(models.Model):
+    date = models.DateField(verbose_name='日期')
+    currency = models.CharField(max_length=16, verbose_name='货币')
+    rate = models.DecimalField(max_digits=8, decimal_places=4, verbose_name='汇率')
+    modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
+    class Meta:
+        indexes = [
+            models.Index(fields=['date', 'currency']),
+        ]
+
+# 历史持仓市值数据模型
+class historical_market_value(models.Model):
+    date = models.DateField(verbose_name='日期')
+    currency = models.CharField(max_length=16, verbose_name='货币')
+    value = models.DecimalField(max_digits=16, decimal_places=4, verbose_name='市值')
+    modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
+    class Meta:
+        indexes = [
+            models.Index(fields=['date', 'currency']),
+        ]
+
