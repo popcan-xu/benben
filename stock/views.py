@@ -1,7 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from django.shortcuts import render, redirect, HttpResponse
-from django.db import models
+from django.db import models, connection
 from .models import broker, market, account, industry, stock, position, trade, dividend, subscription, dividend_history, \
     funds, funds_details, historical_position, historical_rate, historical_market_value
 from utils.excel2db import *
@@ -9,6 +9,7 @@ from utils.statistics import *
 from utils.utils import *
 from django.template.defaulttags import register
 import datetime
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 
 from django.db.models.functions import ExtractYear
@@ -19,7 +20,8 @@ import json
 import pandas as pd
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Sum, Q, Window, F, Min, Max
+from django.db.models.functions import Lag
 from collections import defaultdict
 
 
@@ -353,7 +355,7 @@ def view_funds_details(request, funds_id):
             "value": value
         })
 
-    funds_details_list_TOP5 = funds_details.objects.filter(funds=funds_id).order_by("-date")[:5]
+    funds_details_list_TOP = funds_details.objects.filter(funds=funds_id).order_by("-date")[:10]
 
     updating_time = datetime.datetime.now()
 
@@ -362,9 +364,9 @@ def view_funds_details(request, funds_id):
 
 # 持仓市值
 def market_value(request):
-    currency_CNY = '人民币'
-    currency_HKD = '港元'
-    currency_USD = '美元'
+    # currency_CNY = '人民币'
+    # currency_HKD = '港元'
+    # currency_USD = '美元'
     rate_HKD, rate_USD = get_rate()
     # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
     stock_dict = position.objects.values("stock").annotate(
@@ -377,7 +379,93 @@ def market_value(request):
     content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD, rate_USD)
     content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array, rate_HKD, rate_USD)
     content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array, rate_HKD, rate_USD)
+
+    # currencys = [[1, '人民币'], [2, '港元'], [3, '美元']]
+    # currency_dict = {cid: name for cid, name in currencys}
+    currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
+    value_dict = {}
+    result = historical_market_value.objects.aggregate(
+        max_date=Max('date')  # 最大值（最新日期）
+    )
+    current_date = result['max_date']
+
+    for key in currency_dict:
+        if historical_market_value.objects.filter(currency=currency_dict[key], date=current_date).exists():
+            value_dict[key] = historical_market_value.objects.get(currency=currency_dict[key], date=current_date).value
+        else:
+            value_dict[key] = 0
+    updating_time = current_date
     return render(request, templates_path + 'market_value.html', locals())
+
+
+def view_market_value_details(request, currency_id):
+    currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
+    result = historical_market_value.objects.aggregate(
+        max_date=Max('date')  # 最大值（最新日期）
+    )
+    current_date = result['max_date']
+    # if historical_market_value.objects.filter(currency=currency_dict[currency_id], date=current_date).exists():
+    #     value = historical_market_value.objects.get(currency=currency_dict[currency_id], date=current_date).value
+    # else:
+    #     value = 0
+    market_value_obj = historical_market_value.objects.get(currency=currency_dict[currency_id], date=current_date)
+
+    today = datetime.date.today()  # 假设当前日期
+    last_day_of_last_month = today.replace(day=1) - relativedelta(days=1)  # 上月最后一天
+    last_day_of_last_year = datetime.date(today.year - 1, 12, 31)  # 上年最后一天
+
+    # 获取上月最大日期
+    last_month_max_date = historical_market_value.objects.filter(
+        date__month=last_day_of_last_month.month,
+        date__year=last_day_of_last_month.year,
+        currency=currency_dict[currency_id]
+    ).aggregate(
+        max_date=Max('date')
+    )['max_date']
+
+    # 按货币分组获取上年最大日期
+    last_year_max_date = historical_market_value.objects.filter(
+        date__year=last_day_of_last_year.year,
+        currency=currency_dict[currency_id]
+    ).aggregate(
+        max_date=Max('date')
+    )['max_date']
+
+    last_month_value = historical_market_value.objects.get(date=last_month_max_date, currency=currency_dict[currency_id]).value
+    month_change_amount = market_value_obj.value - last_month_value
+    if last_month_value != Decimal('0.0000') and month_change_amount != Decimal('0.0000'):
+        month_change_rate = month_change_amount / last_month_value
+    else:
+        month_change_rate = 0
+    last_year_value = historical_market_value.objects.get(date=last_year_max_date, currency=currency_dict[currency_id]).value
+    year_change_amount = market_value_obj.value - last_year_value
+    if last_year_value != Decimal('0.0000') and year_change_amount != Decimal('0.0000'):
+        year_change_rate = year_change_amount / last_year_value
+    else:
+        year_change_rate = 0
+
+
+    # 生成持仓市值曲线数据data
+    data = []
+    market_value_list = historical_market_value.objects.filter(currency=currency_dict[currency_id]).order_by("date")
+    for rs in market_value_list:
+        date = str(rs.date)
+        value = float(rs.value)
+        data.append({
+            "date": date,
+            "value": value / 10000
+        })
+
+    # 生成市值变化日历字典数据assetChanges
+    assetChanges = {}
+    for rs in market_value_list:
+        date = rs.date.strftime("%Y-%m-%d")
+        amount = float(rs.change_amount)
+        assetChanges[date] = amount
+
+    market_value_list_TOP = historical_market_value.objects.filter(currency=currency_dict[currency_id]).order_by("-date")[:10]
+    updating_time = current_date
+    return render(request, templates_path + 'view_market_value_details.html', locals())
 
 
 # 交易录入
@@ -1907,172 +1995,159 @@ def batch_import(request):
     return render(request, templates_path + 'other/batch_import.html', locals())  # 这里用'/'，‘//’或者‘/’代替'\'，防止'\b'被转义
 
 
-# 关于
-def about(request):
-    return render(request, templates_path + 'about.html', locals())
 
 
-# 测试
-def test(request):
-    # get_akshare()
-    # price, increase, color = get_quote_akshare('00700')
-    # print(price, increase, color)
-    # price, increase, color = get_quote_akshare("511880")
-    # print(price, increase, color)
-    # price, increase, color = get_quote_akshare("200596")
-    # print(price, increase, color)
-    # price, increase, color = get_quote_akshare("600519")
-    # print(price, increase, color)
-    # price, increase, color = get_quote_akshare("000002")
-    # print(price, increase, color)
-    # echarts图表
-    # data = []
-    # funds_details_list = funds_details.objects.filter(funds=3).order_by("date")
-    # for rs in funds_details_list:
-    #     date = str(rs.date)
-    #     value = float(rs.funds_net_value)
-    #     data.append({
-    #         "date": date,
-    #         "value": value
-    #     })
-    # print(data)
-
-    # 更新历史持仓市值数据（historical_position、historical_rate、historical_market_value表）
-    start_date = datetime.date(2025, 1, 1)
-    end_date = datetime.date.today()
-    update_historical_market_value(start_date, end_date)
-
-    return render(request, templates_path + 'test.html', locals())
 
 # 更新历史持仓市值数据（historical_position、historical_rate、historical_market_value表）
-def update_historical_market_value(start_date, end_date):
-    # 反向遍历trade表更新historical_position表
-    reverse_generate_positions(start_date, end_date)
+def update_historical_market_value(request):
+    result = historical_position.objects.aggregate(
+        max_date=Max('date')  # 最大值（最新日期）
+    )
+
+    start_date = result['max_date'] - datetime.timedelta(days=5)
+    while start_date.weekday() >= 5:
+        start_date = start_date - datetime.timedelta(days=1)
+
+    end_date = datetime.date.today() - datetime.timedelta(days=1)
+    while end_date.weekday() >= 5:
+        end_date = end_date - datetime.timedelta(days=1)
+
+    # 正向遍历trade表生成historical_position表
+    generate_historical_positions(start_date, datetime.date.today())
     # 从akshare获取历史行情数据写入historical_position表
-    # 查询日期范围
-    # result = historical_position.objects.aggregate(
-    #     min_date=Min('date'),  # 最小值（最早日期）
-    #     max_date=Max('date')  # 最大值（最新日期）
-    # )
-    # start_date = result['min_date']
-    # end_date = result['max_date']
     get_historical_closing_price(start_date, end_date)
+    get_today_price()
     # 从akshare获取历史汇率写入historical_rate表
-    get_historical_rate(start_date, end_date)
+    get_historical_rate(start_date, datetime.date.today())
+    # 补全汇率数据
+    fill_missing_historical_rates()
     # 计算历史持仓市值
-    calculate_market_value(start_date, end_date)
+    calculate_market_value(start_date, datetime.date.today())
+    calculate_and_fill_historical_data()
 
-    return
+    return render(request, templates_path + 'update_historical_market_value.html', locals())
 
-# 反向遍历trade表更新historical_position表
-def reverse_generate_positions(start_date, end_date):
-    try:
-        # Step 0: 删除现有历史数据
-        # current_date = datetime.date.today()
-        # # 确定有效结束日期（排除周末）
-        # while current_date.weekday() >= 5:
-        #     current_date -= datetime.timedelta(days=1)
-        # end_date = current_date
+# 正向遍历trade表生成historical_position表
+def generate_historical_positions(start_date, end_date):
+    """
+    生成历史持仓记录（支持从已有持仓初始化）
 
-        # 确定有效结束日期（排除周末）
-        while end_date.weekday() >= 5:
-            end_date -= datetime.timedelta(days=1)
+    参数：
+    start_date : datetime.date - 开始日期（包含）
+    end_date : datetime.date - 结束日期（包含）
 
-        # 使用事务保证原子性
-        with transaction.atomic():
-            # 删除目标日期范围内的所有历史记录
+    返回：
+    int - 新生成的记录数量
+    """
+    with transaction.atomic():
+        # 初始化持仓缓存 {(stock_id, currency): quantity}
+        position_cache = defaultdict(int)
+        process_start = start_date
+        date_sequence = []
+
+        # 1. 检查并加载初始持仓
+        initial_positions = historical_position.objects.filter(date=start_date)
+        if initial_positions.exists():
+            # 加载初始持仓（过滤零持仓）
+            for pos in initial_positions.exclude(quantity=0):
+                key = (pos.stock_id, pos.currency)
+                position_cache[key] = pos.quantity
+
+            # 调整处理起始日期为次日
+            process_start = start_date + datetime.timedelta(days=1)
+            print(f"[INFO] 使用 {start_date} 已有持仓作为初始状态，从 {process_start} 开始处理")
+        else:
+            print(f"[INFO] 无初始持仓，从 {start_date} 开始生成")
+
+        # 2. 生成有效日期序列（跳过周末）
+        current_date = process_start
+        while current_date <= end_date:
+            if current_date.weekday() < 5:  # 0-4为工作日
+                date_sequence.append(current_date)
+            current_date += datetime.timedelta(days=1)
+
+        # 3. 获取需要处理的交易数据（排除已初始化的日期）
+        relevant_trades = trade.objects.filter(
+            trade_date__gte=process_start,
+            trade_date__lte=end_date
+        ).order_by('trade_date').values(
+            'trade_date', 'stock_id',
+            'settlement_currency', 'trade_type',
+            'trade_quantity'
+        )
+
+        # 4. 按日期处理交易生成持仓
+        new_positions = []
+        for processing_date in date_sequence:
+            # 当日交易分组汇总
+            daily_trades = defaultdict(lambda: {'buy': 0, 'sell': 0})
+            for t in relevant_trades:
+                if t['trade_date'] == processing_date:
+                    key = (t['stock_id'], t['settlement_currency'])
+                    if t['trade_type'] == trade.BUY:
+                        daily_trades[key]['buy'] += t['trade_quantity']
+                    else:
+                        daily_trades[key]['sell'] += t['trade_quantity']
+
+            # 计算当日持仓变化
+            temp_cache = defaultdict(int)
+            temp_cache.update(position_cache)  # 继承前一日持仓
+
+            # 处理每个股票+货币组合
+            for (stock_id, currency), amounts in daily_trades.items():
+                net_change = amounts['buy'] - amounts['sell']
+                new_quantity = temp_cache[(stock_id, currency)] + net_change
+
+                if new_quantity != 0:
+                    temp_cache[(stock_id, currency)] = new_quantity
+                else:
+                    # 清除零持仓
+                    del temp_cache[(stock_id, currency)]
+
+            # 更新持仓缓存
+            position_cache = temp_cache
+
+            # 生成当日记录（过滤零持仓）
+            for (stock_id, currency), quantity in position_cache.items():
+                new_positions.append(historical_position(
+                    date=processing_date,
+                    stock_id=stock_id,
+                    currency=currency,
+                    quantity=quantity,
+                    created_time=timezone.now(),
+                    modified_time=timezone.now()
+                ))
+
+        # 5. 清理旧数据并保存新记录
+        if date_sequence:
+            # 删除可能存在的旧记录
             historical_position.objects.filter(
-                date__gte=start_date,
+                date__gte=process_start,
                 date__lte=end_date
             ).delete()
 
-        # Step 1: 汇总当前持仓数据
-        positions = position.objects.values('stock', 'position_currency').annotate(total=Sum('position_quantity'))
-        current_positions = {
-            (pos['stock'], pos['position_currency']): pos['total']
-            for pos in positions
-            if pos['total'] != 0
-        }
+            # 批量插入新记录
+            historical_position.objects.bulk_create(new_positions)
+            print(f"[SUCCESS] 生成 {len(new_positions)} 条记录（{process_start} 至 {end_date}）")
+            return len(new_positions)
 
-        # Step 2: 确定初始日期并调整到最近的周五（如果是周末）
-        initial_date = end_date  # 使用已计算的end_date
-
-        # Step 3: 写入初始持仓到historical_position表（如果非周末）
-        if initial_date.weekday() < 5:
-            with transaction.atomic():
-                entries = [
-                    historical_position(
-                        date=initial_date,
-                        stock_id=stock_id,
-                        currency=currency,
-                        quantity=qty
-                    )
-                    for (stock_id, currency), qty in current_positions.items()
-                    if qty != 0
-                ]
-                historical_position.objects.bulk_create(entries)
-
-        # Step 4: 反向生成历史持仓
-        processing_date = initial_date - datetime.timedelta(days=1)
-        while processing_date >= start_date:
-            if processing_date.weekday() >= 5:
-                processing_date -= datetime.timedelta(days=1)
-                continue
-
-            # 写入当天持仓（与后一天相同）
-            with transaction.atomic():
-                entries = [
-                    historical_position(
-                        date=processing_date,
-                        stock_id=stock_id,
-                        currency=currency,
-                        quantity=qty
-                    )
-                    for (stock_id, currency), qty in current_positions.items()
-                    if qty != 0
-                ]
-                historical_position.objects.bulk_create(entries)
-
-            # 处理交易记录
-            trades = trade.objects.filter(trade_date=processing_date)
-            delta_dict = defaultdict(int)
-            for t in trades:
-                key = (t.stock_id, t.settlement_currency)
-                delta = t.trade_quantity if t.trade_type == trade.BUY else -t.trade_quantity
-                delta_dict[key] += delta
-
-            # 计算前一日持仓
-            prev_positions = {}
-            # 处理现有持仓
-            for (stock, currency), qty in current_positions.items():
-                delta = delta_dict.get((stock, currency), 0)
-                prev_qty = qty - delta
-                if prev_qty != 0:
-                    prev_positions[(stock, currency)] = prev_qty
-            # 处理新增持仓
-            for (stock, currency) in delta_dict:
-                if (stock, currency) not in current_positions:
-                    delta = delta_dict[(stock, currency)]
-                    prev_qty = 0 - delta
-                    if prev_qty != 0:
-                        prev_positions[(stock, currency)] = prev_qty
-
-            current_positions = prev_positions
-            processing_date -= datetime.timedelta(days=1)
-        print("历史持仓写入成功！")
-    except ValueError as e:
-        print(f"输入错误: {e}")
-    except RuntimeError as e:
-        print(f"处理失败: {e}")
+        print("[INFO] 没有需要处理的日期范围")
+        return 0
 
 # 从akshare获取股票历史收盘价
 def get_historical_closing_price(start_date, end_date):
-    # 转换为 "YYYYMMDD" 格式字符串
-    start_date_str = (start_date - datetime.timedelta(days=10)).strftime("%Y%m%d") if start_date else ""
+    # start_date_str = (start_date - datetime.timedelta(days=10)).strftime("%Y%m%d") if start_date else ""
+    start_date_str = start_date.strftime("%Y%m%d") if start_date else ""
     end_date_str = end_date.strftime("%Y%m%d") if end_date else ""
-    date_list = list(historical_position.objects.values_list('date', flat=True).distinct())
+    date_list = list(historical_position.objects.filter(
+                date__gte=start_date,
+                date__lte=end_date
+            ).values_list('date', flat=True).distinct())
     # 获取stock字段的去重值列表
-    stock_list = list(historical_position.objects.values_list('stock', flat=True).distinct())
+    stock_list = list(historical_position.objects.filter(
+                date__gte=start_date,
+                date__lte=end_date
+            ).values_list('stock', flat=True).distinct())
     for i in stock_list:
         stock_code = stock.objects.get(id=i).stock_code
         market_name = stock.objects.get(id=i).market.market_name
@@ -2080,63 +2155,48 @@ def get_historical_closing_price(start_date, end_date):
         price_dict = {}
         if market_name == '港股':
             stock_code_str = stock_code
-            df = ak.stock_hk_hist(symbol=stock_code_str, period="daily", start_date=start_date_str, end_date=end_date_str, adjust="")
-            df['日期'] = pd.to_datetime(df['日期'])
-            current_date = pd.to_datetime(start_date)
-            while not (current_date in df['日期'].values):
-                current_date = current_date - datetime.timedelta(days=1)
-            current_price = float(df[df['日期'] == current_date]['收盘'].iloc[0])
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['日期'].values
-                if date_exists:
-                    current_price = float(df[df['日期'] == item_datetime]['收盘'].iloc[0])
-                price_dict[item] = current_price
+            df = ak.stock_hk_daily(symbol=stock_code_str, adjust="")
         elif market_name == '沪市B股' or market_name == '深市B股':
             stock_code_str = market_abbreviation + stock_code
             df = ak.stock_zh_b_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str, adjust="")
-            df['date'] = pd.to_datetime(df['date'])
-            current_date = pd.to_datetime(start_date)
-            while not (current_date in df['date'].values):
-                current_date = current_date - datetime.timedelta(days=1)
-            current_price = float(df[df['date'] == current_date]['close'].iloc[0])
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['date'].values
-                if date_exists:
-                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
-                price_dict[item] = current_price
         elif classify_stock_code(stock_code) == 'ETF':
             stock_code_str = market_abbreviation + stock_code
             df = ak.stock_zh_index_daily(symbol=stock_code_str)
-            df['date'] = pd.to_datetime(df['date'])
-            current_date = pd.to_datetime(start_date)
-            while not (current_date in df['date'].values):
-                current_date = current_date - datetime.timedelta(days=1)
-            current_price = float(df[df['date'] == current_date]['close'].iloc[0])
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['date'].values
-                if date_exists:
-                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
-                price_dict[item] = current_price
+        elif classify_stock_code(stock_code) == '企业债':
+            stock_code_str = market_abbreviation + stock_code
+            df = ak.bond_zh_hs_daily(symbol=stock_code_str)
         else:
             stock_code_str = market_abbreviation + stock_code
             df = ak.stock_zh_a_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str, adjust="")
-            df['date'] = pd.to_datetime(df['date'])
-            current_date = pd.to_datetime(start_date)
-            while not (current_date in df['date'].values):
-                current_date = current_date - datetime.timedelta(days=1)
+        df['date'] = pd.to_datetime(df['date'])
+        current_date = pd.to_datetime(start_date)
+        # while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
+        while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date)):
+            current_date = current_date - datetime.timedelta(days=1)
+        if current_date in df['date'].values:
             current_price = float(df[df['date'] == current_date]['close'].iloc[0])
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['date'].values
-                if date_exists:
-                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
-                price_dict[item] = current_price
+        else:
+            current_price = 0
+        for item in date_list:
+            item_datetime = pd.to_datetime(item)
+            date_exists = item_datetime in df['date'].values
+            if date_exists:
+                current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
+            price_dict[item] = current_price
 
         update_closing_prices(stock_code, price_dict)
+    return
 
+def get_today_price():
+    current_day = datetime.date.today()
+    # 获取stock字段的去重值列表
+    stock_list = list(historical_position.objects.filter(date=current_day).values_list('stock', flat=True).distinct())
+    for i in stock_list:
+        stock_code = stock.objects.get(id=i).stock_code
+        price_dict = {}
+        current_price, increase, color = get_quote_snowball(stock_code)
+        price_dict[current_day] = current_price
+        update_today_prices(stock_code, price_dict)
     return
 
 def update_closing_prices(stock_code, price_dict):
@@ -2154,9 +2214,29 @@ def update_closing_prices(stock_code, price_dict):
     try:
         with transaction.atomic():
             historical_position.objects.bulk_update(records, ['closing_price'])
+            print(stock_code)
             print("历史收盘价格更新成功！")
     except Exception as e:
+        print(stock_code)
         print(f"历史收盘价格更新失败: {str(e)}")
+
+def update_today_prices(stock_code, price_dict):
+    # 筛选需要更新的记录
+    #dates = price_dict.keys()
+    records = historical_position.objects.filter(date=datetime.date.today(), stock__stock_code=stock_code)
+
+    # 批量赋值并更新
+    for record in records:
+        record.closing_price = price_dict[record.date]
+
+    try:
+        with transaction.atomic():
+            historical_position.objects.bulk_update(records, ['closing_price'])
+            print(stock_code)
+            print("当日价格更新成功！")
+    except Exception as e:
+        print(stock_code)
+        print(f"当日价格更新失败: {str(e)}")
 
 # 从akshare获取历史汇率
 def get_historical_rate(start_date, end_date):
@@ -2183,10 +2263,12 @@ def get_historical_rate(start_date, end_date):
     # 示例调用（带异常处理）
     try:
         update_historical_rate(df_hkd, "港元", start_date, end_date)
+        print("历史汇率（港元）写入成功！")
         update_historical_rate(df_usd, "美元", start_date, end_date)
-        print("历史汇率写入成功！")
+        print("历史汇率（美元）写入成功！")
     except Exception as e:
         print(f"历史汇率写入失败: {str(e)}")
+
 
     return
 
@@ -2213,7 +2295,6 @@ def update_historical_rate(df: pd.DataFrame, currency_name: str, start_date, end
         )
         for _, row in df.iterrows()
     ]
-
     # 原子操作：删除旧数据 + 插入新数据
     with transaction.atomic():
         # 删除该货币所有旧数据
@@ -2224,6 +2305,99 @@ def update_historical_rate(df: pd.DataFrame, currency_name: str, start_date, end
             ).delete()
         # 批量写入新数据
         historical_rate.objects.bulk_create(instances)
+
+# 补充akshare数据中缺失的日期
+def fill_missing_historical_rates():
+    """
+    自动补全historical_rate表中缺失的汇率记录
+    返回补全记录数量和错误信息列表
+    """
+    # 货币代码映射（根据historical_position定义）
+    CURRENCY_MAPPING = {
+        1: "人民币",
+        2: "港元",
+        3: "美元"
+    }
+
+    # 获取需要补全的日期和货币组合
+    positions = historical_position.objects.values('date', 'currency').distinct()
+
+    # 转换货币代码为字符串格式
+    required_combinations = [
+        (pos['date'], CURRENCY_MAPPING[pos['currency']])
+        for pos in positions
+        if pos['currency'] in CURRENCY_MAPPING
+    ]
+
+    # 获取已存在的汇率记录
+    existing_rates = historical_rate.objects.filter(
+        Q(date__in=[d for d, _ in required_combinations]) &
+        Q(currency__in=[c for _, c in required_combinations])
+    ).values_list('date', 'currency')
+
+    existing_set = set(existing_rates)
+
+    # 确定需要补全的组合
+    missing_combinations = [
+        (date, currency)
+        for date, currency in required_combinations
+        if (date, currency) not in existing_set
+    ]
+
+    # 按货币分组处理
+    currency_date_map = defaultdict(list)
+    for date, currency in missing_combinations:
+        currency_date_map[currency].append(date)
+
+    # 补全记录存储
+    new_rates = []
+    errors = []
+
+    # 为每个货币处理缺失日期
+    for currency, dates in currency_date_map.items():
+        # 获取该货币所有历史记录
+        currency_rates = historical_rate.objects.filter(currency=currency) \
+            .order_by('-date').values('date', 'rate')
+
+        if not currency_rates:
+            errors.append(f"货币 {currency} 没有历史汇率记录")
+            continue
+
+        # 转换为按日期索引的字典
+        rate_dict = {r['date']: r['rate'] for r in currency_rates}
+        sorted_dates = sorted(rate_dict.keys(), reverse=True)
+
+        # 处理每个缺失日期
+        for target_date in sorted(dates):
+            found = False
+            # 从目标日期前一天开始查找
+            current_date = target_date - timezone.timedelta(days=1)
+
+            # 最多向前查找30天防止无限循环
+            for _ in range(30):
+                if current_date in rate_dict:
+                    new_rates.append(historical_rate(
+                        date=target_date,
+                        currency=currency,
+                        rate=rate_dict[current_date],
+                        modified_time=timezone.now()
+                    ))
+                    found = True
+                    break
+                # 没有则继续向前查找
+                current_date -= timezone.timedelta(days=1)
+
+            if not found:
+                errors.append(f"货币 {currency} 在 {target_date} 前30天无可用汇率")
+
+    # 批量插入新记录
+    if new_rates:
+        historical_rate.objects.bulk_create(new_rates)
+
+    print(f"补全了 {len(new_rates)} 条记录")
+    if errors:
+        print("发生错误：", "\n".join(errors))
+
 
 # 计算历史持仓市值
 def calculate_market_value(start_date, end_date):
@@ -2336,6 +2510,180 @@ def calculate_market_value(start_date, end_date):
     except Exception as e:
         print(f"历史持仓市值写入失败: {e}")
 
+# 补全变化值和变化率数据
+def calculate_and_fill_historical_data():
+    """
+    全量数据计算函数，执行以下操作：
+    1. 补全全表日期范围内所有货币的工作日记录
+    2. 批量计算市值变化指标
+    """
+    with transaction.atomic():
+        # ================== 阶段1：数据补全 ==================
+        # 获取全表日期范围
+        date_range = historical_market_value.objects.aggregate(
+            min_date=Min('date'),
+            max_date=Max('date')
+        )
+
+        # 处理空表情况
+        if not date_range['min_date'] or not date_range['max_date']:
+            return
+
+        # 生成全量工作日列表
+        workdays = generate_workdays(date_range['min_date'], date_range['max_date'])
+
+        # 获取所有货币种类
+        currencies = historical_market_value.objects.values_list(
+            'currency', flat=True
+        ).distinct()
+
+        # 逐货币补全数据
+        for currency in currencies:
+            # 获取该货币现有日期
+            existing_dates = set(
+                historical_market_value.objects.filter(currency=currency)
+                    .values_list('date', flat=True)
+            )
+
+            # 计算缺失日期
+            missing_dates = [day for day in workdays if day not in existing_dates]
+
+            # 批量创建记录
+            if missing_dates:
+                historical_market_value.objects.bulk_create([
+                    historical_market_value(
+                        currency=currency,
+                        date=day,
+                        value=0,
+                        prev_value=0,
+                        change_amount=0,
+                        change_rate=0
+                    ) for day in missing_dates
+                ], batch_size=1000)
+
+        # ================== 阶段2：指标计算 ==================
+        # 获取全表最早日期（判断基准日）
+        base_date = date_range['min_date']
+
+        # 使用窗口函数获取前值
+        queryset = historical_market_value.objects.annotate(
+            prev_value_calc=Window(
+                expression=Lag('value', 1),
+                partition_by=[F('currency')],
+                order_by=F('date').asc()
+            )
+        ).order_by('currency', 'date')
+
+        # 批量更新容器
+        BATCH_SIZE = 1000
+        update_buffer = []
+
+        for obj in queryset:
+            # 基准日特殊处理
+            if obj.date == base_date:
+                prev_val = 0
+                change_amount = 0
+                change_rate = 0
+            else:
+                prev_val = obj.prev_value_calc or 0
+                change_amount = obj.value - prev_val
+                change_rate = (change_amount / prev_val) if prev_val else 0
+
+            # 更新对象字段
+            obj.prev_value = prev_val
+            obj.change_amount = change_amount
+            obj.change_rate = change_rate
+            update_buffer.append(obj)
+
+            # 批量提交
+            if len(update_buffer) >= BATCH_SIZE:
+                historical_market_value.objects.bulk_update(
+                    update_buffer,
+                    ['prev_value', 'change_amount', 'change_rate'],
+                    batch_size=BATCH_SIZE
+                )
+                update_buffer = []
+
+        # 提交剩余数据
+        if update_buffer:
+            historical_market_value.objects.bulk_update(
+                update_buffer,
+                ['prev_value', 'change_amount', 'change_rate'],
+                batch_size=BATCH_SIZE
+            )
+
+    # 记录补全情况
+    print(f"Currency:{currency} 补全{len(missing_dates)}条记录")
+
+    # 记录计算性能
+    print(f"批量更新完成，本次处理{len(update_buffer)}条记录")
+
+def generate_workdays(start_date, end_date):
+    """
+    生成指定日期范围内的工作日列表
+    Args:
+        start_date (date): 开始日期
+        end_date (date): 结束日期
+    Returns:
+        list: 工作日日期对象列表
+    """
+    workdays = []
+    current_day = start_date
+    while current_day <= end_date:
+        if current_day.weekday() < 5:  # 0-4对应周一到周五
+            workdays.append(current_day)
+        current_day += datetime.timedelta(days=1)
+    return workdays
+
+
+
+# 关于
+def about(request):
+    return render(request, templates_path + 'about.html', locals())
+
+
+# 测试
+def test(request):
+    # get_akshare()
+    # price, increase, color = get_quote_akshare('00700')
+    # print(price, increase, color)
+    # price, increase, color = get_quote_akshare("511880")
+    # print(price, increase, color)
+    # price, increase, color = get_quote_akshare("200596")
+    # print(price, increase, color)
+    # price, increase, color = get_quote_akshare("600519")
+    # print(price, increase, color)
+    # price, increase, color = get_quote_akshare("000002")
+    # print(price, increase, color)
+
+    # echarts图表--净值曲线
+    # data = []
+    # funds_details_list = funds_details.objects.filter(funds=3).order_by("date")
+    # for rs in funds_details_list:
+    #     date = str(rs.date)
+    #     value = float(rs.funds_net_value)
+    #     data.append({
+    #         "date": date,
+    #         "value": value
+    #     })
+    # # print(data)
+
+    # data = []
+    # market_value_list = historical_market_value.objects.filter(currency='人民币').order_by("date")
+    # for rs in market_value_list:
+    #     date = str(rs.date)
+    #     value = float(rs.value)
+    #     data.append({
+    #         "date": date,
+    #         "value": value / 10000
+    #     })
+
+    # # 更新历史持仓市值数据（historical_position、historical_rate、historical_market_value表）
+    # start_date = datetime.date(2007, 8, 15)
+
+
+    return render(request, templates_path + 'test.html', locals())
+
 
 
 # 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值
@@ -2344,4 +2692,297 @@ def get_index(mylist, i):
     return mylist[i]
 
 
+# 反向遍历trade表更新historical_position表
+def reverse_generate_positions(start_date, end_date):
+    try:
+        # Step 0: 删除现有历史数据
+        # current_date = datetime.date.today()
+        # # 确定有效结束日期（排除周末）
+        # while current_date.weekday() >= 5:
+        #     current_date -= datetime.timedelta(days=1)
+        # end_date = current_date
+
+        # 确定有效结束日期（排除周末）
+        while end_date.weekday() >= 5:
+            end_date -= datetime.timedelta(days=1)
+
+        # 使用事务保证原子性
+        with transaction.atomic():
+            # 删除目标日期范围内的所有历史记录
+            historical_position.objects.filter(
+                date__gte=start_date,
+                date__lte=end_date
+            ).delete()
+
+        # Step 1: 汇总当前持仓数据
+        positions = position.objects.values('stock', 'position_currency').annotate(total=Sum('position_quantity'))
+        current_positions = {
+            (pos['stock'], pos['position_currency']): pos['total']
+            for pos in positions
+            if pos['total'] != 0
+        }
+
+        # Step 2: 确定初始日期并调整到最近的周五（如果是周末）
+        initial_date = end_date  # 使用已计算的end_date
+
+        # Step 3: 写入初始持仓到historical_position表（如果非周末）
+        if initial_date.weekday() < 5:
+            with transaction.atomic():
+                entries = [
+                    historical_position(
+                        date=initial_date,
+                        stock_id=stock_id,
+                        currency=currency,
+                        quantity=qty
+                    )
+                    for (stock_id, currency), qty in current_positions.items()
+                    if qty != 0
+                ]
+                historical_position.objects.bulk_create(entries)
+
+        # Step 4: 反向生成历史持仓
+        processing_date = initial_date - datetime.timedelta(days=1)
+        while processing_date >= start_date:
+            if processing_date.weekday() >= 5:
+                processing_date -= datetime.timedelta(days=1)
+                continue
+
+            # 写入当天持仓（与后一天相同）
+            with transaction.atomic():
+                entries = [
+                    historical_position(
+                        date=processing_date,
+                        stock_id=stock_id,
+                        currency=currency,
+                        quantity=qty
+                    )
+                    for (stock_id, currency), qty in current_positions.items()
+                    if qty != 0
+                ]
+                historical_position.objects.bulk_create(entries)
+
+            # 处理交易记录
+            trades = trade.objects.filter(trade_date=processing_date)
+            delta_dict = defaultdict(int)
+            for t in trades:
+                key = (t.stock_id, t.settlement_currency)
+                delta = t.trade_quantity if t.trade_type == trade.BUY else -t.trade_quantity
+                delta_dict[key] += delta
+
+            # 计算前一日持仓
+            prev_positions = {}
+            # 处理现有持仓
+            for (stock, currency), qty in current_positions.items():
+                delta = delta_dict.get((stock, currency), 0)
+                prev_qty = qty - delta
+                if prev_qty != 0:
+                    prev_positions[(stock, currency)] = prev_qty
+            # 处理新增持仓
+            for (stock, currency) in delta_dict:
+                if (stock, currency) not in current_positions:
+                    delta = delta_dict[(stock, currency)]
+                    prev_qty = 0 - delta
+                    if prev_qty != 0:
+                        prev_positions[(stock, currency)] = prev_qty
+
+            current_positions = prev_positions
+            processing_date -= datetime.timedelta(days=1)
+        print("历史持仓写入成功！")
+    except ValueError as e:
+        print(f"输入错误: {e}")
+    except RuntimeError as e:
+        print(f"处理失败: {e}")
+
+
+
+
+def generate_historical_positions_111(start_date, end_date):
+    """
+    生成指定日期范围内的历史持仓记录
+    :param start_date: 开始日期（date类型）
+    :param end_date: 结束日期（date类型）
+    :return: 生成记录数量
+    """
+    with transaction.atomic():
+        # 初始化持仓缓存 { (stock_id, currency): quantity }
+        position_cache = defaultdict(int)
+
+        # 获取所有交易日数据（按日期升序）
+        trades = trade.objects.filter(
+            trade_date__gte=start_date,
+            trade_date__lte=end_date
+        ).order_by('trade_date').values(
+            'trade_date', 'stock_id',
+            'settlement_currency', 'trade_type',
+            'trade_quantity'
+        )
+
+        # 预先生成所有工作日日期序列
+        date_sequence = []
+        current_date = start_date
+        while current_date <= end_date:
+            if current_date.weekday() < 5:  # 0-4为周一到周五
+                date_sequence.append(current_date)
+            current_date += datetime.timedelta(days=1)
+
+        # 按日期处理持仓
+        new_positions = []
+        for processing_date in date_sequence:
+            # 获取当日交易数据（按股票和货币分组汇总）
+            daily_trades = defaultdict(lambda: {'buy': 0, 'sell': 0})
+            for t in trades:
+                if t['trade_date'] == processing_date:
+                    key = (t['stock_id'], t['settlement_currency'])
+                    if t['trade_type'] == trade.BUY:
+                        daily_trades[key]['buy'] += t['trade_quantity']
+                    else:
+                        daily_trades[key]['sell'] += t['trade_quantity']
+
+            # 生成当日持仓
+            temp_cache = position_cache.copy()
+            for (stock_id, currency), amounts in daily_trades.items():
+                net_change = amounts['buy'] - amounts['sell']
+                new_quantity = temp_cache.get((stock_id, currency), 0) + net_change
+                if new_quantity != 0:
+                    temp_cache[(stock_id, currency)] = new_quantity
+                else:
+                    temp_cache.pop((stock_id, currency), None)
+
+            # 判断是否需要更新持仓
+            if daily_trades or processing_date == start_date:
+                position_cache = temp_cache
+
+                # 生成持仓记录
+                for (stock_id, currency), quantity in position_cache.items():
+                    new_positions.append(historical_position(
+                        date=processing_date,
+                        stock_id=stock_id,
+                        quantity=quantity,
+                        currency=currency,
+                    ))
+
+            # 无交易日继承前一日持仓
+            else:
+                # 仅生成记录，持仓缓存保持不变
+                for (stock_id, currency), quantity in position_cache.items():
+                    new_positions.append(historical_position(
+                        date=processing_date,
+                        stock_id=stock_id,
+                        quantity=quantity,
+                        currency=currency,
+                    ))
+
+        # 批量插入并过滤零持仓
+        valid_records = [
+            p for p in new_positions
+            if p.quantity != 0
+        ]
+        historical_position.objects.bulk_create(valid_records)
+
+        return len(valid_records)
+
+
+
+def get_historical_closing_price_111(start_date, end_date):
+    # 转换为 "YYYYMMDD" 格式字符串
+    start_date_str = (start_date - datetime.timedelta(days=10)).strftime("%Y%m%d") if start_date else ""
+    end_date_str = end_date.strftime("%Y%m%d") if end_date else ""
+    date_list = list(historical_position.objects.values_list('date', flat=True).distinct())
+    # 获取stock字段的去重值列表
+    stock_list = list(historical_position.objects.values_list('stock', flat=True).distinct())
+    for i in stock_list:
+        stock_code = stock.objects.get(id=i).stock_code
+        market_name = stock.objects.get(id=i).market.market_name
+        market_abbreviation = stock.objects.get(id=i).market.market_abbreviation
+        price_dict = {}
+        if market_name == '港股':
+            stock_code_str = stock_code
+            # df = ak.stock_hk_hist(symbol=stock_code_str, period="daily", start_date=start_date_str, end_date=end_date_str, adjust="")
+            df = ak.stock_hk_daily(symbol=stock_code_str, adjust="")
+            df['date'] = pd.to_datetime(df['date'])
+            current_date = pd.to_datetime(start_date)
+            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
+                current_date = current_date - datetime.timedelta(days=1)
+            if current_date in df['date'].values:
+                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
+            else:
+                current_price = 0
+            for item in date_list:
+                item_datetime = pd.to_datetime(item)
+                date_exists = item_datetime in df['date'].values
+                if date_exists:
+                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
+                price_dict[item] = current_price
+        elif market_name == '沪市B股' or market_name == '深市B股':
+            stock_code_str = market_abbreviation + stock_code
+            df = ak.stock_zh_b_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str, adjust="")
+            df['date'] = pd.to_datetime(df['date'])
+            current_date = pd.to_datetime(start_date)
+            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
+                current_date = current_date - datetime.timedelta(days=1)
+            if current_date in df['date'].values:
+                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
+            else:
+                current_price = 0
+            for item in date_list:
+                item_datetime = pd.to_datetime(item)
+                date_exists = item_datetime in df['date'].values
+                if date_exists:
+                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
+                price_dict[item] = current_price
+        elif classify_stock_code(stock_code) == 'ETF':
+            stock_code_str = market_abbreviation + stock_code
+            df = ak.stock_zh_index_daily(symbol=stock_code_str)
+            df['date'] = pd.to_datetime(df['date'])
+            current_date = pd.to_datetime(start_date)
+            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
+                current_date = current_date - datetime.timedelta(days=1)
+            if current_date in df['date'].values:
+                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
+            else:
+                current_price = 0
+            for item in date_list:
+                item_datetime = pd.to_datetime(item)
+                date_exists = item_datetime in df['date'].values
+                if date_exists:
+                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
+                price_dict[item] = current_price
+        elif classify_stock_code(stock_code) == '企业债':
+            stock_code_str = market_abbreviation + stock_code
+            df = ak.bond_zh_hs_daily(symbol=stock_code_str)
+            df['date'] = pd.to_datetime(df['date'])
+            current_date = pd.to_datetime(start_date)
+            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
+                current_date = current_date - datetime.timedelta(days=1)
+            if current_date in df['date'].values:
+                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
+            else:
+                current_price = 0
+            for item in date_list:
+                item_datetime = pd.to_datetime(item)
+                date_exists = item_datetime in df['date'].values
+                if date_exists:
+                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
+                price_dict[item] = current_price
+        else:
+            stock_code_str = market_abbreviation + stock_code
+            df = ak.stock_zh_a_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str, adjust="")
+            df['date'] = pd.to_datetime(df['date'])
+            current_date = pd.to_datetime(start_date)
+            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
+                current_date = current_date - datetime.timedelta(days=1)
+            if current_date in df['date'].values:
+                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
+            else:
+                current_price = 0
+            for item in date_list:
+                item_datetime = pd.to_datetime(item)
+                date_exists = item_datetime in df['date'].values
+                if date_exists:
+                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
+                price_dict[item] = current_price
+
+        update_closing_prices(stock_code, price_dict)
+
+    return
 

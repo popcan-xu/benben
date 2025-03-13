@@ -1135,8 +1135,8 @@ def take_col8(list):
 
 
 # 返回二维列表的第10列，用于二维列表按第10列排序
-def take_col11(list):
-    return float(list[10])
+def take_col7(list):
+    return float(list[6])
 
 
 # 时间戳（10位）转日期格式
@@ -1338,11 +1338,11 @@ def classify_stock_code(code):
         return "上证指数"
     elif code == '399001':
         return "深证成指"
-    elif code.startswith(('51', '15')):
+    elif code.startswith(('51', '150', '159')): # 恒生ETF（sz159920）、H股B（sz150176）
         return "ETF"
     elif code.startswith('01'):
         return "国债"
-    elif code.startswith(('12', '13')):
+    elif code.startswith(('12', '13', '112', '155')): # 19恒大01（sh155406）、16冀中01（sz112292）
         return "企业债"
     else:
         return "未知类型"

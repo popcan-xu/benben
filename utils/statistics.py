@@ -53,7 +53,7 @@ def get_position_content(currency):
         # 增加股票对应的行
         position_content.append(row)
     if currency == 1:
-        position_content.sort(key=take_col11, reverse=True)  # 对position_content列表按隐藏的第11列（市值）降序排序
+        position_content.sort(key=take_col7, reverse=True)  # 对position_content列表按隐藏的第6列（市值）降序排序
     elif currency == 2:
         position_content.sort(key=take_col8, reverse=True)  # 对position_content列表按隐藏的第7列（市值）降序排序
     return position_content, abbreviation_array, account_num, stock_num

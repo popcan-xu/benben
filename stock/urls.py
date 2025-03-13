@@ -19,6 +19,7 @@ urlpatterns = [
     path('view_funds_details/<int:funds_id>/', view_funds_details),
 
     path('market_value/', market_value),
+    path('view_market_value_details/<int:currency_id>/', view_market_value_details),
 
     path('input_trade/', input_trade),
     path('input_dividend/', input_dividend),
@@ -104,6 +105,7 @@ urlpatterns = [
     path('capture_dividend_history/', capture_dividend_history),
 
     path('batch_import/', batch_import),
+    path('update_historical_market_value/', update_historical_market_value),
 
     path('about/', about),
     path('test/', test),

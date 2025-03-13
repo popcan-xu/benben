@@ -227,9 +227,12 @@ class historical_market_value(models.Model):
     date = models.DateField(verbose_name='日期')
     currency = models.CharField(max_length=16, verbose_name='货币')
     value = models.DecimalField(max_digits=16, decimal_places=4, verbose_name='市值')
+    prev_value = models.DecimalField(max_digits=16, decimal_places=4, default=0, verbose_name='前一日市值')
+    change_amount = models.DecimalField(max_digits=16, decimal_places=4, default=0, verbose_name='变化值')
+    change_rate = models.DecimalField(max_digits=8, decimal_places=4, default=0, verbose_name='变化率(%)')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
     class Meta:
         indexes = [
-            models.Index(fields=['date', 'currency']),
+            models.Index(fields=['currency', '-date']),
+            models.Index(fields=['date', 'currency'])
         ]
-
