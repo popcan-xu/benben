@@ -105,7 +105,9 @@ urlpatterns = [
     path('capture_dividend_history/', capture_dividend_history),
 
     path('batch_import/', batch_import),
-    path('update_historical_market_value/', update_historical_market_value),
+    path('update_historical_market_value/', update_historical_market_value,
+         name='update_historical_market_value'),
+    path('get_task_status/', get_task_status, name='get_task_status'),
 
     path('about/', about),
     path('test/', test),

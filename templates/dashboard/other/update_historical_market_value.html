@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+{% extends 'dashboard/base_dashboard.html' %}
+{% block page_content %}
+
+<!-- update_historical_market_value.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>任务执行状态</title>
+    <style>
+        .status-container {
+            margin: 20px 0;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .message {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .duration {
+            margin-top: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-container">
+        <div id="stepDisplay"></div>
+        <div class="message" id="message"></div>
+        <div class="duration" id="duration"></div>
+    </div>
+
+    <script>
+        // 定时获取任务状态
+        function updateStatusDisplay() {
+            fetch("{% url 'get_task_status' %}")
+                .then(response => response.json())
+                .then(data => {
+                    const stepDisplay = document.getElementById('stepDisplay');
+                    const message = document.getElementById('message');
+                    const duration = document.getElementById('duration');
+
+                    // 更新步骤显示
+                    stepDisplay.innerHTML = `当前步骤: ${data.current_step}/${data.total_steps}`;
+
+                    // 更新消息
+                    message.textContent = data.message;
+
+                    // 更新耗时
+                    if (data.duration !== null) {
+                        duration.textContent = `耗时: ${data.duration} 秒`;
+                    }
+
+                    // 如果任务还在运行，继续获取状态
+                    if (data.status === 'running') {
+                        setTimeout(updateStatusDisplay, 1000); // 每秒更新一次
+                    }
+                })
+                .catch(error => console.error('Error fetching status:', error));
+        }
+
+        // 初始调用
+        updateStatusDisplay();
+
+    </script>
+</body>
+</html>
+
+{% endblock %}

@@ -209,7 +209,7 @@
         <div class="col-xl-6 col-md-6 mb-4">
             <div class="card h-100 shadow mb-4">
                 <div class="card-header d-flex align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">持仓市值曲线</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">市值曲线</h6>
                     <div class="btn-group">
                         <button
                             type="button"
@@ -256,7 +256,7 @@
             <div class="card h-100 shadow mb-4">
                 <!-- Card Header - Dropdown -->
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">持仓市值变化日历</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">市值变化日历</h6>
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
@@ -469,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return `${month}-${day}`;
                             }
                             //return `${date.getFullYear().slice(-2)}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
-                            return `${date.getFullYear().toString().slice(-2)}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
+                            return `${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
                         }
 
                         if (rangeType === 'all') {
@@ -494,7 +494,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     new Date(d.date).getTime(), // 转换为时间戳
                     d.value
                 ]),
-                //data: filteredData.map(d => [d.date, d.value]),
+                markPoint: {
+                     // 根据条件生成数据数组（核心逻辑）
+                    data: (range === 'all' || range === 'year') ? [
+                        { type: 'max', symbol: 'circle', symbolSize: 5, itemStyle: { color: 'orange' }},
+                        { type: 'min', symbol: 'circle', symbolSize: 5, itemStyle: { color: 'orange' } }
+                    ] : [],
+                    //label: { show: false } // 显示标签及数值
+                    label: {
+                        show: false,
+                        position: 'left',
+                        // 使用函数格式化数值（核心改动）
+                        formatter: (params) => {
+                            // 确保数值为 Number 类型
+                            const value = parseFloat(params.value);
+                            return value.toFixed(2); // 保留两位小数
+                        },
+                        color: '#ff0000',
+                        fontSize: 14,
+                        //backgroundColor: '#f8f8f8',
+                        backgroundColor: 'transparent',
+                        distance: 15,
+                        rotate: 0,
+                    }
+                },
                 type: 'line',
                 showSymbol: (range === 'all' || range === 'year') ? false : true, // 动态控制，默认隐藏，悬停时显示
                 smooth: true,

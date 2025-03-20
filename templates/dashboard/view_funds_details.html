@@ -166,9 +166,18 @@
                             <div class="h6 mb-0 text-gray-500">本金（元）</div>
                             <div class="h4 mb-0  text-gray-800">{{ current_funds_details_object.funds_principal|floatformat:0 }}</div>
                         </div>
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">收益（元）</div>
+                            <div class="h4 mb-0 text-gray-800 font"><span style="color: {{ current_funds_details_object.funds_profit|text_color }}">{{ current_funds_details_object.funds_profit|floatformat:0 }}</span></div>
+                        </div>
                     </div>
                     <h6>&nbsp;</h6>
                     <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">上期资产（元）</div>
+                            <div class="small mb-0 text-gray-500">{{ second_max_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>
+                            <div class="h4 mb-0 text-gray-800 font"><span style="">{{ last_period_value|floatformat:0 }}</span></div>
+                        </div>
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">当期收益（元）</div>
                             <div class="small mb-0 text-gray-500">{{ second_max_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>
@@ -183,14 +192,16 @@
                     <h6>&nbsp;</h6>
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计收益（元）</div>
-                            <div class="small mb-0 text-gray-500">{{ min_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ current_funds_details_object.funds_profit|floatformat:0 }}</div>
+                            <div class="h6 mb-0 text-gray-500">上年资产（元）</div>
+                            <div class="h4 mb-0 text-gray-800 font">{{ last_year_value|floatformat:0 }}</div>
                         </div>
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计收益率（%）</div>
-                            <div class="small mb-0 text-gray-500">{{ min_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>
-                            <div class="h4 mb-0  text-gray-800">{{ current_funds_details_object.funds_profit_rate|percent }}</div>
+                            <div class="h6 mb-0 text-gray-500">年内收益（元）</div>
+                            <div class="h4 mb-0 text-gray-800 font"><span style="color: {{ year_change_amount|text_color }}">{{ year_change_amount|floatformat:0 }}</span></div>
+                        </div>
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">年内收益率（%）</div>
+                            <div class="h4 mb-0  text-gray-800"><span style="color: {{ year_change_rate|text_color }}">{{ year_change_rate|percent }}</span></div>
                         </div>
                     </div>
                     <h6>&nbsp;</h6>
@@ -200,8 +211,12 @@
                             <div class="h4 mb-0 text-gray-800 font">{{ current_funds_details_object.funds_net_value|floatformat:4 }}</div>
                         </div>
                         <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">年内资金加权收益率（%）</div>
+                            <div class="h4 mb-0  text-gray-800"><span style="color: {{year_change_net_value_rate|text_color }}">{{ year_change_net_value_rate|percent }}</span></div>
+                        </div>
+                        <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">年化收益率（%）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ current_funds_details_object.funds_annualized_profit_rate|percent }}</div>
+                            <div class="h4 mb-0  text-gray-800"><span style="color: {{ current_funds_details_object.funds_annualized_profit_rate|text_color }}">{{ current_funds_details_object.funds_annualized_profit_rate|percent }}</span></div>
                         </div>
                     </div>
                 </div>
@@ -379,6 +394,7 @@
                                         <th>日期</th>
                                         <th>基金价值</th>
                                         <th>出入金</th>
+                                        <th>基金净值</th>
                                         <th>当期收益</th>
                                         <th>当期收益率</th>
                                     </tr>
@@ -389,6 +405,7 @@
                                             <td>{{ funds_details.date|date:'Y-m-d' }}</td>
                                             <td>{{ funds_details.funds_value|floatformat:0 }}</td>
                                             <td>{{ funds_details.funds_in_out|floatformat:0 }}</td>
+                                            <td>{{ funds_details.funds_net_value|floatformat:4 }}</td>
                                             <td style="color: {{ funds_details.funds_current_profit|text_color }}">{{ funds_details.funds_current_profit|floatformat:0 }}</td>
                                             <td style="color: {{ funds_details.funds_current_profit_rate|text_color }}">{{ funds_details.funds_current_profit_rate|percent }}%</td>
                                         </tr>
@@ -586,7 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return `${month}-${day}`;
                             }
                             //return `${date.getFullYear().slice(-2)}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
-                            return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
+                            return `${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
                         }
 
                         if (rangeType === 'all') {
@@ -611,7 +628,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     new Date(d.date).getTime(), // 转换为时间戳
                     d.value
                 ]),
-                //data: filteredData.map(d => [d.date, d.value]),
+                markPoint: {
+                     // 根据条件生成数据数组（核心逻辑）
+                    data: (range === 'all') ? [
+                        { type: 'max', symbol: 'circle', symbolSize: 5, itemStyle: { color: 'orange' }},
+                        { type: 'min', symbol: 'circle', symbolSize: 5, itemStyle: { color: 'orange' } }
+                    ] : [],
+                    //label: { show: false } // 显示标签及数值
+                    label: {
+                        show: false,
+                        position: 'left',
+                        // 使用函数格式化数值（核心改动）
+                        formatter: (params) => {
+                            // 确保数值为 Number 类型
+                            const value = parseFloat(params.value);
+                            return value.toFixed(2); // 保留两位小数
+                        },
+                        color: '#ff0000',
+                        fontSize: 14,
+                        //backgroundColor: '#f8f8f8',
+                        backgroundColor: 'transparent',
+                        distance: 15,
+                        rotate: 0,
+                    }
+                },
                 type: 'line',
                 showSymbol: range === 'all' ? false : true, // 动态控制，默认隐藏，悬停时显示
                 smooth: true,
