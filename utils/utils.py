@@ -553,25 +553,26 @@ def get_stock_dividend_history(stock_code):
     stock_dividend_history_list = []
 
     # 使用雪球账号登录后的cookie
-    # headers = {
-    #     "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
-    #     'Cookie': 'device_id=79ed3ae94c7946784a708f25b6aebcbc; '
-    #               'Hm_lvt_1db88642e346389874251b5a1eded6e3=1649310073; '
-    #               's=bx171kn59d; '
-    #               'remember=1; '
-    #               'xq_a_token=e346c88419efc81408e75d9d84ea652027032bda; '
-    #               'xqat=e346c88419efc81408e75d9d84ea652027032bda; '
-    #               'xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOjE2ODI2NjI4MjAsImlzcyI6InVjIiwi'
-    #               'ZXhwIjoxNjUxODg5NDc2LCJjdG0iOjE2NDkzODQ4OTQyMDMsImNpZCI6ImQ5ZDBuNEFadXAifQ.mTaEjcPN2L0Ohd'
-    #               '2idDsrekbmYddMR8bUak2FgDXbi27JdYOeKubiMiYi2fIEvBJ9ekxi4rshi6JpuqWv10Zy0FLxU8sVLDJYRl2dE6K'
-    #               'BmhuGgEkVUuQyOHDpZbIX4BDQzozucipmD3l2L48wtNY6mHMeWJ2KWAK1PVLiRAvnulk4kDbOPoe7DNmmqMrkazb6'
-    #               'scWzRRxqLhLEBJvteKeRd-HoMCDc49AKI_W6Uf39QUCr_k4Kc7c2tWy0EWI5DA-S_gnn9hoEqvO6VfEANW2_nTD-p'
-    #               'UOUsfFvr-a4IfEaONaODlvenelTaHWnwBiKHNT--VASqNPtJJqOyPrapysiaQ; '
-    #               'xq_r_token=cac1abdcce297edbd7c9dda7c5a7c35167270cdc; '
-    #               'xq_is_login=1; '
-    #               'u=1682662820; '
-    #               'Hm_lpvt_1db88642e346389874251b5a1eded6e3=1649384895'
-    # }
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
+        'Cookie':   'cookiesu=491738051267842; '
+                    'device_id=b043d2601995dbbb5aa7312b27832e20; '
+                    'Hm_lvt_1db88642e346389874251b5a1eded6e3=1742526598; '
+                    'HMACCOUNT=B120DF9442E09CC4; '
+                    'remember=1; '
+                    'xq_a_token=6d17f59380435d35d8208c1b34e1b9431038a24b; '
+                    'xqat=6d17f59380435d35d8208c1b34e1b9431038a24b; '
+                    'xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOjE2ODI2NjI4MjAsImlzcyI6InVjIiwiZXhwIjoxNzQ0NTE2Nzk1LCJj'
+                    'dG0iOjE3NDI1MjY2MzI0ODUsImNpZCI6ImQ5ZDBuNEFadXAifQ.rM_naStZbct485LeJNE76EfY4CU9xncyTTH18YTW-y0Z2ZXij5fbwP2JT2vHsyP'
+                    'PW6jqMR_dpTXkQHzDirdBhQqH9pwbeVs4tJYfZfWrQWeB45-qMFq5qUxro1_G2gIjEY9pyIr3S6rb_2uGxDZ18BeYPAPfIDYL-C6nLkPK-zIbEHqt9'
+                    'yT69FsSyOPeQmSBrblmkuNc-UAiejdY8S74Kl1_zomgzI4-2xPcYeeeo4uJcBUQVydjlU_jSSdZ5cZc9eKtQXiBoUFYARlSm8iQI_1unuoY_TTrxa9'
+                    'hgz7dJyIolX7HdnG-KG60GA-DJVaqjCy1-7GXSXOKa2ukkfnsEA; '
+                    'xq_r_token=18a89a46ad609493b9aa4668f7adabfc98b4bd9f; '
+                    'xq_is_login=1; '
+                    'u=1682662820; '
+                    'is_overseas=0; '
+                    'Hm_lpvt_1db88642e346389874251b5a1eded6e3=1742526634; '
+    }
 
     # 使用未登录雪球的cookie，只保留_token的值， 一段时间后会失效？？
     # headers = {
@@ -609,18 +610,17 @@ def get_stock_dividend_history(stock_code):
 
     # 自动处理cookie爬取雪球网
     session = requests.Session()
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36"
-    }
+    # headers = {
+    #     "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36"
+    # }
     # 第一步,向雪球网首页发送一条请求,获取cookie
-    session.get(url="https://xueqiu.com", headers=headers)
+    # session.get(url="https://xueqiu.com", headers=headers)
     # 第二步,获取动态加载的数据
     # page_json = session.get(url=url, headers=headers).json()
     # print(page_json)
 
     if market == 'sh' or market == 'sz':
         url = 'https://stock.xueqiu.com/v5/stock/f10/cn/bonus.json?symbol=' + market.upper() + stock_code + '&size=10000&page=1&extend=true'
-        # page_json = requests.get(url=url, headers=headers, timeout=30).json()
         page_json = session.get(url=url, headers=headers, timeout=30).json()
         stock_dividend_dict = page_json['data']['items']
         for i in stock_dividend_dict:
@@ -634,7 +634,6 @@ def get_stock_dividend_history(stock_code):
             stock_dividend_history_list.append(dict_tmp)
     elif market == 'hk':
         url = 'https://stock.xueqiu.com/v5/stock/f10/hk/bonus.json?symbol=' + stock_code + '&size=1000&page=1&extend=true'
-        # page_json = requests.get(url=url, headers=headers, timeout=30).json()
         page_json = session.get(url=url, headers=headers, timeout=30).json()
         stock_dividend_dict = page_json['data']['items']
         for i in stock_dividend_dict:
@@ -648,7 +647,6 @@ def get_stock_dividend_history(stock_code):
             stock_dividend_history_list.append(dict_tmp)
     else:
         url = 'https://stock.xueqiu.com/v5/stock/f10/us/bonus.json?symbol=' + stock_code + '&size=1000&page=1&extend=true'
-        # page_json = requests.get(url=url, headers=headers, timeout=30).json()
         page_json = session.get(url=url, headers=headers, timeout=30).json()
         stock_dividend_dict = page_json['data']['items']
         for i in stock_dividend_dict:
