@@ -926,7 +926,7 @@ function formatAmount(amount) {
     if (absAmount >= 10000) { // 资产大于等于 1 万时，以万为单位显示
         formatted = `${(absAmount / 10000).toFixed(2)}万`;
     } else { // 否则，显示千位分隔的整数
-        formatted = absAmount.toLocaleString();
+        formatted = absAmount.toFixed(0).toLocaleString();
     }
     return `${isNegative ? '-' : '+'}${formatted}`; // 返回带正负号的格式化字符串
 }
