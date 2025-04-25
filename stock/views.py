@@ -247,8 +247,10 @@ def view_funds_details(request, funds_id):
     funds_baseline_name = funds.objects.get(id=funds_id).funds_baseline
     max_date = get_max_date(funds_id)
     min_date = get_min_date(funds_id)
+    years = max_date.year - min_date.year
     second_max_date = get_second_max_date(funds_id)
     current_funds_details_object = funds_details_list.get(date=max_date) #生成概要数据
+    profit_rate = current_funds_details_object.funds_profit / current_funds_details_object.funds_principal
     last_period_value = current_funds_details_object.funds_value - current_funds_details_object.funds_current_profit
     last_year_max_date = funds_details.objects.filter(
         date__year=datetime.date.today().year - 1,
@@ -367,12 +369,22 @@ def view_funds_details(request, funds_id):
         amount = float(rs.funds_current_profit)
         assetChanges[date] = amount
 
-    data = []
+    data_net_value = []
     #funds_details_list = funds_details.objects.filter(funds=3)
     for rs in funds_details_list:
         date = str(rs.date)
         value = float(rs.funds_net_value)
-        data.append({
+        data_net_value.append({
+            "date": date,
+            "value": value
+        })
+
+    data_value = []
+    #funds_details_list = funds_details.objects.filter(funds=3)
+    for rs in funds_details_list:
+        date = str(rs.date)
+        value = float(rs.funds_value / 10000)
+        data_value.append({
             "date": date,
             "value": value
         })
