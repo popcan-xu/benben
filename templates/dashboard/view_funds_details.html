@@ -296,7 +296,7 @@
                     <div class="btn-group" id="net_value">
                         <button
                             type="button"
-                            class="btn btn-sm btn-outline-primary active"
+                            class="btn btn-sm btn-outline-primary"
                             data-range="currentYear"
                             style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
                         >今年</button>
@@ -308,7 +308,7 @@
                         >近一月</button>
                         <button
                             type="button"
-                            class="btn btn-sm btn-outline-primary"
+                            class="btn btn-sm btn-outline-primary active"
                             data-range="year"
                             style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
                         >近一年</button>
@@ -567,7 +567,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const chart = echarts.init(document.getElementById('Chart_net_value'));
     const allData = {{ data_net_value|safe }};
-    let currentRange = 'currentYear';
+    // let currentRange = 'currentYear';
+    let currentRange = 'year';
 
     // 更新时间显示
     function updateTimestamp() {

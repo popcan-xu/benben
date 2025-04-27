@@ -39,6 +39,46 @@ templates_path = 'dashboard/'
 # 总览
 def overview(request):
     rate_HKD, rate_USD = get_rate()
+
+    # 投资记账
+    funds_list = funds.objects.all()
+
+    # 持仓市值
+    stock_dict = position.objects.values("stock").annotate(
+        count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
+    stock_code_array = []
+    for dict in stock_dict:
+        stock_code = dict['stock__stock_code']
+        stock_code_array.append(stock_code)
+    price_array = get_stock_array_price(stock_code_array)
+    content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD, rate_USD)
+    # content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array, rate_HKD, rate_USD)
+    # content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array, rate_HKD, rate_USD)
+
+    currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
+    value_dict = {}
+    result = historical_market_value.objects.aggregate(
+        max_date=Max('date')  # 最大值（最新日期）
+    )
+    current_date = result['max_date']
+
+    for key in currency_dict:
+        if historical_market_value.objects.filter(currency=currency_dict[key], date=current_date).exists():
+            value_dict[key] = historical_market_value.objects.get(currency=currency_dict[key], date=current_date).value
+        else:
+            value_dict[key] = 0
+
+    # 类现金市值计算
+    cash_assets_rate_dict = {1: 0, 2: 0, 3: 0}
+    current_price, increase, color = get_quote_snowball('511880') #银华日利
+    positions = position.objects.filter(stock=93) #银华日利
+    quantity = 0
+    for pos in positions:
+        quantity += pos.position_quantity
+    cash_like_assets_CNY = current_price * quantity
+    cash_assets_rate_dict[1] = cash_like_assets_CNY / amount_sum_CNY
+
+
     path = pathlib.Path("./templates/dashboard/overview.json")
     if path.is_file() and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
         # 读取overview.json
@@ -389,7 +429,7 @@ def view_funds_details(request, funds_id):
             "value": value
         })
 
-    funds_details_list_TOP = funds_details.objects.filter(funds=funds_id).order_by("-date")[:10]
+    funds_details_list_TOP = funds_details.objects.filter(funds=funds_id).order_by("-date")[:12]
 
     updating_time = datetime.datetime.now()
 
@@ -506,7 +546,7 @@ def view_market_value_details(request, currency_id):
         amount = float(rs.change_amount)
         assetChanges[date] = amount
 
-    market_value_list_TOP = historical_market_value.objects.filter(currency=currency_dict[currency_id]).order_by("-date")[:10]
+    market_value_list_TOP = historical_market_value.objects.filter(currency=currency_dict[currency_id]).order_by("-date")[:12]
     updating_time = current_date
     return render(request, templates_path + 'view_market_value_details.html', locals())
 
