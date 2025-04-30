@@ -2412,9 +2412,9 @@ def get_historical_rate(start_date, end_date):
     # 示例调用（带异常处理）
     try:
         update_historical_rate(df_hkd, "港元", start_date, end_date)
-        print("历史汇率（港元）写入成功！")
+        print("历史汇率（港元）写入成功！" + str(df_hkd))
         update_historical_rate(df_usd, "美元", start_date, end_date)
-        print("历史汇率（美元）写入成功！")
+        print("历史汇率（美元）写入成功！" + str(df_usd))
     except Exception as e:
         print(f"历史汇率写入失败: {str(e)}")
 
@@ -2815,11 +2815,11 @@ def about(request):
 def test(request):
     # get_akshare()
 
-    df = ak.stock_hk_daily(symbol='00700', adjust="")
-    print(df)
-    stock_hk_hist_df = ak.stock_hk_hist(symbol="00700", period="daily", start_date="19700101", end_date="22220101",
-                                        adjust="")
-    print(stock_hk_hist_df)
+    # df = ak.stock_hk_daily(symbol='00700', adjust="")
+    # print(df)
+    # stock_hk_hist_df = ak.stock_hk_hist(symbol="00700", period="daily", start_date="19700101", end_date="22220101",
+    #                                     adjust="")
+    # print(stock_hk_hist_df)
 
     # price, increase, color = get_quote_akshare('00700')
     # print(price, increase, color)
@@ -2844,15 +2844,15 @@ def test(request):
     #     })
     # # print(data)
 
-    # data = []
-    # market_value_list = historical_market_value.objects.filter(currency='人民币').order_by("date")
-    # for rs in market_value_list:
-    #     date = str(rs.date)
-    #     value = float(rs.value)
-    #     data.append({
-    #         "date": date,
-    #         "value": value / 10000
-    #     })
+    data = []
+    market_value_list = historical_market_value.objects.filter(currency='人民币').order_by("date")
+    for rs in market_value_list:
+        date = str(rs.date)
+        value = float(rs.value)
+        data.append({
+            "date": date,
+            "value": value / 10000
+        })
 
     # # 更新历史持仓市值数据（historical_position、historical_rate、historical_market_value表）
     # start_date = datetime.date(2007, 8, 15)
@@ -2871,8 +2871,23 @@ def test(request):
     # calculate_market_value(start_date, datetime.date.today())
     # calculate_and_fill_historical_data()
 
+    # currency_boc_sina_df = ak.currency_boc_sina(symbol="港币", start_date="20250425", end_date="20250430")
+    # print(currency_boc_sina_df)
 
+    current_date = pd.to_datetime(datetime.date.today())
+    current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
 
+    df = ak.fx_spot_quote()
+    rate_HKD = float(df[df['货币对'] == 'HKD/CNY']['买报价'].iloc[0])
+    rate_USD = float(df[df['货币对'] == 'USD/CNY']['买报价'].iloc[0])
+    updating_time = datetime.datetime.now()
+
+    df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
+    df['日期'] = pd.to_datetime(df['日期'])
+    hkd = float(df[df['日期'] == current_date_str]['中行汇买价'].iloc[0] / 100)
+    df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
+    df['日期'] = pd.to_datetime(df['日期'])
+    usd = float(df[df['日期'] == current_date_str]['中行汇买价'].iloc[0] / 100)
 
 
     return render(request, templates_path + 'test.html', locals())

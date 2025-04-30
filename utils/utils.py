@@ -369,7 +369,8 @@ def get_rate():
             data = json.load(f)
         time1 = datetime.datetime.strptime(data['modified_time'], "%Y-%m-%d %H:%M:%S")
         time2 = datetime.datetime.now()
-        if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 3600):
+        # if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 3600):
+        if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 60):
             # df = ak.fx_quote_baidu(symbol="人民币")
             # try:
             #     temp_HKD = float(df.query('代码=="CNYHKD"')['最新价'].iloc[0])
@@ -392,6 +393,7 @@ def get_rate():
             # else:
             #     rate_USD = data["rate_USD"]
             try:
+                # ak.currency_boc_sina接口
                 current_date = pd.to_datetime(datetime.date.today())
                 current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
                 df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
@@ -402,6 +404,14 @@ def get_rate():
                 df['日期'] = pd.to_datetime(df['日期'])
                 rate_USD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
                 data["rate_USD"] = rate_USD
+
+                # ak.fx_spot_quote接口
+                # df = ak.fx_spot_quote()
+                # rate_HKD = float(df[df['货币对'] == 'HKD/CNY']['买报价'].iloc[0])
+                # rate_USD = float(df[df['货币对'] == 'USD/CNY']['买报价'].iloc[0])
+                # data["rate_HKD"] = rate_HKD
+                # data["rate_USD"] = rate_USD
+
             except Exception as e:
                 print(f"查询报错: {e}")
                 rate_HKD = data["rate_HKD"]
@@ -422,6 +432,7 @@ def get_rate():
         # rate_HKD = 1 / temp_HKD if temp_HKD != 0 else 1
         # rate_USD = 1 / temp_USD if temp_HKD != 0 else 1
         try:
+            # ak.currency_boc_sina接口
             current_date = pd.to_datetime(datetime.date.today())
             current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
             df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
@@ -430,6 +441,12 @@ def get_rate():
             df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
             df['日期'] = pd.to_datetime(df['日期'])
             rate_USD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+
+            # ak.fx_spot_quote接口
+            # df = ak.fx_spot_quote()
+            # rate_HKD = float(df[df['货币对'] == 'HKD/CNY']['买报价'].iloc[0])
+            # rate_USD = float(df[df['货币对'] == 'USD/CNY']['买报价'].iloc[0])
+
             rate = {}
             rate.update(rate_HKD=rate_HKD)
             rate.update(rate_USD=rate_USD)
@@ -560,64 +577,26 @@ def get_stock_dividend_history(stock_code):
                     'Hm_lvt_1db88642e346389874251b5a1eded6e3=1742526598; '
                     'HMACCOUNT=B120DF9442E09CC4; '
                     'remember=1; '
-                    'xq_a_token=6d17f59380435d35d8208c1b34e1b9431038a24b; '
-                    'xqat=6d17f59380435d35d8208c1b34e1b9431038a24b; '
-                    'xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOjE2ODI2NjI4MjAsImlzcyI6InVjIiwiZXhwIjoxNzQ0NTE2Nzk1LCJj'
-                    'dG0iOjE3NDI1MjY2MzI0ODUsImNpZCI6ImQ5ZDBuNEFadXAifQ.rM_naStZbct485LeJNE76EfY4CU9xncyTTH18YTW-y0Z2ZXij5fbwP2JT2vHsyP'
-                    'PW6jqMR_dpTXkQHzDirdBhQqH9pwbeVs4tJYfZfWrQWeB45-qMFq5qUxro1_G2gIjEY9pyIr3S6rb_2uGxDZ18BeYPAPfIDYL-C6nLkPK-zIbEHqt9'
-                    'yT69FsSyOPeQmSBrblmkuNc-UAiejdY8S74Kl1_zomgzI4-2xPcYeeeo4uJcBUQVydjlU_jSSdZ5cZc9eKtQXiBoUFYARlSm8iQI_1unuoY_TTrxa9'
-                    'hgz7dJyIolX7HdnG-KG60GA-DJVaqjCy1-7GXSXOKa2ukkfnsEA; '
-                    'xq_r_token=18a89a46ad609493b9aa4668f7adabfc98b4bd9f; '
+                    'xq_a_token=8fc0059d58726bfb167e37dbf0fe235f0adfdb4b; '
+                    'xqat=8fc0059d58726bfb167e37dbf0fe235f0adfdb4b; '
+                    'xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1a'
+                    'WQiOjE2ODI2NjI4MjAsImlzcyI6InVjIiwiZXhwIjoxNzQ3OTYyMTc'
+                    'wLCJjdG0iOjE3NDU4MDgwMTk3NDYsImNpZCI6ImQ5ZDBuNEFadXAif'
+                    'Q.bGQqJeFQOCws3fN7lwVV_yEA0oixK9A3QhMDMffwrVAMa2vzON'
+                    'u - zckMZubLgEfW_zOYj - PjZLNmqc6W6enRFiSeT511VwgMDX0xTQ'
+                    'yOFzFQHbzfQCWwhefeItS35RRW2 - cyqQadN4_ex4nsTSIZGXhNP - Z'
+                    'VatHA6UMk3jmUWm3G1xcBlUZUzfQEjD - gj - HDiKH5fMEi9pkrSNHwe'
+                    '0Yu - fN8iNPEazVwbEwwJggDu - b2avfBFjcsK7jOa7kKsFcBEHbMG3C'
+                    'KCXBAmSkCKxPwuGjcPYi9wIt3BEWhJEX - dGQdNfcX17xOeazyw46rXVa'
+                    'mrBj9jQfPeJ6nhquDRSpgsw;'
+                    'xq_r_token=be996e380f9b12414860ed8ee297cfa79e8d60f2; '
                     'xq_is_login=1; '
                     'u=1682662820; '
                     'is_overseas=0; '
-                    'Hm_lpvt_1db88642e346389874251b5a1eded6e3=1742526634; '
+                    'Hm_lpvt_1db88642e346389874251b5a1eded6e3=1745808363; '
     }
 
-    # 使用未登录雪球的cookie，只保留_token的值， 一段时间后会失效？？
-    # headers = {
-    #     "User-Agent": "Mozilla/5.0",
-    #     "Cookie": "xq_a_token=f1e4545cb0f3cfb17acc98ad7a298b8106f55e86; "
-    #               "xq_r_token=f5d9f889384a1b3b886c6a67f79bd30c74aaeb1c; "
-    #               "xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOi0xLCJpc3MiOiJ1YyIsImV4cCI6MTY1MTQ"
-    #               "0NzY3MywiY3RtIjoxNjQ5MzkwMDI4MjY4LCJjaWQiOiJkOWQwbjRBWnVwIn0.PoJMwn3BsuM4BIyMbtsioTXIdMZDa75"
-    #               "DOLgyL-dyqahufvDcnsv9xH_mKmx54PRGQ1qUZPj_gzhhIqAFoaNqQnb305FvVr6VmZ-6Dzgjmt9lS4C2up6zdlgg9BC"
-    #               "MU5cltTM21yx49VtyIJz1Pvgpn75o6Ydsr4vWayG8sIlDx0SC2Kaynrc0F_5cHLANE6uYkchwWAA6ULi21odD4ZI4Oj4"
-    #               "0yvOolgo5XzUS878g7bcLQcewvSOTrqXUmA87LvO21nZ2Q2CNr-Ux2Zz5wg7ud7EE7tJmQMQ2gfVo0Zhvob2Nm68F7tT"
-    #               "r03_T2KU9ddJtII2Leha7sX_5RjswPIKSaA"
-    # }
-
-    # 使用未登录雪球的完整cookie
-    # headers = {
-    #     "User-Agent": "Mozilla/5.0",
-    #     "Cookie": "device_id=79ed3ae94c7946784a708f25b6aebcbc; "
-    #               "s=bx171kn59d; bid=b336830f120a0f7d04d425a0e3c3455f_l1q98uis; "
-    #               "Hm_lvt_1db88642e346389874251b5a1eded6e3=1649407616,1649410023,1649472317,1650003400; "
-    #               "snbim_minify=true; "
-    #               "xq_a_token=7a84ec3929cd1e60abe21a2c26b9292767c1bd62; "
-    #               "xqat=7a84ec3929cd1e60abe21a2c26b9292767c1bd62; "
-    #               "xq_r_token=1b89b595a3ae0881d42538acf4948a94fd506777; "
-    #               "xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOi0xLCJpc3MiOiJ1YyIsImV4cCI6MTY1Mjc0Mzcw"
-    #               "MywiY3RtIjoxNjUwMTcxOTc0NzcyLCJjaWQiOiJkOWQwbjRBWnVwIn0.X1af2x-iOamO8UNvMnCDFFR9GDlnOB87hVzsVXi-n"
-    #               "CrePKUqVP7F1MRPVntas3XKBfJbkBz2E09HxujvQpa53rpsqQZljGrrd8hmBJortsEvoRMo9KvgoI6USsKusvpjB9xtdDkOQu"
-    #               "rzdwtA5IJ0XS4--TTM2VD15JgvJ6flAQUobqazcQXonUI65JERbzfgdjYv1VASFYK6Yr9vAyrgjpkKtEIZ33wAyGZHGFfu-y8"
-    #               "bSJhJDvKkGHkJ4lDYyw45NcBcZdgISzbmUbVu1qOzhRgYNEfO0DV9QWcLgtRlW1SvbFhB4SOJ2GWJMmXGJkCsXLe3tKzJfomc"
-    #               "KOpIfG8SwQ; "
-    #               "u=681650171995983; "
-    #               "is_overseas=0; "
-    #               "Hm_lpvt_1db88642e346389874251b5a1eded6e3=1650172044"
-    # }
-
-    # 自动处理cookie爬取雪球网
     session = requests.Session()
-    # headers = {
-    #     "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36"
-    # }
-    # 第一步,向雪球网首页发送一条请求,获取cookie
-    # session.get(url="https://xueqiu.com", headers=headers)
-    # 第二步,获取动态加载的数据
-    # page_json = session.get(url=url, headers=headers).json()
-    # print(page_json)
 
     if market == 'sh' or market == 'sz':
         url = 'https://stock.xueqiu.com/v5/stock/f10/cn/bonus.json?symbol=' + market.upper() + stock_code + '&size=10000&page=1&extend=true'

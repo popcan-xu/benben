@@ -41,6 +41,9 @@
         <div class="card chart-card">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">资产净值走势图</h5>
+                <div style="text-align:center">
+                   港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp; 来自于ak.fx_spot_quote()
+                </div>
                 <div class="btn-group">
                     <button type="button" class="btn btn-sm btn-outline-primary active" data-range="currentYear">今年</button>
                     <button type="button" class="btn btn-sm btn-outline-primary" data-range="month">近一月</button>
@@ -54,7 +57,7 @@
                 </div>
             </div>
             <div class="card-footer bg-white text-muted small">
-                数据更新于：<span id="updateTime"></span>
+                数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}   港元汇率：{{ hkd|floatformat:4 }}，美元汇率：{{ usd|floatformat:4 }}&nbsp; 来自于ak.currency_boc_sina(symbol=currency, start_date=current_date_str, end_date=current_date_str)
             </div>
         </div>
     </div>
