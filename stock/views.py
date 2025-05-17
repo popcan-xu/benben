@@ -28,9 +28,8 @@ from django.db.models import Sum, Q, Window, F, Min, Max
 from django.db.models.functions import Lag
 from collections import defaultdict
 
+import threading
 
-#from django.db import transaction, IntegrityError, OperationalError
-#from django.db.models import Case, When, Sum, F, Q
 import logging
 logger = logging.getLogger(__name__)
 
@@ -1459,7 +1458,8 @@ def edit_historical_position(request, historical_position_id):
 
 def list_historical_position(request):
     # historical_position_list = historical_position.objects.filter(date='2025-02-27')
-    historical_position_list = historical_position.objects.all()
+    # historical_position_list = historical_position.objects.all()
+    historical_position_list = historical_position.objects.order_by('-date')[:100]
     return render(request,  templates_path + 'backstage/list_historical_position.html', locals())
 
 # 交易表增删改查
@@ -2131,7 +2131,105 @@ task_status = {
     "end_time": None
 }
 
+
 def update_historical_market_value(request):
+    # 初始化任务状态到缓存
+    cache.set('task_status', {
+        "current_step": 0,
+        "total_steps": 8,
+        "status": "running",
+        "message": "任务开始执行",
+        "start_time": timezone.now().isoformat(),  # 时间序列化为字符串
+        "end_time": None
+    }, timeout=3600)  # 缓存有效期1小时
+
+    # 获取初始日期范围
+    result = historical_position.objects.aggregate(max_date=Max('date'))
+    start_date = result['max_date'] - datetime.timedelta(days=2)
+    end_date = datetime.date.today()
+
+    # 后台任务线程
+    def background_task():
+        steps = [
+            ("生成历史持仓", generate_historical_positions, (start_date, end_date)),
+            ("获取历史收盘价", get_historical_closing_price, (start_date, end_date - datetime.timedelta(days=1))),
+            ("补全历史收盘价", fill_missing_closing_price, (start_date, end_date - datetime.timedelta(days=1))),
+            ("获取今日价格", get_today_price, ()),
+            ("获取历史汇率", get_historical_rate, (start_date, end_date)),
+            ("填充缺失的历史汇率", fill_missing_historical_rates, ()),
+            ("计算市场价值", calculate_market_value, (start_date, end_date)),
+            ("计算并填充历史数据", calculate_and_fill_historical_data, (start_date, end_date))
+        ]
+
+        try:
+            for step_idx, (step_name, func, args) in enumerate(steps, 1):
+                # 更新任务状态
+                current_status = cache.get('task_status')
+                current_status.update({
+                    "current_step": step_idx,
+                    "message": f"正在{step_name}，请不要刷新页面！",
+                })
+                cache.set('task_status', current_status)
+
+                # 模拟执行步骤（替换为实际函数调用）
+                time.sleep(0.5)
+                func(*args)  # 实际执行任务步骤
+
+            # 任务完成
+            current_status = cache.get('task_status')
+            current_status.update({
+                "status": "completed",
+                "message": "任务执行完成！",
+                "end_time": timezone.now().isoformat()
+            })
+            cache.set('task_status', current_status)
+        except Exception as e:
+            # 任务失败处理
+            current_status = cache.get('task_status')
+            current_status.update({
+                "status": "failed",
+                "message": f"任务失败: {str(e)}",
+                "end_time": timezone.now().isoformat()
+            })
+            cache.set('task_status', current_status)
+
+    # 启动后台线程
+    threading.Thread(target=background_task).start()
+
+    return render(request, templates_path + 'other/update_historical_market_value.html')
+
+
+def get_task_status(request):
+    # 从缓存获取状态，不存在则返回默认
+    status = cache.get('task_status', {
+        "current_step": 0,
+        "total_steps": 8,
+        "status": "idle",
+        "message": "",
+        "start_time": None,
+        "end_time": None
+    })
+
+    # 计算耗时
+    duration = 0
+    if status.get('start_time') and status.get('end_time'):
+        start = timezone.datetime.fromisoformat(status['start_time'])
+        end = timezone.datetime.fromisoformat(status['end_time'])
+        duration = (end - start).total_seconds()
+    elif status.get('start_time'):
+        start = timezone.datetime.fromisoformat(status['start_time'])
+        duration = (timezone.now() - start).total_seconds()
+
+    return JsonResponse({
+        "current_step": status["current_step"],
+        "total_steps": status["total_steps"],
+        "status": status["status"],
+        "message": status["message"],
+        "duration": round(duration, 2)
+    })
+
+
+def update_historical_market_value1(request):
     global task_status
     task_status = {
         "current_step": 0,
@@ -2172,7 +2270,7 @@ def update_historical_market_value(request):
 
     return render(request, templates_path + 'other/update_historical_market_value.html')
 
-def get_task_status(request):
+def get_task_status1(request):
     global task_status
     # 计算耗时
     duration = None

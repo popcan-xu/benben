@@ -137,24 +137,35 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = False
+# USE_TZ = False
 
 USE_DECIMAL_SEPARATOR = True
 DECIMAL_SEPARATOR = "."
 USE_THOUSAND_SEPARATOR = True
 THOUSAND_SEPARATOR = ","
 
+# CACHES = {
+#  'default': {
+#   'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',  # 指定缓存使用的引擎
+#   'LOCATION': 'unique-snowflake',         # 写在内存中的变量的唯一值
+#   'TIMEOUT':300,             # 缓存超时时间(默认为300秒,None表示永不过期)
+#   'OPTIONS':{
+#    'MAX_ENTRIES': 300,           # 最大缓存记录的数量（默认300）
+#    'CULL_FREQUENCY': 3,          # 缓存到达最大个数之后，剔除缓存个数的比例，即：1/CULL_FREQUENCY（默认3）
+#   }
+#  }
+# }
+# 添加缓存配置
 CACHES = {
- 'default': {
-  'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',  # 指定缓存使用的引擎
-  'LOCATION': 'unique-snowflake',         # 写在内存中的变量的唯一值
-  'TIMEOUT':300,             # 缓存超时时间(默认为300秒,None表示永不过期)
-  'OPTIONS':{
-   'MAX_ENTRIES': 300,           # 最大缓存记录的数量（默认300）
-   'CULL_FREQUENCY': 3,          # 缓存到达最大个数之后，剔除缓存个数的比例，即：1/CULL_FREQUENCY（默认3）
-  }
- }
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'task-status-cache',  # 唯一标识缓存
+    }
 }
+
+# 确保时区正确
+# TIME_ZONE = 'Asia/Shanghai'
+USE_TZ = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 

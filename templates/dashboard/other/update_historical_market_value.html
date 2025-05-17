@@ -2,72 +2,57 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% block page_content %}
 
-<!-- update_historical_market_value.html -->
-<!DOCTYPE html>
 <html>
 <head>
-    <title>任务执行状态</title>
-    <style>
-        .status-container {
-            margin: 20px 0;
-        }
-        .step {
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        .message {
-            margin-top: 10px;
-            font-weight: bold;
-        }
-        .duration {
-            margin-top: 10px;
-            color: #666;
-        }
-    </style>
+    <title>任务进度监控</title>
+{#    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>#}
 </head>
 <body>
-    <div class="status-container">
-        <div id="stepDisplay"></div>
-        <div class="message" id="message"></div>
-        <div class="duration" id="duration"></div>
+    <div class="col-xl-12 col-md-6 mb-4">
+        <div class="card chart-card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">历史持仓数据更新任务</h5>
+            </div>
+            <div class="card-body p-4">
+                <div id="task-progress">
+                    <p>当前步骤: <span id="current-step">0</span>/<span id="total-steps">8</span></p>
+                    <p>状态: <span id="status">idle</span></p>
+                    <p>信息: <span id="message"></span></p>
+                    <p>耗时: <span id="duration">0</span> 秒</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // 定时获取任务状态
-        function updateStatusDisplay() {
-            fetch("{% url 'get_task_status' %}")
-                .then(response => response.json())
-                .then(data => {
-                    const stepDisplay = document.getElementById('stepDisplay');
-                    const message = document.getElementById('message');
-                    const duration = document.getElementById('duration');
+    function updateProgress() {
+        $.ajax({
+            url: "/benben/get_task_status/",  // 确保URL与Django路由匹配
+            type: "GET",
+            success: function(response) {
+                // 更新页面数据
+                $('#current-step').text(response.current_step);
+                $('#total-steps').text(response.total_steps);
+                $('#status').text(response.status);
+                $('#message').text(response.message);
+                $('#duration').text(response.duration);
 
-                    // 更新步骤显示
-                    stepDisplay.innerHTML = `当前步骤: ${data.current_step}/${data.total_steps}`;
+                // 任务未完成时继续轮询
+                if (response.status === 'running') {
+                    setTimeout(updateProgress, 1000);  // 1秒刷新一次
+                }
+            },
+            error: function(xhr) {
+                $('#message').text("状态更新失败: " + xhr.statusText);
+            }
+        });
+    }
 
-                    // 更新消息
-                    message.textContent = data.message;
-
-                    // 更新耗时
-                    if (data.duration !== null) {
-                        duration.textContent = `耗时: ${data.duration} 秒`;
-                    }
-
-                    // 如果任务还在运行，继续获取状态
-                    if (data.status === 'running') {
-                        setTimeout(updateStatusDisplay, 1000); // 每秒更新一次
-                    }
-                })
-                .catch(error => console.error('Error fetching status:', error));
-        }
-
-        // 初始调用
-        updateStatusDisplay();
-
+    // 页面加载后开始轮询
+    $(document).ready(function() {
+        updateProgress();
+    });
     </script>
 </body>
 </html>
-
 {% endblock %}
