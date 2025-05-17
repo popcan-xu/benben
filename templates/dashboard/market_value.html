@@ -38,8 +38,8 @@
                                 <div class="h3 mb-0 text-gray-800">{{ value_dict|get_index:key|floatformat:0 }}</div>
                             </div>
                             <div class="col mr-2">
-                                <div class="h6 mb-0 text-gray-500">类现金占比（%）</div>
-                                <div class="h3 mb-0 text-gray-800">{{ cash_assets_rate_dict|get_index:key|percent }}</div>
+                                <div class="h6 mb-0 text-gray-500">仓位（%）</div>
+                                <div class="h3 mb-0 text-gray-800">{{ position_percent_dict|get_index:key|percent }}</div>
                             </div>
                         </div>
                     </div>

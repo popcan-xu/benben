@@ -23,87 +23,52 @@
 
     <!-- Content Card Row -->
 
-    <!-- 投资记账 -->
     <div class="row">
-        {% for funds in funds_list %}
-            <div class="col-xl-4 col-md-6 mb-4">
-                <div class="card shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                    <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">{{ funds.funds_name|truncate_end:2|safe }}资产</a>   {# 裁剪后两个字符 #}
-                                </div>
-                            </div>
-                            <div class="col-auto">
-                                <div class="h6 mb-0 text-gray-500">
-                                    <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Divider -->
-                        <h3>&nbsp;</h3>
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h6 mb-0 text-gray-500">总资产（元）</div>
-                                <div class="h3 mb-0 text-gray-800">{{ funds.funds_value|floatformat:0 }}</div>
-                            </div>
-                            <div class="col mr-2">
-                                <div class="h6 mb-0 text-gray-500">净值（元）</div>
-                                <div class="h3 mb-0 text-gray-800">{{ funds.funds_net_value|floatformat:4 }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-
-    <!-- 持仓市值 -->
-    <div class="row">
-        {% for key in currency_dict %}
-            <div class="col-xl-4 col-md-6 mb-4">
-                <div class="card shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                    <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">{{ currency_dict|get_index:key|safe }}持仓</a>
-                                </div>
-                            </div>
-                            <div class="col-auto">
-                                <div class="h6 mb-0 text-gray-500">
-                                    <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Divider -->
-                        <h3>&nbsp;</h3>
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h6 mb-0 text-gray-500">持仓市值（元）</div>
-                                <div class="h3 mb-0 text-gray-800">{{ value_dict|get_index:key|floatformat:0 }}</div>
-                            </div>
-                            <div class="col mr-2">
-                                <div class="h6 mb-0 text-gray-500">类现金占比（%）</div>
-                                <div class="h3 mb-0 text-gray-800">{{ cash_assets_rate_dict|get_index:key|percent }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-
-    <div class="row">
-        <!-- 市值 -->
-        <div class="col-xl-4 col-md-6 mb-4">
+        <!-- 资产 -->
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                市值
+                                <a href="/benben/investment_accounting/" style="color: inherit; text-decoration: none;">资产</a>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="h6 mb-0 text-gray-500">
+                                <a href="/benben/investment_accounting/" style="color: inherit; text-decoration: none;">详情 ></a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Divider -->
+                    <h3>&nbsp;</h3>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">总资产（元）</div>
+                            <div class="h3 mb-0 text-gray-800">{{ overview.funds_value_sum|floatformat:0 }}</div>
+                        </div>
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">净值（元）</div>
+                            <div class="h3 mb-0 text-gray-800">{{ overview.funds_net_value_weighting|floatformat:4 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 市值 -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
+                                <a href="/benben/market_value/" style="color: inherit; text-decoration: none;">市值</a>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="h6 mb-0 text-gray-500">
+                                <a href="/benben/market_value/" style="color: inherit; text-decoration: none;">详情 ></a>
                             </div>
                         </div>
                     </div>
@@ -112,11 +77,13 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">总市值（元）</div>
-                            <div class="h3 mb-0 text-gray-800">{{ overview.value_sum|floatformat:0 }}</div>
+                            <div class="h3 mb-0 text-gray-800">{{ overview.market_value_sum|floatformat:0 }}</div>
                         </div>
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">持股数量</div>
-                            <div class="h3 mb-0 text-gray-800">{{ overview.holding_stock_number }}</div>
+{#                            <div class="h6 mb-0 text-gray-500">持股数量</div>#}
+{#                            <div class="h3 mb-0 text-gray-800">{{ overview.holding_stock_number }}</div>#}
+                            <div class="h6 mb-0 text-gray-500">仓位（%）</div>
+                            <div class="h3 mb-0 text-gray-800">{{ overview.position_percent_weighting|percent }}</div>
                         </div>
                     </div>
                 </div>
@@ -124,7 +91,7 @@
         </div>
 
         <!-- 分红 -->
-        <div class="col-xl-4 col-md-6 mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -152,7 +119,7 @@
         </div>
 
         <!-- 打新 -->
-        <div class="col-xl-4 col-md-6 mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -182,6 +149,78 @@
 
     </div>
 
+    <!-- 投资记账 -->
+{#    <div class="row">#}
+{#        {% for funds in funds_list %}#}
+{#            <div class="col-xl-4 col-md-6 mb-4">#}
+{#                <div class="card shadow h-100 py-2">#}
+{#                    <div class="card-body">#}
+{#                        <div class="row no-gutters align-items-center">#}
+{#                            <div class="col mr-2">#}
+{#                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">#}
+{#                                    <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">{{ funds.funds_name|truncate_end:2|safe }}资产</a>   {# 裁剪后两个字符 #}
+{#                                </div>#}
+{#                            </div>#}
+{#                            <div class="col-auto">#}
+{#                                <div class="h6 mb-0 text-gray-500">#}
+{#                                    <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <!-- Divider -->#}
+{#                        <h3>&nbsp;</h3>#}
+{#                        <div class="row no-gutters align-items-center">#}
+{#                            <div class="col mr-2">#}
+{#                                <div class="h6 mb-0 text-gray-500">总资产（元）</div>#}
+{#                                <div class="h3 mb-0 text-gray-800">{{ funds.funds_value|floatformat:0 }}</div>#}
+{#                            </div>#}
+{#                            <div class="col mr-2">#}
+{#                                <div class="h6 mb-0 text-gray-500">净值（元）</div>#}
+{#                                <div class="h3 mb-0 text-gray-800">{{ funds.funds_net_value|floatformat:4 }}</div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        {% endfor %}#}
+{#    </div>#}
+
+    <!-- 持仓市值 -->
+{#    <div class="row">#}
+{#        {% for key in currency_dict %}#}
+{#            <div class="col-xl-4 col-md-6 mb-4">#}
+{#                <div class="card shadow h-100 py-2">#}
+{#                    <div class="card-body">#}
+{#                        <div class="row no-gutters align-items-center">#}
+{#                            <div class="col mr-2">#}
+{#                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">#}
+{#                                    <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">{{ currency_dict|get_index:key|safe }}持仓</a>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            <div class="col-auto">#}
+{#                                <div class="h6 mb-0 text-gray-500">#}
+{#                                    <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <!-- Divider -->#}
+{#                        <h3>&nbsp;</h3>#}
+{#                        <div class="row no-gutters align-items-center">#}
+{#                            <div class="col mr-2">#}
+{#                                <div class="h6 mb-0 text-gray-500">持仓市值（元）</div>#}
+{#                                <div class="h3 mb-0 text-gray-800">{{ value_dict|get_index:key|floatformat:0 }}</div>#}
+{#                            </div>#}
+{#                            <div class="col mr-2">#}
+{#                                <div class="h6 mb-0 text-gray-500">类现金占比（%）</div>#}
+{#                                <div class="h3 mb-0 text-gray-800">{{ position_percent_dict|get_index:key|percent }}</div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        {% endfor %}#}
+{#    </div>#}
+
 
     <!-- Content Chart Row -->
 
@@ -204,6 +243,8 @@
                                         <th>股票/代码</th>
                                         <th>价格（元）</th>
                                         <th>涨跌幅</th>
+                                        <th>金额（元）</th>
+                                        <th>百分比</th>
                                         <!--
                                         <th>持仓数量（股）</th>
                                         <th>金额（{{ currency_CNY }}）</th>
@@ -214,9 +255,11 @@
                                 <tbody>
                                     {% for i in overview.holding_stock_array %}
                                         <tr>
-                                            <td>{{ i.0|stringformat:"s" }}</td>
+                                            <td style="text-align: left">{{ i.0|stringformat:"s" }}</td>
                                             <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
                                             <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+                                            <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+                                            <td style="text-align: right">{{ i.6 }}</td>
                                             <!--
                                             <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
                                             <td style="text-align: right">{{ i.5|floatformat:0 }}</td>

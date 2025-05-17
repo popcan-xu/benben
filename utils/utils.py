@@ -360,7 +360,7 @@ def get_quote_gtimg(stock_code):
         color = 'grey'
     return price, increase, color
 
-# 从akshare获取汇率数据
+# 从akshare或http://qt.gtimg.cn/获取汇率数据
 def get_rate():
     path = pathlib.Path("./templates/dashboard/rate.json")
     if path.is_file() == True: # 若json文件存在
@@ -393,17 +393,28 @@ def get_rate():
             # else:
             #     rate_USD = data["rate_USD"]
             try:
-                # ak.currency_boc_sina接口
-                current_date = pd.to_datetime(datetime.date.today())
-                current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
-                df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
-                df['日期'] = pd.to_datetime(df['日期'])
-                rate_HKD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+                # http://qt.gtimg.cn/接口
+                url = "http://qt.gtimg.cn/q=whHKDCNY"
+                html = getHTMLText(url)
+                rate_HKD = extract_rate(html)
                 data["rate_HKD"] = rate_HKD
-                df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
-                df['日期'] = pd.to_datetime(df['日期'])
-                rate_USD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+                url = "http://qt.gtimg.cn/q=whUSDCNY"
+                html = getHTMLText(url)
+                rate_USD = extract_rate(html)
                 data["rate_USD"] = rate_USD
+
+
+                # ak.currency_boc_sina接口
+                # current_date = pd.to_datetime(datetime.date.today())
+                # current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
+                # df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
+                # df['日期'] = pd.to_datetime(df['日期'])
+                # rate_HKD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+                # data["rate_HKD"] = rate_HKD
+                # df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
+                # df['日期'] = pd.to_datetime(df['日期'])
+                # rate_USD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+                # data["rate_USD"] = rate_USD
 
                 # ak.fx_spot_quote接口
                 # df = ak.fx_spot_quote()
@@ -432,15 +443,23 @@ def get_rate():
         # rate_HKD = 1 / temp_HKD if temp_HKD != 0 else 1
         # rate_USD = 1 / temp_USD if temp_HKD != 0 else 1
         try:
+            # http://qt.gtimg.cn/接口
+            url = "http://qt.gtimg.cn/q=whHKDCNY"
+            html = getHTMLText(url)
+            rate_HKD = extract_rate(html)
+            url = "http://qt.gtimg.cn/q=whUSDCNY"
+            html = getHTMLText(url)
+            rate_USD = extract_rate(html)
+
             # ak.currency_boc_sina接口
-            current_date = pd.to_datetime(datetime.date.today())
-            current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
-            df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
-            df['日期'] = pd.to_datetime(df['日期'])
-            rate_HKD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
-            df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
-            df['日期'] = pd.to_datetime(df['日期'])
-            rate_USD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+            # current_date = pd.to_datetime(datetime.date.today())
+            # current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
+            # df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
+            # df['日期'] = pd.to_datetime(df['日期'])
+            # rate_HKD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+            # df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
+            # df['日期'] = pd.to_datetime(df['日期'])
+            # rate_USD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
 
             # ak.fx_spot_quote接口
             # df = ak.fx_spot_quote()
@@ -459,6 +478,38 @@ def get_rate():
             rate_HKD = 1
             rate_USD = 1
     return rate_HKD, rate_USD
+
+
+def extract_rate(input_str: str) -> float or None:
+    """
+    从输入字符串中提取HKDCNY后的汇率值。
+
+    参数:
+        input_str (str): 格式为 "字段1~字段2~HKDCNY~汇率~...~更新时间~无效内容..."
+
+    返回:
+        float or None: 解析成功的汇率值，失败返回None
+    """
+    # try:
+    # 使用正则表达式匹配双引号之间的内容
+    match = re.search(r'"(.*?)"', input_str).group(1)
+
+    # 按分隔符拆分字符串
+    fields = match.split("~")
+
+    # 找到"HKDCNY"的位置（假设是第三个字段，索引为2）
+    # if len(fields) < 4 or fields[2] != "HKDCNY":
+    #     return None
+
+    # 截断到更新时间字段（第六个字段，索引5），保留前6个字段
+    valid_fields = fields[:6]
+
+    # 提取汇率值（第四个字段，索引3）
+    rate_str = valid_fields[3]
+    return float(rate_str)
+
+    # except (IndexError, ValueError, TypeError):
+    #     return None
 
 # 从https://wocha.cn/网站抓取汇率数据
 # def get_rate_wocha():
@@ -569,32 +620,27 @@ def get_stock_dividend_history(stock_code):
     market = stock_object.market.market_abbreviation
     stock_dividend_history_list = []
 
-    # 使用雪球账号登录后的cookie
+    # 使用雪球账号登录后的cookie，只需替换xq_a_token
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
-        'Cookie':   'cookiesu=491738051267842; '
-                    'device_id=b043d2601995dbbb5aa7312b27832e20; '
-                    'Hm_lvt_1db88642e346389874251b5a1eded6e3=1742526598; '
-                    'HMACCOUNT=B120DF9442E09CC4; '
-                    'remember=1; '
-                    'xq_a_token=8fc0059d58726bfb167e37dbf0fe235f0adfdb4b; '
-                    'xqat=8fc0059d58726bfb167e37dbf0fe235f0adfdb4b; '
-                    'xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1a'
-                    'WQiOjE2ODI2NjI4MjAsImlzcyI6InVjIiwiZXhwIjoxNzQ3OTYyMTc'
-                    'wLCJjdG0iOjE3NDU4MDgwMTk3NDYsImNpZCI6ImQ5ZDBuNEFadXAif'
-                    'Q.bGQqJeFQOCws3fN7lwVV_yEA0oixK9A3QhMDMffwrVAMa2vzON'
-                    'u - zckMZubLgEfW_zOYj - PjZLNmqc6W6enRFiSeT511VwgMDX0xTQ'
-                    'yOFzFQHbzfQCWwhefeItS35RRW2 - cyqQadN4_ex4nsTSIZGXhNP - Z'
-                    'VatHA6UMk3jmUWm3G1xcBlUZUzfQEjD - gj - HDiKH5fMEi9pkrSNHwe'
-                    '0Yu - fN8iNPEazVwbEwwJggDu - b2avfBFjcsK7jOa7kKsFcBEHbMG3C'
-                    'KCXBAmSkCKxPwuGjcPYi9wIt3BEWhJEX - dGQdNfcX17xOeazyw46rXVa'
-                    'mrBj9jQfPeJ6nhquDRSpgsw;'
-                    'xq_r_token=be996e380f9b12414860ed8ee297cfa79e8d60f2; '
-                    'xq_is_login=1; '
-                    'u=1682662820; '
-                    'is_overseas=0; '
-                    'Hm_lpvt_1db88642e346389874251b5a1eded6e3=1745808363; '
+        "Cookie": "xq_a_token=f266c9393dc766b17cb5694f0510606e7e7f9256"
     }
+    # headers = {
+    #     "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
+    #     'Cookie':   'cookiesu=491738051267842; '
+    #                 'device_id=b043d2601995dbbb5aa7312b27832e20; '
+    #                 'Hm_lvt_1db88642e346389874251b5a1eded6e3=1742526598; '
+    #                 'HMACCOUNT=B120DF9442E09CC4; '
+    #                 'remember=1; '
+    #                 'xq_a_token=f266c9393dc766b17cb5694f0510606e7e7f9256; '
+    #                 'xqat=f266c9393dc766b17cb5694f0510606e7e7f9256; '
+    #                 'xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOjE2ODI2NjI4MjAsImlzcyI6InVjIiwiZXhwIjoxNzQ5NDQzNTM1LCJjdG0iOjE3NDcyNjc5NTc0MjgsImNpZCI6ImQ5ZDBuNEFadXAifQ.S38DWHfWAvd4s-kUzjBvc9aeDe6QRDMBtI51bwqakXdamdQtsyQVmQOmR8h1jSHtTJO9I72qsX5aF02H6Bb0c-e6qFAfoIRhJrbLtic4ik3UcASlR-L7p1Is6Ix9YDR0h0AgFx3cMdzzZEivzO-y8k8emXrU0CJUtDWy2fPdTEDUbHxt0b2wvftofluo5BY0DjLi9CVEPTIuU6FqbWldMR_4gZVPbDTq4UIB7yeRXM-EYvM8T_sLj3EKZhPpTXJizQHTp-06qqfDzM9rxoSsdjWkZmgWcPKb5Qa4a_rVFDWtm22JgfolTDXZkndRC7UR_dVeKn54O1LjhhT0YTWGOw;'
+    #                 'xq_r_token=7fcdd7f2e943a91f55daee0fb28c2e36cfc7f482; '
+    #                 'xq_is_login=1; '
+    #                 'u=1682662820; '
+    #                 'is_overseas=0; '
+    #                 'Hm_lpvt_1db88642e346389874251b5a1eded6e3=1745808363; '
+    # }
 
     session = requests.Session()
 

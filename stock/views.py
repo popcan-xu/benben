@@ -40,45 +40,6 @@ templates_path = 'dashboard/'
 def overview(request):
     rate_HKD, rate_USD = get_rate()
 
-    # 投资记账
-    funds_list = funds.objects.all()
-
-    # 持仓市值
-    stock_dict = position.objects.values("stock").annotate(
-        count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
-    stock_code_array = []
-    for dict in stock_dict:
-        stock_code = dict['stock__stock_code']
-        stock_code_array.append(stock_code)
-    price_array = get_stock_array_price(stock_code_array)
-    content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD, rate_USD)
-    # content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array, rate_HKD, rate_USD)
-    # content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array, rate_HKD, rate_USD)
-
-    currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
-    value_dict = {}
-    result = historical_market_value.objects.aggregate(
-        max_date=Max('date')  # 最大值（最新日期）
-    )
-    current_date = result['max_date']
-
-    for key in currency_dict:
-        if historical_market_value.objects.filter(currency=currency_dict[key], date=current_date).exists():
-            value_dict[key] = historical_market_value.objects.get(currency=currency_dict[key], date=current_date).value
-        else:
-            value_dict[key] = 0
-
-    # 类现金市值计算
-    cash_assets_rate_dict = {1: 0, 2: 0, 3: 0}
-    current_price, increase, color = get_quote_snowball('511880') #银华日利
-    positions = position.objects.filter(stock=93) #银华日利
-    quantity = 0
-    for pos in positions:
-        quantity += pos.position_quantity
-    cash_like_assets_CNY = current_price * quantity
-    cash_assets_rate_dict[1] = cash_like_assets_CNY / amount_sum_CNY
-
-
     path = pathlib.Path("./templates/dashboard/overview.json")
     if path.is_file() and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
         # 读取overview.json
@@ -86,10 +47,71 @@ def overview(request):
         with open('./templates/dashboard/overview.json', 'r', encoding='utf-8') as f:
             overview = json.load(f)
     else: # 若json文件不存在or点击了刷新按钮，重写json文件（文件不存在则创建文件），再从json文件中读取overview页面需要的数据
+
+        # 计算基金价值总和
+        funds_value_sum = 0
+        funds_list = funds.objects.all()
+        for rs in funds_list:
+            if rs.funds_name == '港元账户':
+                funds_value_sum += float(rs.funds_value) * rate_HKD
+            elif rs.funds_name == '美元账户':
+                funds_value_sum += float(rs.funds_value) * rate_USD
+            else:
+                funds_value_sum += float(rs.funds_value)
+
+        # 计算基金价值占比和加权净值
+        funds_name_dict = {1: '人民币账户', 2: '港元账户', 3: '美元账户'}
+        funds_percent_dict = {1: 0, 2: 0, 3: 0}
+        funds_net_value_weighting = 0
+        for key in funds_name_dict:
+            funds_percent_dict[key] = float(
+                funds_list.get(funds_name=funds_name_dict[key]).funds_value) / funds_value_sum
+            funds_net_value_weighting += float(funds_list.get(funds_name=funds_name_dict[key]).funds_net_value) * \
+                                         funds_percent_dict[key]
+
+        # 计算持仓市值总和
+        stock_dict = position.objects.values("stock").annotate(
+            count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
+        stock_code_array = []
+        for dict in stock_dict:
+            stock_code = dict['stock__stock_code']
+            stock_code_array.append(stock_code)
+        price_array = get_stock_array_price(stock_code_array)
+        content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD,
+                                                                                               rate_USD)
+        # content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array, rate_HKD, rate_USD)
+        # content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array, rate_HKD, rate_USD)
+
+        # 计算仓位
+        currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
+        position_percent_dict = {}
+        funds_value_dict = {}
+        market_value_dict = {}
+        result = funds_details.objects.aggregate(
+            max_date=Max('date')  # 最大值（最新日期）
+        )
+        max_date_funds = result['max_date']
+        for key in funds_name_dict:
+            funds_id = funds.objects.get(funds_name=funds_name_dict[key]).id
+            funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
+            market_value_dict[key] = historical_market_value.objects.get(currency=currency_dict[key],
+                                                                         date=max_date_funds).value
+            position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
+        # 人民币基金的持仓比例通过511880的市值占比计算
+        current_price, increase, color = get_quote_snowball('511880')  # 银华日利
+        positions = position.objects.filter(stock=93)  # 银华日利
+        quantity = 0
+        for pos in positions:
+            quantity += pos.position_quantity
+        cash_like_assets_CNY = current_price * quantity
+        position_percent_dict[1] = 1 - cash_like_assets_CNY / amount_sum_CNY
+
+        # 计算加权仓位
+        position_percent_weighting = 0
+        for key in funds_name_dict:
+            position_percent_weighting += float(position_percent_dict[key]) * funds_percent_dict[key]
+
         current_year = datetime.datetime.now().year
-        # current_year = 2021
-        # 获得汇率数据
-        # rate_HKD, rate_USD = get_rate()
         # 获得人民币、港元、美元分红总收益
         dividend_sum_CNY = dividend.objects.filter(dividend_currency=1).aggregate(amount=Sum('dividend_amount'))['amount']
         dividend_sum_HKD = dividend.objects.filter(dividend_currency=2).aggregate(amount=Sum('dividend_amount'))['amount']
@@ -136,9 +158,9 @@ def overview(request):
         price_array = get_stock_array_price(stock_code_array)
 
         # position_currency=0时，get_value_stock_content返回人民币、港元、美元计价的所有股票的人民币市值汇总
-        content, value_sum, name_array, value_array = get_value_stock_content(0, price_array, rate_HKD, rate_USD)
+        content, market_value_sum, name_array, value_array = get_value_stock_content(0, price_array, rate_HKD, rate_USD)
         # 计算当年分红占总市值的百分比
-        current_dividend_percent = float(current_dividend_sum / value_sum) * 100
+        current_dividend_percent = float(current_dividend_sum / market_value_sum) * 100
         # 计算前五大持仓百分比之和
         top5_content = content[:5]
         top5_percent = 0.0
@@ -160,7 +182,10 @@ def overview(request):
         # 汇率
         #overview.update(rate_HKD=rate_HKD, rate_USD=rate_USD)
         # 总市值、分红收益、当年分红、当年分红率、打新收益、当年打新、持股数量
-        overview.update(value_sum=value_sum)
+        overview.update(funds_value_sum=funds_value_sum)
+        overview.update(funds_net_value_weighting=funds_net_value_weighting)
+        overview.update(market_value_sum=market_value_sum)
+        overview.update(position_percent_weighting=position_percent_weighting)
         overview.update(dividend_sum=dividend_sum)
         overview.update(current_dividend_sum=current_dividend_sum)
         overview.update(current_dividend_percent=current_dividend_percent)
@@ -174,7 +199,7 @@ def overview(request):
         # 持藏股票一览
         holding_stock_array = []
         for i in content:
-            holding_stock_array.append((i[0], i[1], i[2], i[3]))
+            holding_stock_array.append((i[0], i[1], i[2], i[3], i[4], i[5], i[6]))
         overview.update(holding_stock_array=holding_stock_array)
         # 持仓前五占比
         overview.update(top5_percent=top5_percent)
@@ -406,7 +431,7 @@ def view_funds_details(request, funds_id):
     assetChanges = {}
     for rs in funds_details_list:
         date = rs.date.strftime("%Y-%m-%d")
-        amount = float(rs.funds_current_profit)
+        amount = float(rs.funds_current_profit) + float(rs.funds_in_out)
         assetChanges[date] = amount
 
     data_net_value = []
@@ -467,15 +492,28 @@ def market_value(request):
         else:
             value_dict[key] = 0
 
-    # 类现金市值计算
-    cash_assets_rate_dict = {1: 0, 2: 0, 3: 0}
+    # 仓位计算
+    position_percent_dict = {}
+    funds_name_dict = {1: '人民币账户', 2: '港元账户', 3: '美元账户'}
+    funds_value_dict = {}
+    market_value_dict = {}
+    result = funds_details.objects.aggregate(
+        max_date=Max('date')  # 最大值（最新日期）
+    )
+    max_date_funds = result['max_date']
+    for key in funds_name_dict:
+        funds_id = funds.objects.get(funds_name=funds_name_dict[key]).id
+        funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
+        market_value_dict[key] = historical_market_value.objects.get(currency=currency_dict[key], date=max_date_funds).value
+        position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
+    # 人民币基金的持仓比例通过511880的市值占比计算
     current_price, increase, color = get_quote_snowball('511880') #银华日利
     positions = position.objects.filter(stock=93) #银华日利
     quantity = 0
     for pos in positions:
         quantity += pos.position_quantity
     cash_like_assets_CNY = current_price * quantity
-    cash_assets_rate_dict[1] = cash_like_assets_CNY / amount_sum_CNY
+    position_percent_dict[1] = 1 - cash_like_assets_CNY / amount_sum_CNY
 
     updating_time = current_date
     return render(request, templates_path + 'market_value.html', locals())
@@ -2086,7 +2124,7 @@ def batch_import(request):
 # 全局变量，用于存储任务状态
 task_status = {
     "current_step": 0,
-    "total_steps": 7,
+    "total_steps": 8,
     "status": "idle",
     "message": "",
     "start_time": None,
@@ -2097,7 +2135,7 @@ def update_historical_market_value(request):
     global task_status
     task_status = {
         "current_step": 0,
-        "total_steps": 7,
+        "total_steps": 8,
         "status": "running",
         "message": "任务开始执行",
         "start_time": timezone.now(),
@@ -2106,13 +2144,14 @@ def update_historical_market_value(request):
 
     # 获取初始日期范围
     result = historical_position.objects.aggregate(max_date=Max('date'))
-    start_date = result['max_date'] - datetime.timedelta(days=1)
+    start_date = result['max_date'] - datetime.timedelta(days=2)
     end_date = datetime.date.today()
 
     # 任务步骤列表
     steps = [
         ("生成历史持仓", generate_historical_positions, (start_date, end_date)),
         ("获取历史收盘价", get_historical_closing_price, (start_date, end_date - datetime.timedelta(days=1))),
+        ("补全历史收盘价", fill_missing_closing_price, (start_date, end_date - datetime.timedelta(days=1))),
         ("获取今日价格", get_today_price, ()),
         ("获取历史汇率", get_historical_rate, (start_date, end_date)),
         ("填充缺失的历史汇率", fill_missing_historical_rates, ()),
@@ -2283,8 +2322,28 @@ def get_historical_closing_price(start_date, end_date):
         price_dict = {}
         if market_name == '港股':
             stock_code_str = stock_code
-            #df = ak.stock_hk_daily(symbol=stock_code_str, adjust="")
-            df = ak.stock_hk_hist(symbol=stock_code_str, period="daily", start_date=start_date_str, end_date=end_date_str, adjust="")
+            # df = ak.stock_hk_hist(symbol=stock_code_str, period="daily", start_date=start_date_str, end_date=end_date_str, adjust="")
+            # 如果df为空，则把start_date_str往前一天继续获得df，直至df不为空
+            attempts = 0
+            # 将初始日期转为datetime对象以便调整
+            current_start_date = datetime.datetime.strptime(start_date_str, "%Y%m%d")
+            while attempts < 10:
+                df = ak.stock_hk_hist(
+                    symbol=stock_code_str,
+                    period="daily",
+                    start_date=current_start_date.strftime("%Y%m%d"),
+                    end_date=end_date_str,
+                    adjust=""
+                )
+                # 如果数据不为空，退出循环
+                if not df.empty:
+                    break
+                # 否则：将日期提前一天，增加尝试次数
+                current_start_date -= datetime.timedelta(days=1)
+                attempts += 1
+            else:
+                # 循环正常结束（达到最大尝试次数仍无数据）
+                raise ValueError(f"在 30 天内未找到有效数据，请检查股票代码或日期范围")
             df['日期'] = pd.to_datetime(df['日期'])
             current_date = pd.to_datetime(start_date)
             # while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
@@ -2299,6 +2358,25 @@ def get_historical_closing_price(start_date, end_date):
                 date_exists = item_datetime in df['日期'].values
                 if date_exists:
                     current_price = float(df[df['日期'] == item_datetime]['收盘'].iloc[0])
+                price_dict[item] = current_price
+        elif market_name == '美股':
+            stock_code_str = stock_code
+            # 美股历史行情接口
+            df = ak.stock_us_daily(symbol=stock_code_str, adjust="")
+            df['date'] = pd.to_datetime(df['date'])
+            current_date = pd.to_datetime(start_date)
+            # while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
+            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date)):
+                current_date = current_date - datetime.timedelta(days=1)
+            if current_date in df['date'].values:
+                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
+            else:
+                current_price = 0
+            for item in date_list:
+                item_datetime = pd.to_datetime(item)
+                date_exists = item_datetime in df['date'].values
+                if date_exists:
+                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
                 price_dict[item] = current_price
         else:
             if market_name == '沪市B股' or market_name == '深市B股':
@@ -2331,6 +2409,41 @@ def get_historical_closing_price(start_date, end_date):
 
         update_closing_prices(stock_code, price_dict)
     return
+
+# 补充akshare数据中缺失的收盘价
+def fill_missing_closing_price(start_date, end_date):
+    with transaction.atomic():
+        # 获取指定日期范围内收盘价为0的所有记录
+        records = historical_position.objects.filter(
+            date__range=(start_date, end_date),
+            closing_price=0
+        )
+
+        updates = []
+        count = 0
+
+        for record in records:
+            # 查找同一股票和货币的最近有效收盘价记录
+            prev_entry = historical_position.objects.filter(
+                stock=record.stock,
+                currency=record.currency,
+                date__lt=record.date,
+                closing_price__gt=0
+            ).order_by('-date').first()
+
+            if prev_entry:
+                record.closing_price = prev_entry.closing_price
+                updates.append(record)
+                count += 1
+
+        # 批量更新记录
+        if updates:
+            historical_position.objects.bulk_update(updates, ['closing_price'])
+
+        print(f"补全了 {count} 条缺失的收盘价格")
+
+        return
+
 
 def get_today_price():
     current_date = datetime.date.today()
@@ -2546,7 +2659,6 @@ def fill_missing_historical_rates():
     print(f"补全了 {len(new_rates)} 条记录")
     # if errors:
     #     print("发生错误：", "\n".join(errors))
-
 
 # 计算历史持仓市值
 def calculate_market_value(start_date, end_date):
@@ -2889,8 +3001,59 @@ def test(request):
     df['日期'] = pd.to_datetime(df['日期'])
     usd = float(df[df['日期'] == current_date_str]['中行汇买价'].iloc[0] / 100)
 
+    # 美股实时行情接口
+    # stock_us_spot_em_df = ak.stock_us_spot_em()
+    # print(stock_us_spot_em_df)
+
+    # 美股实时行情接口，数据量太大
+    # us_stock_current_df = ak.stock_us_spot()
+    # print(us_stock_current_df)
+
+    # 美股的历史行情数据接口
+    # stock_us_hist_df = ak.stock_us_hist(symbol='105.MSFT', period="daily", start_date="20250505", end_date="20250506", adjust="")
+    # print(stock_us_hist_df)
+    # stock_us_hist_df = ak.stock_us_hist(symbol='106.DQ', period="daily", start_date="20250505", end_date="20250506", adjust="")
+    # print(stock_us_hist_df)
+    # stock_us_hist_df = ak.stock_us_hist(symbol='105.AAPL', period="daily", start_date="20250505", end_date="20250506", adjust="")
+    # print(stock_us_hist_df)
+    # stock_us_hist_df = ak.stock_us_hist(symbol='106.KO', period="daily", start_date="20250505", end_date="20250506", adjust="")
+    # print(stock_us_hist_df)
+
+    # 美股的分时数据接口
+    # stock_us_hist_min_em_df = ak.stock_us_hist_min_em(symbol="105.AAPL")
+    # print(stock_us_hist_min_em_df)
+
+    # 美股股票名称代码接口，数据量太大
+    # df = ak.get_us_stock_name()
+    # print(df)
+
+    # 美股指数历史行情接口
+    # index_us_stock_sina_df = ak.index_us_stock_sina(symbol=".INX")
+    # print(index_us_stock_sina_df)
+
+    # 美股历史行情接口
+    stock_us_daily_df = ak.stock_us_daily(symbol="TCEHY", adjust="")
+    print(stock_us_daily_df)
+
+    df = ak.stock_zh_a_daily(
+        symbol='sh601318',
+        start_date='20250505',
+        end_date="20250505",
+        adjust=""
+    )
+    print(df)
+    df = ak.stock_hk_hist(
+        symbol='00700',
+        period="daily",
+        start_date='20250505',
+        end_date="20250505",
+        adjust=""
+    )
+    print(df)
+
 
     return render(request, templates_path + 'test.html', locals())
+
 
 
 
