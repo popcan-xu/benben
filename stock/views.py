@@ -2163,26 +2163,40 @@ def update_historical_market_value(request):
 
         try:
             for step_idx, (step_name, func, args) in enumerate(steps, 1):
+
                 # 更新任务状态
                 current_status = cache.get('task_status')
                 current_status.update({
                     "current_step": step_idx,
-                    "message": f"正在{step_name}，请不要刷新页面！",
+                    "current_step_name": step_name,
+                    "step_status": "running",
+                    "message": f"{step_name} - 执行中"
                 })
                 cache.set('task_status', current_status)
 
                 # 模拟执行步骤（替换为实际函数调用）
-                time.sleep(0.5)
+                # time.sleep(0.5)
                 func(*args)  # 实际执行任务步骤
 
-            # 任务完成
+
+                # 更新步骤状态为"完成"
+                current_status.update({
+                    "step_status": "completed",
+                    "message": f"{step_name} - 完成"
+                })
+                cache.set('task_status', current_status)
+
+
+            # 新增：所有步骤完成后更新任务状态为completed
             current_status = cache.get('task_status')
             current_status.update({
                 "status": "completed",
-                "message": "任务执行完成！",
+                "message": "所有步骤执行完成",
                 "end_time": timezone.now().isoformat()
             })
             cache.set('task_status', current_status)
+
+
         except Exception as e:
             # 任务失败处理
             current_status = cache.get('task_status')
@@ -2200,6 +2214,11 @@ def update_historical_market_value(request):
 
 
 def get_task_status(request):
+    status = cache.get('task_status', {})
+    # print("[DEBUG] 当前任务状态:", status)  # 查看后端实际数据
+    # 添加状态终结判断
+    if status.get('current_step', 0) >= status.get('total_steps', 8):
+        status['status'] = 'completed'
     # 从缓存获取状态，不存在则返回默认
     status = cache.get('task_status', {
         "current_step": 0,
