@@ -95,7 +95,7 @@
                         </div>
                     </div>
                     <!-- 新增耗时显示 -->
-                    <small class="text-muted mt-1">耗时：<span id="duration-display">0.00</span></small>
+                    <small class="text-muted mt-1">总耗时：<span id="duration-display">0.00</span></small>
                     <!-- 步骤状态列表 -->
                     <div class="mt-4">
                         <h5>执行步骤详情：</h5>
@@ -128,7 +128,8 @@
             steps.forEach((stepName, index) => {
                 $stepList.append(`
                     <li class="list-group-item step-item" data-step="${index + 1}">
-                        <span class="step-name">${stepName}</span> <!-- 此处直接写入 -->
+                        <span class="step-name">${index + 1}、${stepName}</span> <!-- 此处直接写入 -->
+                        <span class="step-duration text-muted ml-2"></span>
                         <span class="status-badge badge float-right"></span>
                         <small class="step-progress text-muted float-right mr-2">
                             (${index + 1}/${steps.length})
@@ -186,6 +187,16 @@
             const $steps = $('.step-item');
             $steps.each(function(index) {
                 const $step = $(this);
+
+                const stepData = data.steps[index];
+                const $durationElement = $step.find('.step-duration');
+                if (stepData && stepData.duration > 0) {
+                    const formattedDuration = formatDuration(stepData.duration);
+                    $durationElement.text(`（耗时：${formattedDuration}）`); // 添加括号
+                } else {
+                    $durationElement.text('');
+                }
+
                 const stepNumber = index + 1;
 
                 // 不修改步骤名称（已在初始化时绑定）
@@ -230,10 +241,10 @@
                 $bar.addClass('bg-success');
             } else if (status === 'failed') {
                 $bar.addClass('bg-danger');
-/*
+
             } else if (progress >= 99) {
                 $bar.addClass('bg-warning'); // 接近完成时显示黄色
-*/
+
             } else {
                 $bar.addClass('bg-info');
             }
@@ -241,6 +252,7 @@
         }
 
         function formatDuration(seconds) {
+            if (!seconds || seconds < 0.01) return '0秒'; // 处理极小值
             if (seconds < 60) {
                 return seconds.toFixed(2) + "秒";
             }
