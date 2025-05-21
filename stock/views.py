@@ -50,13 +50,28 @@ def overview(request):
         # 计算基金价值总和
         funds_value_sum = 0
         funds_list = funds.objects.all()
+        # 获得资产占比数据，用于生成chart图表
+        funds_value_array = []
+        funds_principal_array = []
+        funds_currency_array = []
+        bar_name_array = ['资产', '本金']
         for rs in funds_list:
+            funds_currency_array.append(rs.funds_name[:-2])
             if rs.funds_name == '港元账户':
-                funds_value_sum += float(rs.funds_value) * rate_HKD
+                funds_value_array.append(round(float(rs.funds_value) * rate_HKD))
+                funds_principal_array.append(round(float(rs.funds_principal) * rate_HKD))
+                funds_value_sum += round(float(rs.funds_value) * rate_HKD)
             elif rs.funds_name == '美元账户':
-                funds_value_sum += float(rs.funds_value) * rate_USD
+                funds_value_array.append(round(float(rs.funds_value) * rate_USD))
+                funds_principal_array.append(round(float(rs.funds_principal) * rate_USD))
+                funds_value_sum += round(float(rs.funds_value) * rate_USD)
             else:
-                funds_value_sum += float(rs.funds_value)
+                funds_value_array.append(round(rs.funds_value))
+                funds_principal_array.append(round(rs.funds_principal))
+                funds_value_sum += round(rs.funds_value)
+        # bar_value = [funds_value_array, funds_principal_array]
+        # bar_data = [bar_name_array, [funds_value_array, funds_principal_array], funds_name_array]
+        # print(bar_data)
 
         # 计算基金价值占比和加权净值
         funds_name_dict = {1: '人民币账户', 2: '港元账户', 3: '美元账户'}
@@ -167,8 +182,9 @@ def overview(request):
         while i < len(top5_content):
             top5_percent += float(top5_content[i][6][:-1])  # [:-1]用于截去百分比字符串的最后一位（百分号）
             i += 1
-        # 获得持仓币种占比数据，用于生成chart图表
+        # 获得持仓市场占比数据，用于生成chart图表
         market_name_array, market_value_array = get_value_market_sum(price_array, rate_HKD, rate_USD)
+
         # 获得近期交易列表
         top5_trade_list = trade.objects.all().order_by('-trade_date', '-modified_time')[:5]
         # 获得近期分红列表
@@ -195,6 +211,9 @@ def overview(request):
         overview.update(current_subscription_stock_num=current_subscription_stock_num)
         overview.update(current_subscription_band_num=current_subscription_band_num)
         overview.update(holding_stock_number=holding_stock_number)
+        overview.update(funds_value_array=funds_value_array)
+        overview.update(funds_principal_array=funds_principal_array)
+        overview.update(funds_currency_array=funds_currency_array)
         # 持藏股票一览
         holding_stock_array = []
         for i in content:
@@ -422,8 +441,8 @@ def view_funds_details(request, funds_id):
         baseline_profit_rate_list.append(float(Decimal(baseline_profit_rate * 100).quantize(Decimal('0.00'))))
 
     line_value = [funds_net_value_list, baseline_net_value_list]
-    bar_value = [funds_profit_rate_list[1:], baseline_profit_rate_list[1:]] # 柱图第一列去掉
     line_data = [name_list, line_value, year_end_date_list]
+    bar_value = [funds_profit_rate_list[1:], baseline_profit_rate_list[1:]] # 柱图第一列去掉
     bar_data = [name_list, bar_value, year_end_date_list[1:]] # 柱图第一列去掉
 
     # 生成资产变化日历字典数据assetChanges

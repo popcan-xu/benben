@@ -149,128 +149,35 @@
 
     </div>
 
-    <!-- 投资记账 -->
-{#    <div class="row">#}
-{#        {% for funds in funds_list %}#}
-{#            <div class="col-xl-4 col-md-6 mb-4">#}
-{#                <div class="card shadow h-100 py-2">#}
-{#                    <div class="card-body">#}
-{#                        <div class="row no-gutters align-items-center">#}
-{#                            <div class="col mr-2">#}
-{#                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">#}
-{#                                    <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">{{ funds.funds_name|truncate_end:2|safe }}资产</a>   {# 裁剪后两个字符 #}
-{#                                </div>#}
-{#                            </div>#}
-{#                            <div class="col-auto">#}
-{#                                <div class="h6 mb-0 text-gray-500">#}
-{#                                    <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>#}
-{#                                </div>#}
-{#                            </div>#}
-{#                        </div>#}
-{#                        <!-- Divider -->#}
-{#                        <h3>&nbsp;</h3>#}
-{#                        <div class="row no-gutters align-items-center">#}
-{#                            <div class="col mr-2">#}
-{#                                <div class="h6 mb-0 text-gray-500">总资产（元）</div>#}
-{#                                <div class="h3 mb-0 text-gray-800">{{ funds.funds_value|floatformat:0 }}</div>#}
-{#                            </div>#}
-{#                            <div class="col mr-2">#}
-{#                                <div class="h6 mb-0 text-gray-500">净值（元）</div>#}
-{#                                <div class="h3 mb-0 text-gray-800">{{ funds.funds_net_value|floatformat:4 }}</div>#}
-{#                            </div>#}
-{#                        </div>#}
-{#                    </div>#}
-{#                </div>#}
-{#            </div>#}
-{#        {% endfor %}#}
-{#    </div>#}
-
-    <!-- 持仓市值 -->
-{#    <div class="row">#}
-{#        {% for key in currency_dict %}#}
-{#            <div class="col-xl-4 col-md-6 mb-4">#}
-{#                <div class="card shadow h-100 py-2">#}
-{#                    <div class="card-body">#}
-{#                        <div class="row no-gutters align-items-center">#}
-{#                            <div class="col mr-2">#}
-{#                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">#}
-{#                                    <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">{{ currency_dict|get_index:key|safe }}持仓</a>#}
-{#                                </div>#}
-{#                            </div>#}
-{#                            <div class="col-auto">#}
-{#                                <div class="h6 mb-0 text-gray-500">#}
-{#                                    <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>#}
-{#                                </div>#}
-{#                            </div>#}
-{#                        </div>#}
-{#                        <!-- Divider -->#}
-{#                        <h3>&nbsp;</h3>#}
-{#                        <div class="row no-gutters align-items-center">#}
-{#                            <div class="col mr-2">#}
-{#                                <div class="h6 mb-0 text-gray-500">持仓市值（元）</div>#}
-{#                                <div class="h3 mb-0 text-gray-800">{{ value_dict|get_index:key|floatformat:0 }}</div>#}
-{#                            </div>#}
-{#                            <div class="col mr-2">#}
-{#                                <div class="h6 mb-0 text-gray-500">类现金占比（%）</div>#}
-{#                                <div class="h3 mb-0 text-gray-800">{{ position_percent_dict|get_index:key|percent }}</div>#}
-{#                            </div>#}
-{#                        </div>#}
-{#                    </div>#}
-{#                </div>#}
-{#            </div>#}
-{#        {% endfor %}#}
-{#    </div>#}
-
-
     <!-- Content Chart Row -->
 
     <div class="row">
-
-        <!-- 持仓股票一览 -->
+        <!-- 资产币种占比 -->
         <div class="col-xl-4 col-lg-4">
             <div class="card shadow mb-4">
                 <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">持仓股票一览</h6>
+                <div
+                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">资产币种占比</h6>
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
-                    <div style="height:320px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
-                        <div class="table-responsive">
-                            <table class="table table-condensed table-hover list_tab">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>股票/代码</th>
-                                        <th>价格（元）</th>
-                                        <th>涨跌幅</th>
-                                        <th>金额（元）</th>
-                                        <th>百分比</th>
-                                        <!--
-                                        <th>持仓数量（股）</th>
-                                        <th>金额（{{ currency_CNY }}）</th>
-                                        <th>百分比</th>
-                                        -->
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for i in overview.holding_stock_array %}
-                                        <tr>
-                                            <td style="text-align: left">{{ i.0|stringformat:"s" }}</td>
-                                            <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
-                                            <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
-                                            <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
-                                            <td style="text-align: right">{{ i.6 }}</td>
-                                            <!--
-                                            <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
-                                            <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
-                                            <td style="text-align: right">{{ i.6 }}</td>
-                                            -->
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <div id="bar_funds" style="width:100%; height:320px; display:block;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 持仓市场占比 -->
+        <div class="col-xl-4 col-lg-4">
+            <div class="card shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div
+                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">持仓市场占比</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div id="pie_area_market" style="width:100%; height:320px; display:block;"></div>
                 </div>
             </div>
         </div>
@@ -301,29 +208,14 @@
             </div>
         </div>
 
-        <!-- 持仓币种占比 -->
-        <div class="col-xl-4 col-lg-4">
-            <div class="card shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div
-                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">持仓市场占比</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div id="pie_area_market" style="width:100%; height:320px; display:block;"></div>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <!-- Content Row -->
     <div class="row">
         <!-- 近期交易 -->
-        <div class="col-xl-5 col-lg-5 mb-5">
+        <div class="col-xl-5 col-lg-5">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">近期交易</h6>
                 </div>
                 <div class="card-body">
@@ -365,9 +257,9 @@
         </div>
 
         <!-- 近期分红 -->
-        <div class="col-xl-3 col-lg-3 mb-3">
+        <div class="col-xl-3 col-lg-3">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">近期分红</h6>
                 </div>
                 <div class="card-body">
@@ -400,9 +292,9 @@
         </div>
 
         <!-- 近期打新 -->
-        <div class="col-xl-4 col-lg-4 mb-4">
+        <div class="col-xl-4 col-lg-4">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">近期打新</h6>
                 </div>
                 <div class="card-body">
@@ -439,7 +331,90 @@
                 </div>
             </div>
         </div>
+
     </div>
+
+    <div class="row">
+        <!-- 持仓股票一览 -->
+        <div class="col-xl-12 col-lg-12">
+            <div class="card shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">持仓股票一览</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div style="height:100%; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                        <!--
+                        <div class="table-responsive">
+                            <table class="table table-condensed table-hover list_tab">
+                                <thead class="bg-gradient-secondary text-gray-100">
+                                    <tr>
+                                        <th>股票/代码</th>
+                                        <th>价格（元）</th>
+                                        <th>涨跌幅</th>
+                                        <th>持仓数量（股）</th>
+                                        <th>金额（元）</th>
+                                        <th>百分比</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for i in overview.holding_stock_array %}
+                                        <tr>
+                                            <td style="text-align: left">{{ i.0|stringformat:"s" }}</td>
+                                            <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
+                                            <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+                                            <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
+                                            <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+                                            <td style="text-align: right">{{ i.6 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                    <thead class="bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>股票/代码</th>
+                                            <th>价格（元）</th>
+                                            <th>涨跌幅</th>
+                                            <th>持仓数量（股）</th>
+                                            <th>金额</th>
+                                            <th>百分比</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in overview.holding_stock_array %}
+                                            <tr>
+                                                <td>{{ i.0|stringformat:"s" }}</td>
+                                                <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
+                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+                                                <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+                                                <td style="text-align: right">{{ i.6 }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        <tr>
+                                            <td><b>合计</b></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td style="text-align: right"><b>{{ overview.market_value_sum|floatformat:0 }}</b></td>
+                                            <td style="text-align: right"><b>100.00%</b></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
 
 </div>
 
@@ -477,9 +452,12 @@
                     //鼠标点击出现的文字
                     tooltip: {
                         trigger: "item",
-                        //formatter: "{a} <br/>{b} : {c} ({d}%)",
-                        formatter: "{b} : {c} ({d}%)"
-                    },
+                        //formatter: "{b} : {c} ({d}%)"
+                        formatter: function(params) {
+                            // 使用toLocaleString添加千位分隔符（英文格式）
+                            return `${params.name} : ${params.value.toLocaleString('en-US')} (${params.percent}%)`;
+                        }
+                     },
                     //视觉映射器
                     /*
                     visualMap: {
@@ -656,6 +634,83 @@
         };
         chart_line.setOption(option);
     }
+
+    // 资产币种占比柱图
+    document.addEventListener('DOMContentLoaded', function() {
+        const chart = echarts.init(document.getElementById('bar_funds'));
+        const funds_value_array = {{ overview.funds_value_array|safe }};
+        const funds_principal_array = {{ overview.funds_principal_array|safe }};
+        const funds_currency_array = {{ overview.funds_currency_array|safe }};
+
+        // 更新图表
+        function updateChart() {
+            const option = {
+            title: {
+                text: ''
+            },
+            tooltip: {
+                trigger: "item",
+                //formatter: "{a} <br/>{b} : {c}",
+                formatter: function(params) {
+                    // 使用toLocaleString添加千位分隔符
+                    return `${params.seriesName} <br/>${params.name} : ${params.value.toLocaleString('en-US')}`;
+                },
+                //backgroundColor: '#ffffff',   // 白色背景
+                borderColor: 'transparent',
+                borderWidth: 0
+            },
+            legend: {
+                //data:bar_data['name_array']
+            },
+            grid: {
+                top: '10%',
+                left: '3%',
+                right: '5%',
+                bottom: '0%',
+                containLabel: true
+            },
+            xAxis: {
+                //name: '年份',
+                data: funds_currency_array,
+                axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                    show: true,
+                    interval: 'auto',
+                    rotate: 45,
+                    margin: 15,
+                    // formatter: null,
+                    textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                        color: '#333'
+                    }
+                }
+            },
+            //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
+            yAxis: {
+                //name: '百分比',
+            },
+            series: [
+                {
+                    name: '资产',
+                    type: 'bar',
+                    data: funds_value_array,
+                    color: ['#1890ff']
+                },
+                {
+                    name:  '本金',
+                    type: 'bar',
+                    data: funds_principal_array,
+                    color: ['#ee9945']
+                }
+            ]
+        };
+            chart.setOption(option, true);
+        }
+
+        // 初始加载
+        updateChart();
+        window.addEventListener('resize', () => chart.resize());
+    });
+
+
 
 </script>
 
