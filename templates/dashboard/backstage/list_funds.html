@@ -23,7 +23,9 @@
                             <th>本金</th>
                             <th>份数</th>
                             <th>净值</th>
+                            <th>货币类型</th>
                             <th>创立日期</th>
+                            <th>更新日期</th>
                             <th>比较基准</th>
                             <th>备注</th>
                             <th>操作</th>
@@ -40,7 +42,9 @@
                                 <td>{{ funds.funds_principal }}</td>
                                 <td>{{ funds.funds_PHR }}</td>
                                 <td>{{ funds.funds_net_value }}</td>
+                                <td>{{ funds.get_funds_currency_display }}</td>
                                 <td>{{ funds.funds_create_date|date:'Y-m-d' }}</td>
+                                <td>{{ funds.update_date|date:'Y-m-d' }}</td>
                                 <td>{{ funds.funds_baseline }}</td>
                                 <td>{{ funds.funds_script }}</td>
                                 <td>

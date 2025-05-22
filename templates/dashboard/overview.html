@@ -419,151 +419,226 @@
 </div>
 
 <script>
-    //market_name_array = JSON.parse('{{ overview.market_name_array|safe }}');
-    market_name_array = {{ overview.market_name_array|safe }};
-    market_value_array = {{ overview.market_value_array|safe }};
-    pie_container = document.getElementById('pie_area_market');
-	pie = echarts.init(pie_container, 'white', {renderer: 'canvas'});
-	pie_data = get_pie_data(market_name_array, market_value_array);
-    //line_container = document.getElementById('line_area_net_value');
-    //line = echarts.init(line_container, 'white', {renderer: 'canvas'});
-    //line_data = ''
-    window.onload = function() {
-        draw_pie(pie, pie_container, pie_data);
-        //draw_line(line, line_container, line_data);
-        //Chart_Pie("pie_market", name_array, value_array);
-    };
+    // 持仓市场占比饼图
+    document.addEventListener('DOMContentLoaded', function() {
+        const chart = echarts.init(document.getElementById('pie_area_market'));// 初始加载
+        const market_name_array = {{ overview.market_name_array|safe }};
+        const market_value_array = {{ overview.market_value_array|safe }};
+        const pie_data = get_pie_data(market_name_array, market_value_array);
 
-	function draw_pie(chart_pie, container, pie_data) {
-        //resize_chart(chart_pie, container);
-        var option = {
-                    //backgroundColor: "#2c343c",
-                    // 标题的一些配置参数
-                    title: {
-                        text: "",
-                        left: "center",
-                        top: 10,
-                        /*
-                        textStyle: {
-                            color: "pink"
-                        }
-                        */
-                    },
-                    //鼠标点击出现的文字
-                    tooltip: {
-                        trigger: "item",
-                        //formatter: "{b} : {c} ({d}%)"
-                        formatter: function(params) {
-                            // 使用toLocaleString添加千位分隔符（英文格式）
-                            return `${params.name} : ${params.value.toLocaleString('en-US')} (${params.percent}%)`;
-                        }
-                     },
-                    //视觉映射器
+        // 初始加载
+        updateChart();
+        window.addEventListener('resize', () => chart.resize());
+
+        // 更新图表
+        function updateChart() {
+            const option = {
+                //backgroundColor: "#2c343c",
+                // 标题的一些配置参数
+                title: {
+                    text: "",
+                    left: "center",
+                    top: 10,
                     /*
-                    visualMap: {
-                        show: false,
-                        min: 20,
-                        max: 600,
-                        inRange: {
-                            colorLightness: [0, 1]
+                    textStyle: {
+                        color: "pink"
+                    }
+                    */
+                },
+                //鼠标点击出现的文字
+                tooltip: {
+                    trigger: "item",
+                    //formatter: "{b} : {c} ({d}%)"
+                    formatter: function(params) {
+                        // 使用toLocaleString添加千位分隔符（英文格式）
+                        return `${params.name} : ${params.value.toLocaleString('en-US')} (${params.percent}%)`;
+                    }
+                 },
+                //视觉映射器
+                /*
+                visualMap: {
+                    show: false,
+                    min: 20,
+                    max: 600,
+                    inRange: {
+                        colorLightness: [0, 1]
+                    }
+                },
+                */
+                legend: {
+                    right: "5%",
+                    top: "10%",
+                    orient: "vertical",    // 图例列表水平布局
+                    show: true
+                    /*
+                    show: true,              // 显示图例
+                    left: "75%",             // 图例组件离容器左侧的距离
+                    top: 10,                 // 图例组件离容器上侧的距离
+                    right: "15%",            // 图例组件离容器右侧的距离
+                    bottom: 30,              // 图例组件离容器下侧的距离
+                    width: "50%",            // 图例组件的宽度
+                    height: 10,              // 图例组件的高度
+                    itemGap: 15,             // 图例每项之间的间隔
+                    itemWidth: 10,           // 图例标记的图形宽度
+                    itemHeight: 15,          // 图例标记的图形高度
+                    textStyle: {             // 图例文本样式
+                      color: "rgba(239, 15, 15, 1)",
+                      fontStyle: "italic",
+                      fontWeight: "bold",
+                      fontFamily: "serif",
+                      fontSize: 15
+                    },
+                    icon: "circle"     // 图例项的 icon
+                    */
+                },
+                //color: ['primary', 'secondary', 'success', 'info', 'warning', 'danger'],
+                color: ['#4e73df', '#858796', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
+                //表格数据
+                series: [{
+                    name: "市值",
+                    type: "pie",
+                    //radius: "55%", //饼图弧度大小
+                    radius: ["60%", "85%"],
+                    //radius: [0, 120],
+                    center: ["40%", "50%"], //饼图位置
+                    data: pie_data,
+                        /*
+                        [
+                            { value: 335, name: "直接访问" },
+                            { value: 310, name: "邮件营销" },
+                            { value: 274, name: "联盟广告" },
+                            { value: 235, name: "视频广告" },
+                            { value: 400, name: "搜索引擎" }
+                        ].sort(function(a, b) {
+                            return a.value - b.value;
+                        }),
+                        */
+                    //roseType: "radius",
+                    //roseType: "area",
+                    // 标注字的的颜色
+
+                    label: {
+                        normal: {
+                            show: false,
+                            textStyle: {
+                                color: "rgba(255, 255, 255, 0.3)"
+                            }
+                        }
+                    },
+
+                    // 指示线的颜色
+
+                    labelLine: {
+                        normal: {
+                            show: false,
+                            lineStyle: {
+                                color: "rgba(255, 255, 255, 0.3)"
+                            },
+                            smooth: 0.2,
+                            length: 10,
+                            length2: 20
+                        }
+                    },
+                    /*
+                    itemStyle: {
+                        normal: {
+                            color: "#c23531",
+                            shadowBlur: 200,
+                            shadowColor: "rgba(0, 0, 0, 0.5)"
                         }
                     },
                     */
-                    legend: {
-                        right: "5%",
-                        top: "10%",
-                        orient: "vertical",    // 图例列表水平布局
-                        show: true
-                        /*
-                        show: true,              // 显示图例
-                        left: "75%",             // 图例组件离容器左侧的距离
-                        top: 10,                 // 图例组件离容器上侧的距离
-                        right: "15%",            // 图例组件离容器右侧的距离
-                        bottom: 30,              // 图例组件离容器下侧的距离
-                        width: "50%",            // 图例组件的宽度
-                        height: 10,              // 图例组件的高度
-                        itemGap: 15,             // 图例每项之间的间隔
-                        itemWidth: 10,           // 图例标记的图形宽度
-                        itemHeight: 15,          // 图例标记的图形高度
-                        textStyle: {             // 图例文本样式
-                          color: "rgba(239, 15, 15, 1)",
-                          fontStyle: "italic",
-                          fontWeight: "bold",
-                          fontFamily: "serif",
-                          fontSize: 15
-                        },
-                        icon: "circle"     // 图例项的 icon
-                        */
+                    animationType: "scale",
+                    animationEasing: "elasticOut",
+                    animationDelay: function(idx) {
+                        return Math.random() * 200;
+                    }
+                }]
+            };
+            chart.setOption(option, true);
+        }
+    });
+
+    // 资产币种占比柱图
+    document.addEventListener('DOMContentLoaded', function() {
+        const chart = echarts.init(document.getElementById('bar_funds'));
+        const funds_value_array = {{ overview.funds_value_array|safe }};
+        const funds_principal_array = {{ overview.funds_principal_array|safe }};
+        const funds_currency_array = {{ overview.funds_currency_array|safe }};
+
+        // 初始加载
+        updateChart();
+        window.addEventListener('resize', () => chart.resize());
+
+        // 更新图表
+        function updateChart() {
+            const option = {
+                title: {
+                    text: ''
+                },
+                tooltip: {
+                    trigger: "item",
+                    //formatter: "{a} <br/>{b} : {c}",
+                    formatter: function(params) {
+                        // 使用toLocaleString添加千位分隔符
+                        // return `${params.seriesName} <br/>${params.name} : ${params.value.toLocaleString('en-US')}`;
+                        return `${params.seriesName} : ${params.value.toLocaleString('en-US')}`;
                     },
-                    //color: ['primary', 'secondary', 'success', 'info', 'warning', 'danger'],
-                    color: ['#4e73df', '#858796', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
-                    //表格数据
-                    series: [{
-                        name: "市值",
-                        type: "pie",
-                        //radius: "55%", //饼图弧度大小
-                        radius: ["60%", "85%"],
-                        //radius: [0, 120],
-                        center: ["40%", "50%"], //饼图位置
-                        data: pie_data,
-                            /*
-                            [
-                                { value: 335, name: "直接访问" },
-                                { value: 310, name: "邮件营销" },
-                                { value: 274, name: "联盟广告" },
-                                { value: 235, name: "视频广告" },
-                                { value: 400, name: "搜索引擎" }
-                            ].sort(function(a, b) {
-                                return a.value - b.value;
-                            }),
-                            */
-                        //roseType: "radius",
-                        //roseType: "area",
-                        // 标注字的的颜色
-
-                        label: {
-                            normal: {
-                                show: false,
-                                textStyle: {
-                                    color: "rgba(255, 255, 255, 0.3)"
-                                }
-                            }
-                        },
-
-                        // 指示线的颜色
-
-                        labelLine: {
-                            normal: {
-                                show: false,
-                                lineStyle: {
-                                    color: "rgba(255, 255, 255, 0.3)"
-                                },
-                                smooth: 0.2,
-                                length: 10,
-                                length2: 20
-                            }
-                        },
-                        /*
-                        itemStyle: {
-                            normal: {
-                                color: "#c23531",
-                                shadowBlur: 200,
-                                shadowColor: "rgba(0, 0, 0, 0.5)"
-                            }
-                        },
-                        */
-                        animationType: "scale",
-                        animationEasing: "elasticOut",
-                        animationDelay: function(idx) {
-                            return Math.random() * 200;
+                    //backgroundColor: '#ffffff',   // 白色背景
+                    borderColor: 'transparent',
+                    borderWidth: 0
+                },
+                legend: {
+                    //data:bar_data['name_array']
+                },
+                grid: {
+                    top: '10%',
+                    left: '3%',
+                    right: '5%',
+                    bottom: '0%',
+                    containLabel: true
+                },
+                xAxis: {
+                    //name: '年份',
+                    data: funds_currency_array,
+                    axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                        show: true,
+                        interval: 'auto',
+                        rotate: 45,
+                        margin: 15,
+                        // formatter: null,
+                        textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            color: '#333'
                         }
-                    }]
-                };
-		chart_pie.setOption(option);
-        //window.onresize = function () { resize_chart(chart_pie, container); };
-	}
+                    }
+                },
+                //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
+                yAxis: {
+                    //name: '百分比',
+                },
+                series: [
+                    {
+                        name: '资产',
+                        type: 'bar',
+                        data: funds_value_array,
+                        //stack: '总量', //堆叠柱图
+                        color: ['#1890ff']
+                    },
+                    {
+                        name:  '本金',
+                        type: 'bar',
+                        data: funds_principal_array,
+                        //stack: '总量',
+                        color: ['#ee9945']
+                    }
+                ]
+            };
+            chart.setOption(option, true);
+        }
+    });
 
-	function get_pie_data(name_array, value_array) {
+	// 生成持仓市场占比饼图数据
+    function get_pie_data(name_array, value_array) {
 		var pie_data = [];
 		for(i = 0; i < name_array.length; i++){
 			pie_data.push(
@@ -575,142 +650,6 @@
 		}
 		return pie_data;
 	}
-
-    function draw_line(chart_line, container, line_data) {
-        var option = {
-            title: {
-              text: '',
-              subtext: '',
-              x: 'center'
-            },
-
-            legend: {
-              orient: 'horizontal',
-              x: 'left',
-              y: 'top',
-              data: ['猜想','预期','实际']
-            },
-            grid: {
-                top: '20%',
-                left: '3%',
-                right: '10%',
-                bottom: '5%',
-                containLabel: true
-            },
-            xAxis: {
-              name: '月份',
-              type: 'category',
-              data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月',]
-            },
-            yAxis: {
-              name: '人次',
-              type: 'value',
-              min:0, // 配置 Y 轴刻度最小值
-              max:4000,  // 配置 Y 轴刻度最大值
-              splitNumber:7,  // 配置 Y 轴数值间隔
-            },
-
-            series: [ // 多组折线图数据
-              {
-                name: '猜想',
-                data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
-                type: 'line'
-              },
-
-              {
-                name: '预期',
-                data: [2455,2534,2360,2301,2861,2181,1944,2197,1745,1810,2283,2298],
-                type: 'line',
-              },
-
-              {
-                name: '实际',
-                data: [1107,1352,1740,1968,1647,1570,1343,1757,2547,2762,3170,3665],
-                type: 'line'
-              }
-            ],
-            color: ['#3366CC', '#FFCC99','#99CC33']
-
-        };
-        chart_line.setOption(option);
-    }
-
-    // 资产币种占比柱图
-    document.addEventListener('DOMContentLoaded', function() {
-        const chart = echarts.init(document.getElementById('bar_funds'));
-        const funds_value_array = {{ overview.funds_value_array|safe }};
-        const funds_principal_array = {{ overview.funds_principal_array|safe }};
-        const funds_currency_array = {{ overview.funds_currency_array|safe }};
-
-        // 更新图表
-        function updateChart() {
-            const option = {
-            title: {
-                text: ''
-            },
-            tooltip: {
-                trigger: "item",
-                //formatter: "{a} <br/>{b} : {c}",
-                formatter: function(params) {
-                    // 使用toLocaleString添加千位分隔符
-                    return `${params.seriesName} <br/>${params.name} : ${params.value.toLocaleString('en-US')}`;
-                },
-                //backgroundColor: '#ffffff',   // 白色背景
-                borderColor: 'transparent',
-                borderWidth: 0
-            },
-            legend: {
-                //data:bar_data['name_array']
-            },
-            grid: {
-                top: '10%',
-                left: '3%',
-                right: '5%',
-                bottom: '0%',
-                containLabel: true
-            },
-            xAxis: {
-                //name: '年份',
-                data: funds_currency_array,
-                axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
-                    show: true,
-                    interval: 'auto',
-                    rotate: 45,
-                    margin: 15,
-                    // formatter: null,
-                    textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
-                        color: '#333'
-                    }
-                }
-            },
-            //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-            yAxis: {
-                //name: '百分比',
-            },
-            series: [
-                {
-                    name: '资产',
-                    type: 'bar',
-                    data: funds_value_array,
-                    color: ['#1890ff']
-                },
-                {
-                    name:  '本金',
-                    type: 'bar',
-                    data: funds_principal_array,
-                    color: ['#ee9945']
-                }
-            ]
-        };
-            chart.setOption(option, true);
-        }
-
-        // 初始加载
-        updateChart();
-        window.addEventListener('resize', () => chart.resize());
-    });
-
-
 
 </script>
 

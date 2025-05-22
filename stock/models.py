@@ -154,8 +154,18 @@ class dividend_history(models.Model):
 
 # 基金数据模型
 class funds(models.Model):
+    # 定义货币类型数据字典
+    CNY = 1
+    HKD = 2
+    USD = 3
+    CURRENCY_ITEMS = (
+        (CNY, '人民币'),
+        (HKD, '港元'),
+        (USD, '美元'),
+    )
     funds_name = models.CharField(max_length=32, verbose_name='基金名称', unique=True, db_index=True)
     funds_script = models.CharField(max_length=128, verbose_name='备注', null=True)
+    funds_currency = models.PositiveIntegerField(default=CNY, choices=CURRENCY_ITEMS, verbose_name='货币')
     funds_baseline = models.CharField(max_length=32, verbose_name='比较基准', null=True)
     funds_create_date = models.DateField(verbose_name='基金创立日期', null=True, blank=True)
     funds_value = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金价值')

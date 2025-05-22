@@ -25,6 +25,22 @@
                             </div>
                         </div>
                         <div class="row form-group">
+                            <label for="funds_currency" class="col-md-4 control-label text-right">货币类型：</label>
+                            <div class="col-md-8">
+                                {% for key,v in currency_items %}
+                                <label class="custom-control custom-radio custom-control-inline">
+                                    {% if key == 1 %}
+                                    <input type="radio" class="custom-control-input" name="funds_currency" id="funds_currency{{ key }}" value="{{ key }}" checked />
+                                    <label class="custom-control-label" for="funds_currency{{ key }}">{{ v }}</label>
+                                    {% else %}
+                                    <input type="radio" class="custom-control-input" name="funds_currency" id="funds_currency{{ key }}" value="{{ key }}" />
+                                    <label class="custom-control-label" for="funds_currency{{ key }}">{{ v }}</label>
+                                    {% endif %}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="row form-group">
                             <label for="funds_create_date" class="col-md-4 control-label text-right">创立日期：</label>
                             <div class="col-md-8">
                                 <input type="date" class="form-control date-picker"  name="funds_create_date" id="funds_create_date" placeholder="请录入创立日期">
