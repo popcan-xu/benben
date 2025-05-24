@@ -450,8 +450,8 @@
                     trigger: "item",
                     //formatter: "{b} : {c} ({d}%)"
                     formatter: function(params) {
-                        // 使用toLocaleString添加千位分隔符（英文格式）
-                        return `${params.name} : ${params.value.toLocaleString('en-US')} (${params.percent}%)`;
+                        const val = Math.round(params.data.value / 10000); // 动态计算
+                        return `${params.name}\n${val.toLocaleString('en-US')}万`;
                     }
                  },
                 //视觉映射器
@@ -576,18 +576,6 @@
                 title: {
                     text: ''
                 },
-                tooltip: {
-                    trigger: "item",
-                    //formatter: "{a} <br/>{b} : {c}",
-                    formatter: function(params) {
-                        // 使用toLocaleString添加千位分隔符
-                        // return `${params.seriesName} <br/>${params.name} : ${params.value.toLocaleString('en-US')}`;
-                        return `${params.seriesName} : ${params.value.toLocaleString('en-US')}`;
-                    },
-                    //backgroundColor: '#ffffff',   // 白色背景
-                    borderColor: 'transparent',
-                    borderWidth: 0
-                },
                 legend: {
                     //data:bar_data['name_array']
                 },
@@ -597,6 +585,8 @@
                     right: '5%',
                     bottom: '0%',
                     containLabel: true
+                },
+                tooltip: {
                 },
                 xAxis: {
                     //name: '年份',
@@ -614,21 +604,53 @@
                 },
                 //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
                 yAxis: {
-                    //name: '百分比',
+                    axisLabel: {
+                        formatter: function (value) {
+                            return `${Math.round(value / 10000).toLocaleString('en-US')}`;
+                        },
+                    }
                 },
                 series: [
                     {
                         name: '资产',
                         type: 'bar',
+                        //data: funds_principal_array.map(v => Math.round(v / 10000)), // 数据转换
                         data: funds_value_array,
                         //stack: '总量', //堆叠柱图
+                        tooltip: {
+                            trigger: "item",
+                            //formatter: "{a} <br/>{b} : {c}",
+                            formatter: function(params) {
+                                const val = Math.round(params.value / 10000); // 动态计算
+                                // 使用toLocaleString添加千位分隔符
+                                return `${params.seriesName} <br/>${params.name} : ${val.toLocaleString('en-US')}万`;
+                            },
+                            //backgroundColor: '#ffffff',   // 白色背景
+                            borderColor: 'transparent',
+                            borderWidth: 0
+                        },
                         color: ['#1890ff']
+
                     },
                     {
                         name:  '本金',
                         type: 'bar',
+                        //data: funds_principal_array.map(v => Math.round(v / 10000)), // 数据转换
                         data: funds_principal_array,
                         //stack: '总量',
+                        tooltip: {
+                            trigger: "item",
+                            //formatter: "{a} <br/>{b} : {c}",
+                            formatter: function(params) {
+                                const val = Math.round(params.value / 10000); // 动态计算
+                                // 使用toLocaleString添加千位分隔符
+                                return `${params.seriesName} <br/>${params.name} : ${val.toLocaleString('en-US')}万`;
+                            },
+
+                            //backgroundColor: '#ffffff',   // 白色背景
+                            borderColor: 'transparent',
+                            borderWidth: 0
+                        },
                         color: ['#ee9945']
                     }
                 ]

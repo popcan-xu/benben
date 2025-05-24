@@ -91,10 +91,20 @@ def overview(request):
         position_percent_dict = {}
         funds_value_dict = {}
         market_value_dict = {}
-        result = funds_details.objects.aggregate(
-            max_date=Max('date')  # 最大值（最新日期）
-        )
-        max_date_funds = result['max_date']
+
+        # 获取所有funds同时存在记录的最大有效日期
+        # 获取所有不同的基金数量
+        total_funds = funds_details.objects.values('funds').distinct().count()
+        # 查找所有日期及其对应的基金数量，并筛选出基金数等于总基金数的日期
+        valid_dates = funds_details.objects.values('date').annotate(
+            funds_count=Count('funds', distinct=True)
+        ).filter(funds_count=total_funds).order_by('-date')
+        if valid_dates.exists():
+            max_date_funds = valid_dates.first()['date']
+        else:
+            # 根据问题描述，其他逻辑确保存在有效日期，此处无需处理
+            max_date_funds = None
+
         for key, value in currency_dict.items():
             funds_id = funds.objects.get(funds_currency=key).id
             funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
@@ -496,10 +506,20 @@ def market_value(request):
     funds_name_dict = {1: '人民币账户', 2: '港元账户', 3: '美元账户'}
     funds_value_dict = {}
     market_value_dict = {}
-    result = funds_details.objects.aggregate(
-        max_date=Max('date')  # 最大值（最新日期）
-    )
-    max_date_funds = result['max_date']
+
+    # 获取所有funds同时存在记录的最大有效日期
+    # 获取所有不同的基金数量
+    total_funds = funds_details.objects.values('funds').distinct().count()
+    # 查找所有日期及其对应的基金数量，并筛选出基金数等于总基金数的日期
+    valid_dates = funds_details.objects.values('date').annotate(
+        funds_count=Count('funds', distinct=True)
+    ).filter(funds_count=total_funds).order_by('-date')
+    if valid_dates.exists():
+        max_date_funds = valid_dates.first()['date']
+    else:
+        # 根据问题描述，其他逻辑确保存在有效日期，此处无需处理
+        max_date_funds = None
+
     for key in funds_name_dict:
         funds_id = funds.objects.get(funds_name=funds_name_dict[key]).id
         funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
@@ -3161,7 +3181,7 @@ def test(request):
         symbol='00700',
         period="daily",
         start_date='20250505',
-        end_date="20250505",
+        end_date="20250522",
         adjust=""
     )
     print(df)
