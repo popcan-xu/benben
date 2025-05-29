@@ -128,15 +128,26 @@
         z-index: 2; /* 提升层级 */
         box-shadow: 0 2px 8px rgba(0,0,0,0.15); /* 添加阴影 */
     }
+
 </style>
 
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">{{ funds_name }}</h1>
-        <div class="col-auto">
-            <div class="h6 mb-0 text-gray-500">
-                <a href="/benben/investment_accounting/" style="color: inherit; text-decoration: none;">返回 ></a>
+        <div class="col-xl-4" style="text-align:left">
+            <h1 class="h3 mb-0 font-weight-bold text-gray-700">{{ funds_name }}</h1>
+        </div>
+        <div class="col-xl-4" style="text-align:center">
+            <form action="" method="post" class="form-horizontal" role="form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-sync-alt"></i>&nbsp&nbsp{{ baseline.modified_time }}</button>
+            </form>
+        </div>
+        <div class="col-xl-4" style="text-align:right">
+            <div class="col-auto">
+                <div class="h6 mb-0 text-gray-500">
+                    <a href="/benben/investment_accounting/" style="color: inherit; text-decoration: none;">返回 ></a>
+                </div>
             </div>
         </div>
     </div>

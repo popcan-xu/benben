@@ -9,15 +9,17 @@
 
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">总览</h1>
-        <div style="text-align:center">
-            港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}&nbsp;
+        <div class="col-xl-4" style="text-align:left">
+            <h1 class="h3 mb-0 font-weight-bold text-gray-700">总览</h1>
         </div>
-        <div style="text-align:center">
+        <div class="col-xl-4" style="text-align:center">
             <form action="" method="post" class="form-horizontal" role="form">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-sync-alt"></i>&nbsp&nbsp{{ overview.modified_time }}</button>
             </form>
+        </div>
+        <div class="col-xl-4" style="text-align:right">
+             <span>港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}</span>
         </div>
     </div>
 
@@ -629,8 +631,8 @@
                             borderColor: 'transparent',
                             borderWidth: 0
                         },
-                        color: ['#1890ff']
-
+                        //color: ['#1890ff']
+                        color: ['#4e73df']
                     },
                     {
                         name:  '本金',
@@ -651,7 +653,9 @@
                             borderColor: 'transparent',
                             borderWidth: 0
                         },
-                        color: ['#ee9945']
+                        //color: ['#ee9945']
+                        //color: ['#4e73df', '#858796', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
+                        color: ['#36b9cc']
                     }
                 ]
             };

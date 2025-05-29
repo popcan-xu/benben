@@ -231,16 +231,16 @@ def excel2funds(file_name, sheet_name, start_row, end_row):
                 funds_annualized_profit_rate = sht.cell(i, 15).value
             elif funds_id == 5: # 美元账户
                 date = xldate_as_datetime(sht.cell(i, 0).value, 0)
-                funds_value = sht.cell(i, 2).value
-                funds_in_out = sht.cell(i, 3).value
-                funds_principal = sht.cell(i, 4).value
-                funds_PHR = sht.cell(i, 5).value
-                funds_net_value = sht.cell(i, 6).value
-                funds_current_profit = sht.cell(i, 7).value
-                funds_current_profit_rate = sht.cell(i, 8).value
-                funds_profit = sht.cell(i, 9).value
-                funds_profit_rate = sht.cell(i, 10).value
-                funds_annualized_profit_rate = sht.cell(i, 11).value
+                funds_value = sht.cell(i, 3).value
+                funds_in_out = sht.cell(i, 4).value
+                funds_principal = sht.cell(i, 5).value
+                funds_PHR = sht.cell(i, 6).value
+                funds_net_value = sht.cell(i, 7).value
+                funds_current_profit = sht.cell(i, 8).value
+                funds_current_profit_rate = sht.cell(i, 9).value
+                funds_profit = sht.cell(i, 10).value
+                funds_profit_rate = sht.cell(i, 11).value
+                funds_annualized_profit_rate = sht.cell(i, 12).value
 
             try:
                 # 更新或新增一条记录

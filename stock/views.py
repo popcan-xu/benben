@@ -276,25 +276,6 @@ def investment_accounting(request):
     funds_list = funds.objects.all()
     rate_HKD, rate_USD = get_rate()
 
-    path = pathlib.Path("./templates/dashboard/baseline.json")
-    if path.is_file() == True and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
-        pass
-    elif path.is_file() == False : # json文件不存在，则创建文件
-        # 获取指数历史数据
-        get_his_index()
-    else: #点击刷新按钮
-        # 获得汇率数据
-        rate_HKD, rate_USD = get_rate()
-        # 更新当年指数数据
-        get_current_index()
-    #rate = FileOperate(filepath='./templates/dashboard/', filename='rate.json').operation_file()
-    #with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
-    #    rate = json.load(f)
-    # baseline = FileOperate(filepath='./templates/dashboard/', filename='baseline.json').operation_file()
-    with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
-        baseline = json.load(f)
-
-
     return render(request, templates_path + 'investment_accounting.html', locals())
 
 
@@ -341,11 +322,18 @@ def view_funds_details(request, funds_id):
 
     name_list.append(funds_name)
     name_list.append(funds_baseline_name)
+
     path = pathlib.Path("./templates/dashboard/baseline.json")
-    if path.is_file(): # 若json文件存，从json文件中读取页面需要的数据以提高性能
-        # 读取baseline.json
-        with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
-            baseline = json.load(f)
+    if path.is_file() == True and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取需要的数据以提高性能
+        pass
+    elif path.is_file() == False : # json文件不存在，则创建文件
+        # 获取指数历史数据
+        get_his_index()
+    else: #点击刷新按钮
+        # 更新当年指数数据
+        get_current_index()
+    with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
+        baseline = json.load(f)
 
     min_date_baseline_value = get_baseline_closing_price(baseline[funds_baseline_name], int(min_date.year))
 
@@ -368,7 +356,8 @@ def view_funds_details(request, funds_id):
         baseline_profit_rate = baseline_net_value / pre_baseline_net_value -1
         pre_baseline_net_value = baseline_net_value
 
-        earliest_date = get_min_date(funds_id)
+        earliest_date = funds.objects.get(id=funds_id).funds_create_date # 计算年化收益率的起始日期为基金的创立日期
+        # earliest_date = get_min_date(funds_id)
         years = float((year_end_date - earliest_date).days / 365)
         if years == 0:
             funds_annualized_profit_rate = 0
@@ -503,7 +492,6 @@ def market_value(request):
 
     # 仓位计算
     position_percent_dict = {}
-    funds_name_dict = {1: '人民币账户', 2: '港元账户', 3: '美元账户'}
     funds_value_dict = {}
     market_value_dict = {}
 
@@ -520,11 +508,12 @@ def market_value(request):
         # 根据问题描述，其他逻辑确保存在有效日期，此处无需处理
         max_date_funds = None
 
-    for key in funds_name_dict:
-        funds_id = funds.objects.get(funds_name=funds_name_dict[key]).id
+    for key, value in currency_dict.items():
+        funds_id = funds.objects.get(funds_currency=key).id
         funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
-        market_value_dict[key] = historical_market_value.objects.get(currency=currency_dict[key], date=max_date_funds).value
+        market_value_dict[key] = historical_market_value.objects.get(currency=value, date=max_date_funds).value
         position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
+
     # 人民币基金的持仓比例通过511880的市值占比计算
     current_price, increase, color = get_quote_snowball('511880') #银华日利
     positions = position.objects.filter(stock=93) #银华日利
@@ -1934,7 +1923,8 @@ def add_funds_details(request, funds_id):
             funds_value = float(funds_value)
             funds_in_out = float(funds_in_out)
             latest_date = get_max_date(funds_id)
-            earliest_date = get_min_date(funds_id)
+            earliest_date = funds.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
+            # earliest_date = get_min_date(funds_id)
             years = float((latest_date - earliest_date).days / 365)
             #print(latest_date,earliest_date,years)
             latest_funds_value = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_value)
@@ -3124,17 +3114,17 @@ def test(request):
     current_date = pd.to_datetime(datetime.date.today())
     current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
 
-    df = ak.fx_spot_quote()
-    rate_HKD = float(df[df['货币对'] == 'HKD/CNY']['买报价'].iloc[0])
-    rate_USD = float(df[df['货币对'] == 'USD/CNY']['买报价'].iloc[0])
-    updating_time = datetime.datetime.now()
-
-    df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
-    df['日期'] = pd.to_datetime(df['日期'])
-    hkd = float(df[df['日期'] == current_date_str]['中行汇买价'].iloc[0] / 100)
-    df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
-    df['日期'] = pd.to_datetime(df['日期'])
-    usd = float(df[df['日期'] == current_date_str]['中行汇买价'].iloc[0] / 100)
+    # df = ak.fx_spot_quote()
+    # rate_HKD = float(df[df['货币对'] == 'HKD/CNY']['买报价'].iloc[0])
+    # rate_USD = float(df[df['货币对'] == 'USD/CNY']['买报价'].iloc[0])
+    # updating_time = datetime.datetime.now()
+    #
+    # df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
+    # df['日期'] = pd.to_datetime(df['日期'])
+    # hkd = float(df[df['日期'] == current_date_str]['中行汇买价'].iloc[0] / 100)
+    # df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
+    # df['日期'] = pd.to_datetime(df['日期'])
+    # usd = float(df[df['日期'] == current_date_str]['中行汇买价'].iloc[0] / 100)
 
     # 美股实时行情接口
     # stock_us_spot_em_df = ak.stock_us_spot_em()
@@ -3167,24 +3157,88 @@ def test(request):
     # print(index_us_stock_sina_df)
 
     # 美股历史行情接口
-    stock_us_daily_df = ak.stock_us_daily(symbol="DQ", adjust="")
-    print(stock_us_daily_df)
+    # stock_us_daily_df = ak.stock_us_daily(symbol="DQ", adjust="")
+    # print(stock_us_daily_df)
 
-    df = ak.stock_zh_a_daily(
-        symbol='sh601318',
-        start_date='20250505',
-        end_date="20250505",
-        adjust=""
-    )
+    # df = ak.stock_zh_a_daily(
+    #     symbol='sh601318',
+    #     start_date='20250505',
+    #     end_date="20250505",
+    #     adjust=""
+    # )
+    # print(df)
+    # df = ak.stock_hk_hist(
+    #     symbol='00700',
+    #     period="daily",
+    #     start_date='20250505',
+    #     end_date="20250522",
+    #     adjust=""
+    # )
+    # print(df)
+
+    # A股指数历史行情数据-东财 截止当前日期
+    # df = ak.stock_zh_index_daily_em(symbol="sh000300").sort_values(by='date', ascending=False)
+    # print(df)
+    # A股指数历史行情数据-新浪 截至前一天
+    # stock_zh_index_daily_df = ak.stock_zh_index_daily(symbol="sh000300")
+    # print(stock_zh_index_daily_df)
+    # A股指数历史行情数据-腾讯 截止前一天 速度慢
+    # stock_zh_index_daily_tx_df = ak.stock_zh_index_daily_tx(symbol="sh000300")
+    # print(stock_zh_index_daily_tx_df)
+    # 港股指数历史行情数据-东财 只返回前100条，无HSI
+    # df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date', ascending=False)
+    # print(df)
+    # 港股指数历史行情数据-新浪
+    # stock_hk_index_daily_sina_df = ak.stock_hk_index_daily_sina(symbol="HSI")
+    # print(stock_hk_index_daily_sina_df)
+    # 美股指数行情数据-新浪
+    # df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date', ascending=False)
+    # print(df)
+    # A股指数实时行情数据-东财
+    # df = ak.stock_zh_index_daily_em(symbol="sh000300").sort_values(by='date',ascending=False).head(1)
+    # current_year_HS300 = datetime.datetime.strptime(df['date'].iloc[0], "%Y-%m-%d").year
+    # current_HS300 = float(df['close'].iloc[0])
+    # print(current_HS300)
+    # A股指数实时行情数据-新浪
+    # df = ak.stock_zh_index_spot_sina()
+    # current_HS300 = float(df[df['代码'] == 'sh000300']['最新价'].iloc[0])
+    # print(current_HS300)
+    # 港股指数实时行情数据-东财 只返回前100条，无HSI
+    # df = ak.stock_hk_index_spot_em()
+    # current_HSI = float(df[df['代码'] == 'HSI']['最新价'].iloc[0])
+    # print(current_HSI)
+    # 港股指数实时行情数据-新浪
+    # df = ak.stock_hk_index_spot_sina()
+    # current_HSI = float(df[df['代码'] == 'HSI']['最新价'].iloc[0])
+    # print(current_HSI)
+
+    # # 指数接口
+    # # A股指数实时行情数据-新浪
+    # df = ak.stock_zh_index_spot_sina()
+    # current_HS300 = float(df[df['代码'] == 'sh000300']['最新价'].iloc[0])
+    # print(current_HS300)
+    # print(df)
+    # # 港股指数实时行情数据-新浪
+    # df = ak.stock_hk_index_spot_sina()
+    # current_HSI = float(df[df['代码'] == 'HSI']['最新价'].iloc[0])
+    # print(current_HSI)
+    # # A股指数历史行情数据-新浪 截至前一天
+    # stock_zh_index_daily_df = ak.stock_zh_index_daily(symbol="sh000300")
+    # print(stock_zh_index_daily_df)
+    # # 港股指数历史行情数据-新浪
+    # stock_hk_index_daily_sina_df = ak.stock_hk_index_daily_sina(symbol="HSI")
+    # print(stock_hk_index_daily_sina_df)
+    # # 美股指数行情数据-新浪
+    # df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date', ascending=False)
+    # print(df)
+
+    # df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date',ascending=False)
+    df = ak.stock_hk_index_daily_sina(symbol="HSI").sort_values(by='date',ascending=False)
+    current_year = df.head(1)['date'].iloc[0].year
+    current_latest = float(df.head(1)['close'].iloc[0])
     print(df)
-    df = ak.stock_hk_hist(
-        symbol='00700',
-        period="daily",
-        start_date='20250505',
-        end_date="20250522",
-        adjust=""
-    )
-    print(df)
+    print(current_year)
+    print(current_latest)
 
 
     return render(request, templates_path + 'test.html', locals())

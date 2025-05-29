@@ -966,8 +966,10 @@ def get_his_index():
     # 沪深300指数
     item = []
     data = []
-    df = ak.stock_zh_index_daily_em(symbol="sh000300").sort_values(by='date',ascending=False)
-    current_year = datetime.datetime.strptime(df.head(1)['date'].iloc[0], "%Y-%m-%d").year
+    # df = ak.stock_zh_index_daily_em(symbol="sh000300").sort_values(by='date',ascending=False)
+    # current_year = datetime.datetime.strptime(df.head(1)['date'].iloc[0], "%Y-%m-%d").year
+    df = ak.stock_zh_index_daily(symbol="sh000300").sort_values(by='date',ascending=False)
+    current_year = df.head(1)['date'].iloc[0].year
     current_latest = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
     item.append(current_latest)
@@ -975,7 +977,8 @@ def get_his_index():
     item = []
     for index in df.index:
         row = df.loc[index]
-        year = datetime.datetime.strptime(row['date'], "%Y-%m-%d").year
+        # year = datetime.datetime.strptime(row['date'], "%Y-%m-%d").year
+        year = row['date'].year
         if year != current_year:
             current_year = year
             item.append(year)
@@ -989,20 +992,24 @@ def get_his_index():
     # 恒生指数
     item = []
     data = []
-    df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date',ascending=False)
-    current_year = datetime.datetime.strptime(df.head(1)['date'].iloc[0], "%Y-%m-%d").year
-    current_latest = float(df.head(1)['latest'].iloc[0])
+    # df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date',ascending=False)
+    # current_year = datetime.datetime.strptime(df.head(1)['date'].iloc[0], "%Y-%m-%d").year
+    # current_latest = float(df.head(1)['latest'].iloc[0])
+    df = ak.stock_hk_index_daily_sina(symbol="HSI").sort_values(by='date',ascending=False)
+    current_year = df.head(1)['date'].iloc[0].year
+    current_latest = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
     item.append(current_latest)
     data.append(item)
     item = []
     for index in df.index:
         row = df.loc[index]
-        year = datetime.datetime.strptime(row['date'], "%Y-%m-%d").year
+        # year = datetime.datetime.strptime(row['date'], "%Y-%m-%d").year
+        year = row['date'].year
         if year != current_year:
             current_year = year
             item.append(year)
-            item.append(float(row['latest']))
+            item.append(float(row['close']))
             data.append(item)
             item = []
     df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
@@ -1044,10 +1051,13 @@ def get_his_index():
 # 从指数当年数据更新json文件
 def get_current_index():
     # 沪深300指数
-    df = ak.stock_zh_index_daily_em(symbol="sh000300").sort_values(by='date',ascending=False).head(1)
-    current_year_HS300 = datetime.datetime.strptime(df['date'].iloc[0], "%Y-%m-%d").year
-    current_HS300 = float(df['close'].iloc[0])
-
+    # df = ak.stock_zh_index_daily_em(symbol="sh000300").sort_values(by='date',ascending=False).head(1)
+    # current_year_HS300 = datetime.datetime.strptime(df['date'].iloc[0], "%Y-%m-%d").year
+    # current_HS300 = float(df['close'].iloc[0])
+    df = ak.stock_zh_index_spot_sina()
+    current_HS300 = float(df[df['代码'] == 'sh000300']['最新价'].iloc[0])
+    current_year_HS300 = datetime.datetime.now().year
+    # print(current_HS300)
 
     # 恒生指数
     # df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date',ascending=False).head(1)
@@ -1065,8 +1075,10 @@ def get_current_index():
 
     # 标普500指数
     df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date',ascending=False).head(1)
-    current_year_INX = df['date'].iloc[0].year
+    # current_year_INX = df['date'].iloc[0].year
     current_INX = float(df['close'].iloc[0])
+    current_year_INX = datetime.datetime.now().year
+    print(current_year_INX)
 
     # 1. 读取JSON文件
     #baseline = FileOperate(filepath='./templates/dashboard/', filename='baseline.json').operation_file()
