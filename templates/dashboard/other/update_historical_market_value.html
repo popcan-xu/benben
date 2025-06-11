@@ -45,7 +45,6 @@
             border-left: 4px solid #007bff;
         }
 
-        /*
         .completed-step {
             opacity: 0.7;
         }
@@ -53,7 +52,6 @@
         .completed-step .step-name {
             text-decoration: line-through;
         }
-        */
 
         .step-item {
             transition: background-color 0.3s ease; /* 添加过渡动画 */
@@ -65,16 +63,17 @@
         }
 
         .status-badge {
-            min-width: 80px;
+            min-width: 60px;
+            height: 22px;
             font-weight: normal;
-            font-size: 0.9em;
+            font-size: 0.7em;
+            display: inline-flex; /* 使用行内弹性布局 */
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            {# background-color: #e0e0e0; /* 为了演示效果，添加背景色 */ #}
+            border-radius: 11px; /* 圆角，使看起来像徽章 */
+            padding: 0 10px; /* 左右内边距，避免文字紧贴边缘 */
         }
-
-        .status-badge {
-            min-width: 80px;
-            font-weight: normal;
-        }
-
 
         </style>
     </head>
@@ -82,7 +81,7 @@
         <div class="col-xl-12 col-md-6 mb-4">
             <div class="card chart-card">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">更新历史持仓数据</h5>
+                    <h6 class="m-0 font-weight-bold text-primary">更新历史持仓数据</h6>
                 </div>
                 <div class="card-body p-3">
                     <!-- 进度条容器 -->
@@ -98,7 +97,7 @@
                     <small class="text-muted mt-1">总耗时：<span id="duration-display">0.00</span></small>
                     <!-- 步骤状态列表 -->
                     <div class="mt-4">
-                        <h5>执行步骤详情：</h5>
+                        <h6>执行步骤详情：</h6>
                         <ul id="step-list" class="list-group">
                             <!-- 步骤将通过JavaScript动态生成 -->
                         </ul>
@@ -117,7 +116,7 @@
             "补全历史收盘价",
             "获取今日价格",
             "获取历史汇率",
-            "填充缺失的历史汇率",
+            "补全历史汇率",
             "计算市场价值",
             "计算并填充历史数据"
         ];
@@ -128,9 +127,13 @@
             steps.forEach((stepName, index) => {
                 $stepList.append(`
                     <li class="list-group-item step-item" data-step="${index + 1}">
-                        <span class="step-name">${index + 1}、${stepName}</span> <!-- 此处直接写入 -->
-                        <span class="step-duration text-muted ml-2"></span>
-                        <span class="status-badge badge float-right"></span>
+                        <span class="step-progress text-muted">
+                            ${index + 1}.
+                        </span>
+                        {#<span class="step-name">${index + 1}、${stepName}</span> <!-- 此处直接写入 -->#}
+                        <span class="step-name">${stepName}</span> <!-- 此处直接写入 -->
+                        <small class="step-duration text-muted ml-2"></small>
+                        <small class="status-badge badge float-right"></small>
                         <small class="step-progress text-muted float-right mr-2">
                             (${index + 1}/${steps.length})
                         </small>
@@ -149,7 +152,7 @@
                     // 更新进度条
                     const progress = (data.current_step / data.total_steps) * 100;
                     $('#progress-bar').css('width', progress + '%');
-                    $('#progress-text').text(progress.toFixed(1) + '%');
+                    $('#progress-text').text(progress.toFixed(2) + '%');
 
                     // 新增：更新耗时显示
                     // $('#duration-display').text(data.duration.toFixed(2));
@@ -208,8 +211,8 @@
                     $badge.addClass('badge-success').text('✓ 完成');
                 } else if (stepNumber === data.current_step) {
                     const isRunning = data.status === 'running';
-                    $badge.addClass(isRunning ? 'badge-primary' : 'badge-success')
-                          .text(isRunning ? '🔄 执行中' : '✓ 完成');
+                    {#$badge.addClass(isRunning ? 'badge-primary' : 'badge-success').text(isRunning ? '🔄 执行中' : '✓ 完成');#}
+                    $badge.addClass(isRunning ? 'badge-primary' : 'badge-success').text(isRunning ? '执行中' : '✓ 完成');
                 }
             });
         }

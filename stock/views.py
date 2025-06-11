@@ -27,6 +27,7 @@ from django.db import transaction
 from django.db.models import Sum, Q, Window, F, Min, Max
 from django.db.models.functions import Lag
 from collections import defaultdict
+from django.db.models import Sum, Case, When, F, Max, Value, DecimalField, IntegerField
 
 import threading
 
@@ -452,6 +453,7 @@ def view_funds_details(request, funds_id):
             "value": value
         })
 
+    # 获得近期资产列表
     funds_details_list_TOP = funds_details.objects.filter(funds=funds_id).order_by("-date")[:12]
 
     updating_time = datetime.datetime.now()
@@ -592,9 +594,67 @@ def view_market_value_details(request, currency_id):
         amount = float(rs.change_amount)
         assetChanges[date] = amount
 
+    # 获得近期市值列表
     market_value_list_TOP = historical_market_value.objects.filter(currency=currency_dict[currency_id]).order_by("-date")[:12]
+    # 获得近期交易列表
+    # trade_list_TOP = trade.objects.filter(settlement_currency=currency_id).order_by('-trade_date', '-modified_time')[:10]
+    trade_list_TOP = trade.objects.filter(
+        settlement_currency=currency_id
+    ).select_related('stock').values(
+        'trade_date',
+        'stock_id',
+        'stock__stock_code',
+        'stock__stock_name'
+    ).annotate(
+        # 计算净交易金额（买入为负，卖出为正）
+        net_amount=Sum(
+            Case(
+                When(trade_type=trade.BUY, then=-F('trade_quantity') * F('trade_price')),
+                When(trade_type=trade.SELL, then=F('trade_quantity') * F('trade_price')),
+                output_field=DecimalField(max_digits=12, decimal_places=3)
+            )
+        ),
+        # 计算净交易量（买入增加，卖出减少）
+        net_quantity=Sum(
+            Case(
+                When(trade_type=trade.BUY, then=F('trade_quantity')),
+                When(trade_type=trade.SELL, then=-F('trade_quantity')),
+                output_field=IntegerField()
+            )
+        ),
+        # 获取组内最新修改时间
+        latest_modified=Max('modified_time')
+    ).order_by('-trade_date', '-latest_modified')[:10]
+
+    # 获得近期分红列表
+    # dividend_list_TOP = dividend.objects.filter(dividend_currency=currency_id).order_by('-dividend_date', '-modified_time')[:10]
+    dividend_list_TOP = dividend.objects.filter(
+        dividend_currency=currency_id
+    ).select_related('stock').values(
+        'dividend_date',
+        'stock_id',  # 使用stock_id分组（或直接使用'stock'获取股票对象ID）
+        'stock__stock_code',  # 股票代码
+        'stock__stock_name'  # 股票名称
+    ).annotate(
+        total_dividend=Sum('dividend_amount'),  # 汇总分红金额
+        latest_modified=Max('modified_time')  # 取组内最新修改时间
+    ).order_by(
+        '-dividend_date',
+        '-latest_modified'  # 按最新修改时间倒序
+    )[:10]
+    # print(dividend_list_TOP)
+
     updating_time = current_date
     return render(request, templates_path + 'view_market_value_details.html', locals())
+
+
+# 交易详情
+def view_trade_details(request, currency_id):
+    return render(request, templates_path + 'view_trade_details.html', locals())
+
+# 分红详情
+def view_dividend_details(request, currency_id):
+    return render(request, templates_path + 'view_dividend_details.html', locals())
 
 
 # 交易录入
@@ -989,7 +1049,7 @@ def query_dividend_value(request):
         # 由于stock_code为select列表而非文本框text，如果不选择则返回None而非空，所以不能使用stock_code.strip() == ''
         if stock_code is None:
             error_info = '股票不能为空！'
-            return render(request, templates_path + 'stats/query_dividend_value.html', locals())
+            return render(request, templates_path + 'query/query_dividend_value.html', locals())
         stock_object = stock.objects.get(stock_code=stock_code)
         stock_id = stock_object.id
         stock_name = stock_object.stock_name
@@ -2158,7 +2218,7 @@ task_status = {
 def update_historical_market_value(request):
     # 获取初始日期范围
     result = historical_position.objects.aggregate(max_date=Max('date'))
-    start_date = result['max_date'] - datetime.timedelta(days=2)
+    start_date = result['max_date'] - datetime.timedelta(days=7)
     end_date = datetime.date.today()
 
     steps = [
@@ -2167,7 +2227,7 @@ def update_historical_market_value(request):
         ("补全历史收盘价", fill_missing_closing_price, (start_date, end_date - datetime.timedelta(days=1))),
         ("获取今日价格", get_today_price, ()),
         ("获取历史汇率", get_historical_rate, (start_date, end_date)),
-        ("填充缺失的历史汇率", fill_missing_historical_rates, ()),
+        ("补全历史汇率", fill_missing_historical_rates, ()),
         ("计算市场价值", calculate_market_value, (start_date, end_date)),
         ("计算并填充历史数据", calculate_and_fill_historical_data, (start_date, end_date))
     ]
@@ -2199,7 +2259,7 @@ def update_historical_market_value(request):
             ("补全历史收盘价", fill_missing_closing_price, (start_date, end_date - datetime.timedelta(days=1))),
             ("获取今日价格", get_today_price, ()),
             ("获取历史汇率", get_historical_rate, (start_date, end_date)),
-            ("填充缺失的历史汇率", fill_missing_historical_rates, ()),
+            ("补全历史汇率", fill_missing_historical_rates, ()),
             ("计算市场价值", calculate_market_value, (start_date, end_date)),
             ("计算并填充历史数据", calculate_and_fill_historical_data, (start_date, end_date))
         ]
@@ -2650,9 +2710,9 @@ def get_historical_rate(start_date, end_date):
     # 示例调用（带异常处理）
     try:
         update_historical_rate(df_hkd, "港元", start_date, end_date)
-        print("历史汇率（港元）写入成功！" + str(df_hkd))
+        print("历史汇率（港元）写入成功！")
         update_historical_rate(df_usd, "美元", start_date, end_date)
-        print("历史汇率（美元）写入成功！" + str(df_usd))
+        print("历史汇率（美元）写入成功！")
     except Exception as e:
         print(f"历史汇率写入失败: {str(e)}")
 
@@ -3239,6 +3299,16 @@ def test(request):
     print(df)
     print(current_year)
     print(current_latest)
+
+    stock_hk_fhpx_detail_ths_df = ak.stock_hk_fhpx_detail_ths(symbol="0700")
+    print(stock_hk_fhpx_detail_ths_df)
+
+    # 沪深300全收益指数，截至前一天
+    df = ak.stock_zh_index_hist_csindex(symbol="H00300", start_date="20120101", end_date="20250610")
+    print(df)
+    df['日期'] = pd.to_datetime(df['日期'])
+    current_H000300 = float(df[df['日期'] == '2012-12-31']['收盘'].iloc[0])
+    print(current_H000300)
 
 
     return render(request, templates_path + 'test.html', locals())
