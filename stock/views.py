@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.shortcuts import render, redirect, HttpResponse
 from django.db import models, connection
-from .models import broker, market, account, industry, stock, position, trade, dividend, subscription, dividend_history, \
+from .models import currency, broker, market, account, industry, stock, position, trade, dividend, subscription, dividend_history, \
     funds, funds_details, historical_position, historical_rate, historical_market_value
 from utils.excel2db import *
 from utils.statistics import *
@@ -1117,6 +1117,64 @@ def query_dividend_history(request):
         stock_dividend_dict = get_stock_dividend_history(stock_code)
         stock_name = stock.objects.get(stock_code=stock_code).stock_name
     return render(request, templates_path + 'query/query_dividend_history.html', locals())
+
+
+# 货币表的增删改查
+def add_currency(request):
+    if request.method == 'POST':
+        code = request.POST.get('code')
+        name = request.POST.get('name')
+        script = request.POST.get('script')
+        if code.strip() == '':
+            error_info = '货币代码不能为空！'
+            return render(request, templates_path + 'backstage/add_currency.html', locals())
+        try:
+            p = currency.objects.create(
+                code=code,
+                name=name,
+                script=script
+            )
+            return redirect('/benben/list_currency/')
+        except Exception as e:
+            error_info = '输入货币代码重复或信息有错误！'
+            return render(request, templates_path + 'backstage/add_currency.html', locals())
+        finally:
+            pass
+    return render(request, templates_path + 'backstage/add_currency.html', locals())
+
+
+def del_currency(request, currency_id):
+    currency_object = currency.objects.get(id=currency_id)
+    currency_object.delete()
+    return redirect('/benben/list_currency/')
+
+
+def edit_currency(request, currency_id):
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        code = request.POST.get('code')
+        name = request.POST.get('name')
+        script = request.POST.get('script')
+        currency_object = currency.objects.get(id=id)
+        try:
+            currency_object.code = code
+            currency_object.name = name
+            currency_object.script = script
+            currency_object.save()
+        except Exception as e:
+            error_info = '输入货币代码重复或信息有错误！'
+            return render(request, templates_path + 'backstage/edit_currency.html', locals())
+        finally:
+            pass
+        return redirect('/benben/list_currency/')
+    else:
+        currency_object = currency.objects.get(id=currency_id)
+        return render(request, templates_path + 'backstage/edit_currency.html', locals())
+
+
+def list_currency(request):
+    currency_list = currency.objects.all()
+    return render(request, templates_path + 'backstage/list_currency.html', locals())
 
 
 # 券商表的增删改查
@@ -3293,28 +3351,88 @@ def test(request):
     # print(df)
 
     # df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date',ascending=False)
-    df = ak.stock_hk_index_daily_sina(symbol="HSI").sort_values(by='date',ascending=False)
-    current_year = df.head(1)['date'].iloc[0].year
-    current_latest = float(df.head(1)['close'].iloc[0])
-    print(df)
-    print(current_year)
-    print(current_latest)
-
-    stock_hk_fhpx_detail_ths_df = ak.stock_hk_fhpx_detail_ths(symbol="0700")
-    print(stock_hk_fhpx_detail_ths_df)
+    # df = ak.stock_hk_index_daily_sina(symbol="HSI").sort_values(by='date',ascending=False)
+    # current_year = df.head(1)['date'].iloc[0].year
+    # current_latest = float(df.head(1)['close'].iloc[0])
+    # print(df)
+    # print(current_year)
+    # print(current_latest)
+    #
+    # stock_hk_fhpx_detail_ths_df = ak.stock_hk_fhpx_detail_ths(symbol="0700")
+    # print(stock_hk_fhpx_detail_ths_df)
 
     # 沪深300全收益指数，截至前一天
-    df = ak.stock_zh_index_hist_csindex(symbol="H00300", start_date="20120101", end_date="20250610")
-    print(df)
-    df['日期'] = pd.to_datetime(df['日期'])
-    current_H000300 = float(df[df['日期'] == '2012-12-31']['收盘'].iloc[0])
-    print(current_H000300)
+    # df = ak.stock_zh_index_hist_csindex(symbol="H00300", start_date="20120101", end_date="20250610")
+    # print(df)
+    # df['日期'] = pd.to_datetime(df['日期'])
+    # current_H000300 = float(df[df['日期'] == '2012-12-31']['收盘'].iloc[0])
+    # print(current_H000300)
 
+    migrate_market_currencies()
 
     return render(request, templates_path + 'test.html', locals())
 
 
+def migrate_market_currencies():
+    """
+    迁移market表中货币字段的数据
+    根据transaction_currency值设置currency外键字段
+    """
+    from .models import market, currency
+    # 创建货币映射字典
+    currency_mapping = {
+        market.CNY: 'CNY',
+        market.HKD: 'HKD',
+        market.USD: 'USD',
+    }
 
+    # 获取所有未迁移的市场记录
+    markets_to_migrate = market.objects.filter(currency__isnull=True)
+    total_count = markets_to_migrate.count()
+    migrated_count = 0
+
+    if total_count == 0:
+        print("没有需要迁移的市场记录")
+        return
+
+    print(f"发现 {total_count} 条需要迁移货币字段的市场记录")
+
+    # 处理每条市场记录
+    for market_record in markets_to_migrate.iterator():
+        # 获取原字段值对应的货币代码
+        currency_code = currency_mapping.get(market_record.transaction_currency)
+
+        if not currency_code:
+            print(f"警告: 市场 {market_record.market_name} 有未知的货币ID: {market_record.transaction_currency}")
+            continue
+
+        try:
+            # 获取对应的货币对象
+            currency_obj = currency.objects.get(code=currency_code)
+
+            # 更新currency字段
+            market_record.currency = currency_obj
+            market_record.save(update_fields=['currency'])
+
+            migrated_count += 1
+
+        except currency.DoesNotExist:
+            print(f"错误: 找不到代码为 {currency_code} 的货币记录")
+            continue
+
+    # 统计结果
+    remaining = market.objects.filter(currency__isnull=True).count()
+
+    print(f"\n迁移完成!")
+    print(f"成功迁移记录: {migrated_count}")
+    print(f"迁移失败记录: {total_count - migrated_count}")
+    print(f"仍需处理的记录: {remaining}")
+
+    if remaining > 0:
+        print("\n处理失败的可能原因:")
+        print("1. 市场记录中有未知的transaction_currency值")
+        print("2. 缺少对应的currency记录")
+        print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
 
 # 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值
 @register.filter

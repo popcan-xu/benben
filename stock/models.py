@@ -1,6 +1,12 @@
 from django.db import models
 import datetime
 
+# 货币数据模型
+class currency(models.Model):
+    code = models.CharField(max_length=32, verbose_name='代码', unique=True, db_index=True)
+    name = models.CharField(max_length=32, verbose_name='名称', db_index=True)
+    script = models.CharField(max_length=32, verbose_name='备注', null=True)
+
 
 # 券商数据模型
 class broker(models.Model):
@@ -22,7 +28,7 @@ class market(models.Model):
     market_name = models.CharField(max_length=32, verbose_name='市场名称', unique=True, db_index=True)
     market_abbreviation = models.CharField(max_length=32, verbose_name='市场简称')
     transaction_currency = models.PositiveIntegerField(default=CNY, choices=TRANSACTION_CURRENCY_ITEMS, verbose_name='交易货币')
-
+    currency = models.ForeignKey(to="currency", on_delete=models.CASCADE, verbose_name='货币', db_index=True, null=True, blank=True)
 
 # 证券账户数据模型
 class account(models.Model):

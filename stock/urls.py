@@ -41,6 +41,11 @@ urlpatterns = [
     path('query_dividend_date/', query_dividend_date),
     path('query_dividend_history/', query_dividend_history),
 
+    path('add_currency/', add_currency),
+    path('del_currency/<int:currency_id>/', del_currency),
+    path('edit_currency/<int:currency_id>/', edit_currency),
+    path('list_currency/', list_currency),
+
     path('add_broker/', add_broker),
     path('del_broker/<int:broker_id>/', del_broker),
     path('edit_broker/<int:broker_id>/', edit_broker),
