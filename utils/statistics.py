@@ -16,16 +16,16 @@ def get_position_content(currency):
     account_array = []
     abbreviation_array = []
     stock_array = []
-    account_dict = position.objects.filter(position_currency=currency).values("account").annotate(
-        count=Count("account")).values('account_id', 'account__account_abbreviation')
+    # account_dict = position.objects.filter(position_currency=currency).values("account").annotate(count=Count("account")).values('account_id', 'account__account_abbreviation')
+    account_dict = position.objects.filter(currency_id=currency).values("account").annotate(count=Count("account")).values('account_id', 'account__account_abbreviation')
     for dict in account_dict:
         account_id = dict['account_id']
         account_abbreviation = dict['account__account_abbreviation']
         account_array.append(account_id)
         abbreviation_array.append(account_abbreviation)
     account_num = len(account_array)
-    stock_dict = position.objects.filter(position_currency=currency).values("stock").annotate(
-        count=Count("stock")).values('stock_id').order_by('stock__stock_code')
+    # stock_dict = position.objects.filter(position_currency=currency).values("stock").annotate(count=Count("stock")).values('stock_id').order_by('stock__stock_code')
+    stock_dict = position.objects.filter(currency_id=currency).values("stock").annotate(count=Count("stock")).values('stock_id').order_by('stock__stock_code')
     for dict in stock_dict:
         stock_id = dict['stock_id']
         stock_array.append(stock_id)
@@ -41,7 +41,8 @@ def get_position_content(currency):
         # row.append(stock_name)
         for j in account_array:
             try:
-                quantity = position.objects.filter(position_currency=currency).get(stock=i, account=j).position_quantity
+                # quantity = position.objects.filter(position_currency=currency).get(stock=i, account=j).position_quantity
+                quantity = position.objects.filter(currency_id=currency).get(stock=i, account=j).position_quantity
             except:
                 quantity = 0
             row.append(quantity)
@@ -59,7 +60,8 @@ def get_position_content(currency):
     return position_content, abbreviation_array, account_num, stock_num
 
 
-def get_value_stock_content(position_currency, price_increase_array, HKD_rate, USD_rate):
+# def get_value_stock_content(position_currency, price_increase_array, HKD_rate, USD_rate):
+def get_value_stock_content(currency_value, price_increase_array, HKD_rate, USD_rate):
     stock_table_array = []
     stock_chart_array = []
     price_array = []
@@ -70,7 +72,8 @@ def get_value_stock_content(position_currency, price_increase_array, HKD_rate, U
     percent_array = []
     amount_sum = 0.0
 
-    if position_currency == 0:
+    # if position_currency == 0:
+    if currency_value == 0:
         # 对position表分组查询，按stock字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
         stock_dict = position.objects.values("stock").annotate(
             quantity=Sum("position_quantity")).values(
@@ -82,7 +85,8 @@ def get_value_stock_content(position_currency, price_increase_array, HKD_rate, U
         )
     else:
         # 对position表分组查询，按stock字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
-        stock_dict = position.objects.filter(position_currency=position_currency).values("stock").annotate(
+        # stock_dict = position.objects.filter(position_currency=position_currency).values("stock").annotate(
+        stock_dict = position.objects.filter(currency_id=currency_value).values("stock").annotate(
             quantity=Sum("position_quantity")).values(
             'stock__stock_name',
             'stock__stock_code',
@@ -100,7 +104,8 @@ def get_value_stock_content(position_currency, price_increase_array, HKD_rate, U
         price = list(filter(lambda x: stock_code in x, price_increase_array))[0][1]
         increase = list(filter(lambda x: stock_code in x, price_increase_array))[0][2]
         color = list(filter(lambda x: stock_code in x, price_increase_array))[0][3]
-        if position_currency == 1 or position_currency == 0:
+        # if position_currency == 1 or position_currency == 0:
+        if currency_value == 1 or currency_value == 0:
             if currency == 2:
                 rate = HKD_rate
             elif currency == 3:
@@ -136,14 +141,16 @@ def get_value_stock_content(position_currency, price_increase_array, HKD_rate, U
     return stock_table_content, amount_sum, json.dumps(name_array), value_array
 
 
-def get_value_industry_content(position_currency, price_array, HKD_rate, USD_rate):
+# def get_value_industry_content(position_currency, price_array, HKD_rate, USD_rate):
+def get_value_industry_content(currency_value, price_array, HKD_rate, USD_rate):
     industry_table_array = []
     industry_chart_array = []
     amount_array = []
     percent_array = []
     amount_sum = 0.0
     # 对position表分组查询，按stock、industry跨表字段分组，返回每个分组的id（通过双下划线取得多级关联表的字段值）和每个分组的quantity个数
-    industry_dict = position.objects.filter(position_currency=position_currency).values("stock__industry").annotate(
+    # industry_dict = position.objects.filter(position_currency=position_currency).values("stock__industry").annotate(
+    industry_dict = position.objects.filter(currency_id=currency_value).values("stock__industry").annotate(
         count=Count("stock")).values(
         'stock__industry__id',
         'stock__industry__industry_name'
@@ -156,7 +163,8 @@ def get_value_industry_content(position_currency, price_array, HKD_rate, USD_rat
         industry_id = dict['stock__industry__id']
         industry_name = dict['stock__industry__industry_name']
         # 对position表进行跨表过滤，使用双下划线取得多级关联表的字段名
-        record_list = position.objects.filter(stock__industry=industry_id, position_currency=position_currency).values(
+        # record_list = position.objects.filter(stock__industry=industry_id, position_currency=position_currency).values(
+        record_list = position.objects.filter(stock__industry=industry_id, currency_id=currency_value).values(
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
@@ -170,7 +178,8 @@ def get_value_industry_content(position_currency, price_array, HKD_rate, USD_rat
             # currency = record['stock__market__transaction_currency']
             currency = record['stock__market__currency']
             price = list(filter(lambda x: stock_code in x, price_array))[0][1]
-            if position_currency == 1:
+            # if position_currency == 1:
+            if currency_value == 1:
                 if currency == 2:
                     rate = HKD_rate
                 elif currency == 3:
@@ -260,14 +269,16 @@ def get_value_market_sum(price_array, HKD_rate, USD_rate):
     return json.dumps(name_array), value_array
 
 
-def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate):
+# def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate):
+def get_value_market_content(currency_value, price_array, HKD_rate, USD_rate):
     market_table_array = []
     market_chart_array = []
     amount_array = []
     percent_array = []
     amount_sum = 0.0
     # 对position表分组查询，按stock、industry跨表字段分组，返回每个分组的id（通过双下划线取得多级关联表的字段值）和每个分组的quantity个数
-    market_dict = position.objects.filter(position_currency=position_currency).values("stock__market").annotate(
+    # market_dict = position.objects.filter(position_currency=position_currency).values("stock__market").annotate(
+    market_dict = position.objects.filter(currency_id=currency_value).values("stock__market").annotate(
         count=Count("stock")).values(
         'stock__market__id',
         'stock__market__market_name'
@@ -281,7 +292,8 @@ def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate)
         market_id = dict['stock__market__id']
         market_name = dict['stock__market__market_name']
         # 对position表进行跨表过滤，使用双下划线取得多级关联表的字段名
-        record_list = position.objects.filter(stock__market=market_id, position_currency=position_currency).values(
+        # record_list = position.objects.filter(stock__market=market_id, position_currency=position_currency).values(
+        record_list = position.objects.filter(stock__market=market_id, currency_id=currency_value).values(
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
@@ -296,7 +308,8 @@ def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate)
             # currency = record['stock__market__transaction_currency']
             currency = record['stock__market__currency']
             price = list(filter(lambda x: stock_code in x, price_array))[0][1]
-            if position_currency == 1:
+            # if position_currency == 1:
+            if currency_value == 1:
                 if currency == 2:
                     rate = HKD_rate
                 elif currency == 3:
@@ -335,14 +348,16 @@ def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate)
     return market_table_content, amount_sum, json.dumps(name_array), value_array
 
 
-def get_value_account_content(position_currency, price_array, HKD_rate, USD_rate):
+# def get_value_account_content(position_currency, price_array, HKD_rate, USD_rate):
+def get_value_account_content(currency_value, price_array, HKD_rate, USD_rate):
     account_table_array = []
     account_chart_array = []
     amount_array = []
     percent_array = []
     amount_sum = 0.0
     # 对position表分组查询，按account字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
-    account_dict = position.objects.filter(position_currency=position_currency).values("account").annotate(
+    # account_dict = position.objects.filter(position_currency=position_currency).values("account").annotate(
+    account_dict = position.objects.filter(currency_id=currency_value).values("account").annotate(
         count=Count("account")).values(
         'account__id',
         'account__account_abbreviation'
@@ -354,7 +369,8 @@ def get_value_account_content(position_currency, price_array, HKD_rate, USD_rate
         # 从字典tmp中取出’account__id‘的值
         account_id = dict['account__id']
         account_abbreviation = dict['account__account_abbreviation']
-        record_list = position.objects.filter(account=account_id, position_currency=position_currency).values(
+        # record_list = position.objects.filter(account=account_id, position_currency=position_currency).values(
+        record_list = position.objects.filter(account=account_id, currency_id=currency_value).values(
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
@@ -368,7 +384,8 @@ def get_value_account_content(position_currency, price_array, HKD_rate, USD_rate
             # currency = record['stock__market__transaction_currency']
             currency = record['stock__market__currency']
             price = list(filter(lambda x: stock_code in x, price_array))[0][1]
-            if position_currency == 1:
+            # if position_currency == 1:
+            if currency_value == 1:
                 if currency == 2:
                     rate = HKD_rate
                 elif currency == 3:

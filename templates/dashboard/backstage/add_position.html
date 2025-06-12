@@ -53,16 +53,16 @@
                             </div>
                         </div>
                         <div class="row form-group">
-                            <label for="position_currency" class="col-md-4 control-label text-right">持仓货币：</label>
+                            <label for="currency" class="col-md-4 control-label text-right">持仓货币：</label>
                             <div class="col-md-8">
-                                {% for key,v in position_currency_items %}
+                                {% for key,v in currency_items %}
                                 <label class="custom-control custom-radio custom-control-inline">
                                     {% if key == 1 %}
-                                    <input type="radio" class="custom-control-input" name="position_currency" id="position_currency{{ key }}" value="{{ key }}" checked />
-                                    <label class="custom-control-label" for="position_currency{{ key }}">{{ v }}</label>
+                                    <input type="radio" class="custom-control-input" name="currency" id="currency{{ key }}" value="{{ key }}" checked />
+                                    <label class="custom-control-label" for="currency{{ key }}">{{ v }}</label>
                                     {% else %}
-                                    <input type="radio" class="custom-control-input" name="position_currency" id="position_currency{{ key }}" value="{{ key }}" />
-                                    <label class="custom-control-label" for="position_currency{{ key }}">{{ v }}</label>
+                                    <input type="radio" class="custom-control-input" name="currency" id="currency{{ key }}" value="{{ key }}" />
+                                    <label class="custom-control-label" for="currency{{ key }}">{{ v }}</label>
                                     {% endif %}
                                 </label>
                                 {% endfor %}

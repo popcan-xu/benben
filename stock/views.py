@@ -714,7 +714,8 @@ def input_trade(request):
                     account_id=account_id,
                     stock_id=stock_id,
                     position_quantity=trade_quantity,
-                    position_currency=settlement_currency
+                    # position_currency=settlement_currency
+                    currency_id=settlement_currency
                 )
             return redirect('/benben/list_trade/')
         except Exception as e:
@@ -836,8 +837,8 @@ def stats_value(request):
         currency_name = currency_items[currency-1][1]
         condition_id = str(caliber) + str(currency)
         # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
-        stock_dict = position.objects.filter(position_currency=currency).values("stock").annotate(
-            count=Count("stock")).values('stock__stock_code')
+        # stock_dict = position.objects.filter(position_currency=currency).values("stock").annotate(count=Count("stock")).values('stock__stock_code')
+        stock_dict = position.objects.filter(currency_id=currency).values("stock").annotate(count=Count("stock")).values('stock__stock_code')
         # for dict in stock_dict:
         #     stock_code = dict['stock__stock_code']
         #     price, increase, color = get_stock_price(stock_code)
@@ -1240,13 +1241,13 @@ def add_market(request):
     #     (2, '港元'),
     #     (3, '美元'),
     # )
-    currency_item = ()
+    currency_items = ()
     keys = []
     values = []
     for rs in currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
-    currency_item = tuple(zip(keys, values))
+    currency_items = tuple(zip(keys, values))
     if request.method == 'POST':
         market_name = request.POST.get('market_name')
         market_abbreviation = request.POST.get('market_abbreviation')
@@ -1281,13 +1282,13 @@ def edit_market(request, market_id):
     #     (2, '港元'),
     #     (3, '美元'),
     # )
-    currency_item = ()
+    currency_items = ()
     keys = []
     values = []
     for rs in currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
-    currency_item = tuple(zip(keys, values))
+    currency_items = tuple(zip(keys, values))
     if request.method == 'POST':
         id = request.POST.get('id')
         market_name = request.POST.get('market_name')
@@ -1521,16 +1522,24 @@ def list_stock(request):
 def add_position(request):
     account_list = account.objects.all()
     stock_list = stock.objects.all().order_by('stock_code')
-    position_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # position_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
         stock_id = request.POST.get('stock_id')
         position_quantity = request.POST.get('position_quantity')
-        position_currency = request.POST.get('position_currency')
+        # position_currency = request.POST.get('position_currency')
+        currency_value = request.POST.get('currency')
         if stock_id.strip() == '':
             error_info = '股票不能为空！'
             return render(request, templates_path + 'backstage/add_position.html', locals())
@@ -1539,7 +1548,8 @@ def add_position(request):
                 account_id=account_id,
                 stock_id=stock_id,
                 position_quantity=position_quantity,
-                position_currency=position_currency
+                # position_currency=position_currency
+                currency_id=currency_value
             )
             return redirect('/benben/list_position/')
         except Exception as e:
@@ -1557,11 +1567,18 @@ def del_position(request, position_id):
 
 
 def edit_position(request, position_id):
-    position_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # position_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     account_list = account.objects.all()
     stock_list = stock.objects.all()
     if request.method == 'POST':
@@ -1569,13 +1586,15 @@ def edit_position(request, position_id):
         account_id = request.POST.get('account_id')
         stock_id = request.POST.get('stock_id')
         position_quantity = request.POST.get('position_quantity')
-        position_currency = request.POST.get('position_currency')
+        # position_currency = request.POST.get('position_currency')
+        currency_value = request.POST.get('currency')
         position_object = position.objects.get(id=id)
         try:
             position_object.account_id = account_id
             position_object.stock_id = stock_id
             position_object.position_quantity = position_quantity
-            position_object.position_currency = position_currency
+            # position_object.position_currency = position_currency
+            position_object.currency_id = currency_value
             position_object.save()
         except Exception as e:
             error_info = '输入信息有错误！'
@@ -3387,13 +3406,9 @@ def test(request):
     # current_H000300 = float(df[df['日期'] == '2012-12-31']['收盘'].iloc[0])
     # print(current_H000300)
 
-    df = ak.stock_hk_spot()
-    print(df)
-    price = df.query("symbol=='00040'")['lasttrade'].iloc[0]
-    print(price)
-    stock_hk_daily_hfq_df = ak.stock_hk_daily(symbol="00700", adjust="hfq")
-    print(stock_hk_daily_hfq_df)
+
     # migrate_market_currencies()
+    migrate_position_currencies()
 
     return render(request, templates_path + 'test.html', locals())
 
@@ -3459,6 +3474,67 @@ def migrate_market_currencies():
         print("2. 缺少对应的currency记录")
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
 
+def migrate_position_currencies():
+    """
+    迁移position表中货币字段的数据
+    根据position_currency值设置currency外键字段
+    """
+    from .models import position, currency
+    # 创建货币映射字典
+    currency_mapping = {
+        position.CNY: 'CNY',
+        position.HKD: 'HKD',
+        position.USD: 'USD',
+    }
+
+    # 获取所有未迁移的市场记录
+    positions_to_migrate = position.objects.filter(currency__isnull=True)
+    total_count = positions_to_migrate.count()
+    migrated_count = 0
+
+    if total_count == 0:
+        print("没有需要迁移的记录")
+        return
+
+    print(f"发现 {total_count} 条需要迁移货币字段的记录")
+
+    # 处理每条记录
+    for position_record in positions_to_migrate.iterator():
+        # 获取原字段值对应的货币代码
+        currency_code = currency_mapping.get(position_record.position_currency)
+
+        if not currency_code:
+            print(f"警告: 有未知的货币ID: {position_record.position_currency}")
+            continue
+
+        try:
+            # 获取对应的货币对象
+            currency_obj = currency.objects.get(code=currency_code)
+
+            # 更新currency字段
+            position_record.currency = currency_obj
+            position_record.save(update_fields=['currency'])
+
+            migrated_count += 1
+
+        except currency.DoesNotExist:
+            print(f"错误: 找不到代码为 {currency_code} 的货币记录")
+            continue
+
+    # 统计结果
+    remaining = position.objects.filter(currency__isnull=True).count()
+
+    print(f"\n迁移完成!")
+    print(f"成功迁移记录: {migrated_count}")
+    print(f"迁移失败记录: {total_count - migrated_count}")
+    print(f"仍需处理的记录: {remaining}")
+
+    if remaining > 0:
+        print("\n处理失败的可能原因:")
+        print("1. 市场记录中有未知的position_currency值")
+        print("2. 缺少对应的currency记录")
+        print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
+
 # 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值
 @register.filter
 def get_index(mylist, i):
@@ -3466,7 +3542,7 @@ def get_index(mylist, i):
 
 
 # 反向遍历trade表更新historical_position表
-def reverse_generate_positions(start_date, end_date):
+def reverse_generate_positions_111(start_date, end_date):
     try:
         # Step 0: 删除现有历史数据
         # current_date = datetime.date.today()
@@ -3567,312 +3643,5 @@ def reverse_generate_positions(start_date, end_date):
         print(f"处理失败: {e}")
 
 
-
-
-def generate_historical_positions_111(start_date, end_date):
-    """
-    生成指定日期范围内的历史持仓记录
-    :param start_date: 开始日期（date类型）
-    :param end_date: 结束日期（date类型）
-    :return: 生成记录数量
-    """
-    with transaction.atomic():
-        # 初始化持仓缓存 { (stock_id, currency): quantity }
-        position_cache = defaultdict(int)
-
-        # 获取所有交易日数据（按日期升序）
-        trades = trade.objects.filter(
-            trade_date__gte=start_date,
-            trade_date__lte=end_date
-        ).order_by('trade_date').values(
-            'trade_date', 'stock_id',
-            'settlement_currency', 'trade_type',
-            'trade_quantity'
-        )
-
-        # 预先生成所有工作日日期序列
-        date_sequence = []
-        current_date = start_date
-        while current_date <= end_date:
-            if current_date.weekday() < 5:  # 0-4为周一到周五
-                date_sequence.append(current_date)
-            current_date += datetime.timedelta(days=1)
-
-        # 按日期处理持仓
-        new_positions = []
-        for processing_date in date_sequence:
-            # 获取当日交易数据（按股票和货币分组汇总）
-            daily_trades = defaultdict(lambda: {'buy': 0, 'sell': 0})
-            for t in trades:
-                if t['trade_date'] == processing_date:
-                    key = (t['stock_id'], t['settlement_currency'])
-                    if t['trade_type'] == trade.BUY:
-                        daily_trades[key]['buy'] += t['trade_quantity']
-                    else:
-                        daily_trades[key]['sell'] += t['trade_quantity']
-
-            # 生成当日持仓
-            temp_cache = position_cache.copy()
-            for (stock_id, currency), amounts in daily_trades.items():
-                net_change = amounts['buy'] - amounts['sell']
-                new_quantity = temp_cache.get((stock_id, currency), 0) + net_change
-                if new_quantity != 0:
-                    temp_cache[(stock_id, currency)] = new_quantity
-                else:
-                    temp_cache.pop((stock_id, currency), None)
-
-            # 判断是否需要更新持仓
-            if daily_trades or processing_date == start_date:
-                position_cache = temp_cache
-
-                # 生成持仓记录
-                for (stock_id, currency), quantity in position_cache.items():
-                    new_positions.append(historical_position(
-                        date=processing_date,
-                        stock_id=stock_id,
-                        quantity=quantity,
-                        currency=currency,
-                    ))
-
-            # 无交易日继承前一日持仓
-            else:
-                # 仅生成记录，持仓缓存保持不变
-                for (stock_id, currency), quantity in position_cache.items():
-                    new_positions.append(historical_position(
-                        date=processing_date,
-                        stock_id=stock_id,
-                        quantity=quantity,
-                        currency=currency,
-                    ))
-
-        # 批量插入并过滤零持仓
-        valid_records = [
-            p for p in new_positions
-            if p.quantity != 0
-        ]
-        historical_position.objects.bulk_create(valid_records)
-
-        return len(valid_records)
-
-
-
-def get_historical_closing_price_111(start_date, end_date):
-    # 转换为 "YYYYMMDD" 格式字符串
-    start_date_str = (start_date - datetime.timedelta(days=10)).strftime("%Y%m%d") if start_date else ""
-    end_date_str = end_date.strftime("%Y%m%d") if end_date else ""
-    date_list = list(historical_position.objects.values_list('date', flat=True).distinct())
-    # 获取stock字段的去重值列表
-    stock_list = list(historical_position.objects.values_list('stock', flat=True).distinct())
-    for i in stock_list:
-        stock_code = stock.objects.get(id=i).stock_code
-        market_name = stock.objects.get(id=i).market.market_name
-        market_abbreviation = stock.objects.get(id=i).market.market_abbreviation
-        price_dict = {}
-        if market_name == '港股':
-            stock_code_str = stock_code
-            # df = ak.stock_hk_hist(symbol=stock_code_str, period="daily", start_date=start_date_str, end_date=end_date_str, adjust="")
-            df = ak.stock_hk_daily(symbol=stock_code_str, adjust="")
-            df['date'] = pd.to_datetime(df['date'])
-            current_date = pd.to_datetime(start_date)
-            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
-                current_date = current_date - datetime.timedelta(days=1)
-            if current_date in df['date'].values:
-                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
-            else:
-                current_price = 0
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['date'].values
-                if date_exists:
-                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
-                price_dict[item] = current_price
-        elif market_name == '沪市B股' or market_name == '深市B股':
-            stock_code_str = market_abbreviation + stock_code
-            df = ak.stock_zh_b_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str, adjust="")
-            df['date'] = pd.to_datetime(df['date'])
-            current_date = pd.to_datetime(start_date)
-            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
-                current_date = current_date - datetime.timedelta(days=1)
-            if current_date in df['date'].values:
-                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
-            else:
-                current_price = 0
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['date'].values
-                if date_exists:
-                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
-                price_dict[item] = current_price
-        elif classify_stock_code(stock_code) == 'ETF':
-            stock_code_str = market_abbreviation + stock_code
-            df = ak.stock_zh_index_daily(symbol=stock_code_str)
-            df['date'] = pd.to_datetime(df['date'])
-            current_date = pd.to_datetime(start_date)
-            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
-                current_date = current_date - datetime.timedelta(days=1)
-            if current_date in df['date'].values:
-                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
-            else:
-                current_price = 0
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['date'].values
-                if date_exists:
-                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
-                price_dict[item] = current_price
-        elif classify_stock_code(stock_code) == '企业债':
-            stock_code_str = market_abbreviation + stock_code
-            df = ak.bond_zh_hs_daily(symbol=stock_code_str)
-            df['date'] = pd.to_datetime(df['date'])
-            current_date = pd.to_datetime(start_date)
-            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
-                current_date = current_date - datetime.timedelta(days=1)
-            if current_date in df['date'].values:
-                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
-            else:
-                current_price = 0
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['date'].values
-                if date_exists:
-                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
-                price_dict[item] = current_price
-        else:
-            stock_code_str = market_abbreviation + stock_code
-            df = ak.stock_zh_a_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str, adjust="")
-            df['date'] = pd.to_datetime(df['date'])
-            current_date = pd.to_datetime(start_date)
-            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
-                current_date = current_date - datetime.timedelta(days=1)
-            if current_date in df['date'].values:
-                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
-            else:
-                current_price = 0
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['date'].values
-                if date_exists:
-                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
-                price_dict[item] = current_price
-
-        update_closing_prices(stock_code, price_dict)
-
-    return
-
-
-
-def calculate_and_fill_historical_data_111(start_date, end_date):
-    """
-    全量数据计算函数，执行以下操作：
-    1. 补全全表日期范围内所有货币的工作日记录
-    2. 批量计算市值变化指标
-    """
-    with transaction.atomic():
-        # ================== 阶段1：数据补全 ==================
-        # 获取全表日期范围
-        date_range = historical_market_value.objects.filter(
-                date__gte=start_date,
-                date__lte=end_date
-            ).aggregate(
-            min_date=Min('date'),
-            max_date=Max('date')
-        )
-
-        # 处理空表情况
-        if not date_range['min_date'] or not date_range['max_date']:
-            return
-
-        # 生成全量工作日列表
-        workdays = generate_workdays(date_range['min_date'], date_range['max_date'])
-
-        # 获取所有货币种类
-        currencies = historical_market_value.objects.values_list(
-            'currency', flat=True
-        ).distinct()
-
-        # 逐货币补全数据
-        for currency in currencies:
-            # 获取该货币现有日期
-            existing_dates = set(
-                historical_market_value.objects.filter(currency=currency)
-                    .values_list('date', flat=True)
-            )
-
-            # 计算缺失日期
-            missing_dates = [day for day in workdays if day not in existing_dates]
-
-            # 批量创建记录
-            if missing_dates:
-                historical_market_value.objects.bulk_create([
-                    historical_market_value(
-                        currency=currency,
-                        date=day,
-                        value=0,
-                        prev_value=0,
-                        change_amount=0,
-                        change_rate=0
-                    ) for day in missing_dates
-                ], batch_size=1000)
-
-        # ================== 阶段2：指标计算 ==================
-        # 获取全表最早日期（判断基准日）
-        # 获取全表日期范围
-        date_all_range = historical_market_value.objects.aggregate(
-            min_date=Min('date'),
-        )
-        base_date = date_all_range['min_date']
-
-        # 使用窗口函数获取前值
-        queryset = historical_market_value.objects.annotate(
-            prev_value_calc=Window(
-                expression=Lag('value', 1),
-                partition_by=[F('currency')],
-                order_by=F('date').asc()
-            )
-        ).order_by('currency', 'date')
-
-        # 批量更新容器
-        BATCH_SIZE = 1000
-        update_buffer = []
-
-        for obj in queryset:
-            # 基准日特殊处理
-            if obj.date == base_date:
-                prev_val = 0
-                change_amount = 0
-                change_rate = 0
-            else:
-                prev_val = obj.prev_value_calc or 0
-                change_amount = obj.value - prev_val
-                change_rate = (change_amount / prev_val) if prev_val else 0
-
-            # 更新对象字段
-            obj.prev_value = prev_val
-            obj.change_amount = change_amount
-            obj.change_rate = change_rate
-            update_buffer.append(obj)
-
-            # 批量提交
-            if len(update_buffer) >= BATCH_SIZE:
-                historical_market_value.objects.bulk_update(
-                    update_buffer,
-                    ['prev_value', 'change_amount', 'change_rate'],
-                    batch_size=BATCH_SIZE
-                )
-                update_buffer = []
-
-        # 提交剩余数据
-        if update_buffer:
-            historical_market_value.objects.bulk_update(
-                update_buffer,
-                ['prev_value', 'change_amount', 'change_rate'],
-                batch_size=BATCH_SIZE
-            )
-
-    # 记录补全情况
-    print(f"Currency:{currency} 补全{len(missing_dates)}条记录")
-
-    # 记录计算性能
-    print(f"批量更新完成，本次处理{len(update_buffer)}条记录")
 
 

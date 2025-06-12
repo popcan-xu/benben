@@ -49,19 +49,10 @@ class stock(models.Model):
 
 # 持仓数据模型
 class position(models.Model):
-    # 定义持仓货币数据字典
-    CNY = 1
-    HKD = 2
-    USD = 3
-    POSITION_CURRENCY_ITEMS = (
-        (CNY, '人民币'),
-        (HKD, '港元'),
-        (USD, '美元'),
-    )
     account = models.ForeignKey(to="account", on_delete=models.CASCADE, verbose_name='证券账户', db_index=True)
     stock = models.ForeignKey(to="stock", on_delete=models.CASCADE, verbose_name='股票', db_index=True)
     position_quantity = models.IntegerField(default=0, verbose_name='持仓数量')
-    position_currency = models.PositiveIntegerField(default=CNY, choices=POSITION_CURRENCY_ITEMS, verbose_name='持仓货币')
+    currency = models.ForeignKey(to="currency", on_delete=models.CASCADE, verbose_name='货币', db_index=True, null=True, blank=True)
     created_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
 
