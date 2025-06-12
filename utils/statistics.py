@@ -77,7 +77,8 @@ def get_value_stock_content(position_currency, price_increase_array, HKD_rate, U
             'stock__stock_name',
             'stock__stock_code',
             'quantity',
-            'stock__market__transaction_currency'
+            # 'stock__market__transaction_currency'
+            'stock__market__currency'
         )
     else:
         # 对position表分组查询，按stock字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
@@ -86,14 +87,16 @@ def get_value_stock_content(position_currency, price_increase_array, HKD_rate, U
             'stock__stock_name',
             'stock__stock_code',
             'quantity',
-            'stock__market__transaction_currency'
+            # 'stock__market__transaction_currency'
+            'stock__market__currency'
         )
     for dict in stock_dict:
         # 从字典tmp中取出’stock__stock_name‘的值
         stock_name = dict['stock__stock_name']
         stock_code = dict['stock__stock_code']
         quantity = dict['quantity']
-        currency = dict['stock__market__transaction_currency']
+        # currency = dict['stock__market__transaction_currency']
+        currency = dict['stock__market__currency']
         price = list(filter(lambda x: stock_code in x, price_increase_array))[0][1]
         increase = list(filter(lambda x: stock_code in x, price_increase_array))[0][2]
         color = list(filter(lambda x: stock_code in x, price_increase_array))[0][3]
@@ -157,13 +160,15 @@ def get_value_industry_content(position_currency, price_array, HKD_rate, USD_rat
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
-            'stock__market__transaction_currency'
+            # 'stock__market__transaction_currency'
+            'stock__market__currency'
         )
         for record in record_list:
             stock_code = record['stock__stock_code']
             stock_name = record['stock__stock_name']
             position_quantity = record['position_quantity']
-            currency = record['stock__market__transaction_currency']
+            # currency = record['stock__market__transaction_currency']
+            currency = record['stock__market__currency']
             price = list(filter(lambda x: stock_code in x, price_array))[0][1]
             if position_currency == 1:
                 if currency == 2:
@@ -225,12 +230,14 @@ def get_value_market_sum(price_array, HKD_rate, USD_rate):
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
-            'stock__market__transaction_currency'
+            # 'stock__market__transaction_currency'
+            'stock__market__currency'
         )
         for record in record_list:
             stock_code = record['stock__stock_code']
             position_quantity = record['position_quantity']
-            currency = record['stock__market__transaction_currency']
+            # currency = record['stock__market__transaction_currency']
+            currency = record['stock__market__currency']
             price = list(filter(lambda x: stock_code in x, price_array))[0][1]
             if currency == 2:
                 rate = HKD_rate
@@ -278,14 +285,16 @@ def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate)
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
-            'stock__market__transaction_currency'
+            # 'stock__market__transaction_currency'
+            'stock__market__currency'
         )
         print(record_list)
         for record in record_list:
             stock_code = record['stock__stock_code']
             stock_name = record['stock__stock_name']
             position_quantity = record['position_quantity']
-            currency = record['stock__market__transaction_currency']
+            # currency = record['stock__market__transaction_currency']
+            currency = record['stock__market__currency']
             price = list(filter(lambda x: stock_code in x, price_array))[0][1]
             if position_currency == 1:
                 if currency == 2:
@@ -349,13 +358,15 @@ def get_value_account_content(position_currency, price_array, HKD_rate, USD_rate
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
-            'stock__market__transaction_currency'
+            # 'stock__market__transaction_currency'
+            'stock__market__currency'
         )
         for record in record_list:
             stock_code = record['stock__stock_code']
             stock_name = record['stock__stock_name']
             position_quantity = record['position_quantity']
-            currency = record['stock__market__transaction_currency']
+            # currency = record['stock__market__transaction_currency']
+            currency = record['stock__market__currency']
             price = list(filter(lambda x: stock_code in x, price_array))[0][1]
             if position_currency == 1:
                 if currency == 2:
@@ -743,14 +754,16 @@ def get_account_stock_content(account_id, price_increase_array, HKD_rate, USD_ra
         'stock__stock_name',
         'stock__stock_code',
         'quantity',
-        'stock__market__transaction_currency'
+        # 'stock__market__transaction_currency'
+        'stock__market__currency'
     )
     for dict in stock_dict:
         # 从字典tmp中取出’stock__stock_name‘的值
         stock_name = dict['stock__stock_name']
         stock_code = dict['stock__stock_code']
         quantity = dict['quantity']
-        currency = dict['stock__market__transaction_currency']
+        # currency = dict['stock__market__transaction_currency']
+        currency = dict['stock__market__currency']
         price = list(filter(lambda x: stock_code in x, price_increase_array))[0][1]
         # increase = list(filter(lambda x: stock_code in x, price_increase_array))[0][2]
         # color = list(filter(lambda x: stock_code in x, price_increase_array))[0][3]

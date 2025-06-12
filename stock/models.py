@@ -16,18 +16,8 @@ class broker(models.Model):
 
 # 市场数据模型
 class market(models.Model):
-    # 定义交易货币数据字典
-    CNY = 1
-    HKD = 2
-    USD = 3
-    TRANSACTION_CURRENCY_ITEMS = (
-        (CNY, '人民币'),
-        (HKD, '港元'),
-        (USD, '美元'),
-    )
     market_name = models.CharField(max_length=32, verbose_name='市场名称', unique=True, db_index=True)
     market_abbreviation = models.CharField(max_length=32, verbose_name='市场简称')
-    transaction_currency = models.PositiveIntegerField(default=CNY, choices=TRANSACTION_CURRENCY_ITEMS, verbose_name='交易货币')
     currency = models.ForeignKey(to="currency", on_delete=models.CASCADE, verbose_name='货币', db_index=True, null=True, blank=True)
 
 # 证券账户数据模型

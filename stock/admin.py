@@ -6,7 +6,7 @@ class brokerAdmin(admin.ModelAdmin):
     list_display = ('broker_name','broker_script')
 
 class marketAdmin(admin.ModelAdmin):
-    list_display = ('market_name','market_abbreviation','transaction_currency')
+    list_display = ('market_name','market_abbreviation')
 
 class accountAdmin(admin.ModelAdmin):
     list_display = ('account_number','broker')

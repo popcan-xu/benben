@@ -31,16 +31,18 @@
                             </div>
                         </div>
                         <div class="row form-group">
-                            <label for="transaction_currency" class="col-md-4 control-label text-right">交易货币：</label>
+{#                            <label for="transaction_currency" class="col-md-4 control-label text-right">交易货币：</label>#}
+                            <label for="currency" class="col-md-4 control-label text-right">交易货币：</label>
                             <div class="col-md-8">
-                                {% for key,v in transaction_currency_items %}
+{#                                {% for key,v in transaction_currency_items %}#}
+                                {% for key,v in currency_items %}
                                 <div class="custom-control custom-radio custom-control-inline">
                                     {% if key == 1 %}
-                                    <input type="radio" class="custom-control-input" name="transaction_currency" id="transaction_currency{{ key }}" value="{{ key }}" checked />
-                                    <label class="custom-control-label" for="transaction_currency{{ key }}">{{ v }}</label>
+                                    <input type="radio" class="custom-control-input" name="currency" id="currency{{ key }}" value="{{ key }}" checked />
+                                    <label class="custom-control-label" for="currency{{ key }}">{{ v }}</label>
                                     {% else %}
-                                    <input type="radio" class="custom-control-input" name="transaction_currency" id="transaction_currency{{ key }}" value="{{ key }}" />
-                                    <label class="custom-control-label" for="transaction_currency{{ key }}">{{ v }}</label>
+                                    <input type="radio" class="custom-control-input" name="currency" id="currency{{ key }}" value="{{ key }}" />
+                                    <label class="custom-control-label" for="currency{{ key }}">{{ v }}</label>
                                     {% endif %}
                                 </div>
                                 {% endfor %}

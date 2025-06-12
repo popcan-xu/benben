@@ -31,7 +31,8 @@
                                 <td>{{ market.market_name }}</td>
                                 <td>{{ market.market_abbreviation }}</td>
                                 <!-- 用get_属性_display来显示包含choice参数的字段值 // -->
-                                <td>{{ market.get_transaction_currency_display }}</td>
+{#                                <td>{{ market.get_transaction_currency_display }}</td>#}
+                                <td>{{ market.currency.name }}</td>
                                 <td>
                                     <a href="/benben/del_market/{{ market.id|safe }}/" class="btn btn-default btn-sm">
                                         删除

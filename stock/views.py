@@ -972,14 +972,15 @@ def stats_profit(request):
         stock_id = rs.id
         stock_code = rs.stock_code
         stock_name = rs.stock_name
-        transaction_currency = rs.market.transaction_currency
+        # transaction_currency = rs.market.transaction_currency
+        currency_value = rs.market.currency
         trade_list = trade.objects.all().filter(stock=stock_id)
         trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin, cost_sum = get_holding_stock_profit(
             stock_code)
-        if transaction_currency == 2:
+        if currency_value == 2:
             profit *= rate_HKD
             value *= rate_HKD
-        elif transaction_currency == 3:
+        elif currency_value == 3:
             profit *= rate_USD
             value *= rate_USD
         holding_profit_sum += profit
@@ -990,13 +991,14 @@ def stats_profit(request):
         stock_id = rs.id
         stock_code = rs.stock_code
         stock_name = rs.stock_name
-        transaction_currency = rs.market.transaction_currency
+        # transaction_currency = rs.market.transaction_currency
+        currency_value = rs.market.currency
         trade_list = trade.objects.all().filter(stock=stock_id)
         if trade_list.exists() and stock_code != '-1':
             trade_array, profit, profit_margin, cost_sum = get_cleared_stock_profit(stock_code)
-            if transaction_currency == 2:
+            if currency_value == 2:
                 profit *= rate_HKD
-            elif transaction_currency == 3:
+            elif currency_value == 3:
                 profit *= rate_USD
             cleared_profit_sum += profit
             cleared_profit_array.append((stock_name, stock_code, profit))
@@ -1233,15 +1235,22 @@ def list_broker(request):
 
 # 市场表的增删改查
 def add_market(request):
-    transaction_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # transaction_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_item = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_item = tuple(zip(keys, values))
     if request.method == 'POST':
         market_name = request.POST.get('market_name')
         market_abbreviation = request.POST.get('market_abbreviation')
-        transaction_currency = request.POST.get('transaction_currency')
+        currency_value = request.POST.get('currency')
         if market_name.strip() == '':
             error_info = '市场名称不能为空！'
             return render(request, templates_path + 'backstage/add_market.html', locals())
@@ -1249,7 +1258,7 @@ def add_market(request):
             p = market.objects.create(
                 market_name=market_name,
                 market_abbreviation=market_abbreviation,
-                transaction_currency=transaction_currency
+                currency_id=currency_value
             )
             return redirect('/benben/list_market/')
         except Exception as e:
@@ -1267,21 +1276,30 @@ def del_market(request, market_id):
 
 
 def edit_market(request, market_id):
-    transaction_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # transaction_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_item = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_item = tuple(zip(keys, values))
     if request.method == 'POST':
         id = request.POST.get('id')
         market_name = request.POST.get('market_name')
         market_abbreviation = request.POST.get('market_abbreviation')
-        transaction_currency = request.POST.get('transaction_currency')
+        # transaction_currency = request.POST.get('transaction_currency')
+        currency_value = request.POST.get('currency') # 变量名为currency_value，以避免和表名currency混淆
         market_object = market.objects.get(id=id)
         try:
             market_object.market_name = market_name
             market_object.market_abbreviation = market_abbreviation
-            market_object.transaction_currency = transaction_currency
+            # market_object.transaction_currency = transaction_currency
+            market_object.currency_id = currency_value # 使用主键赋值（但需要通过赋值给currency_id字段，这是Django自动为ForeignKey字段创建的隐藏字段）
             market_object.save()
         except Exception as e:
             error_info = '输入市场名称重复或信息有错误！'
@@ -1586,7 +1604,7 @@ def edit_historical_position(request, historical_position_id):
 def list_historical_position(request):
     # historical_position_list = historical_position.objects.filter(date='2025-02-27')
     # historical_position_list = historical_position.objects.all()
-    historical_position_list = historical_position.objects.order_by('-date')[:100]
+    historical_position_list = historical_position.objects.order_by('-date')[:200]
     return render(request,  templates_path + 'backstage/list_historical_position.html', locals())
 
 # 交易表增删改查
@@ -2276,7 +2294,7 @@ task_status = {
 def update_historical_market_value(request):
     # 获取初始日期范围
     result = historical_position.objects.aggregate(max_date=Max('date'))
-    start_date = result['max_date'] - datetime.timedelta(days=7)
+    start_date = result['max_date'] - datetime.timedelta(days=30)
     end_date = datetime.date.today()
 
     steps = [
@@ -2982,7 +3000,8 @@ def calculate_market_value(start_date, end_date):
 
                     # 6.2 获取汇率（人民币特殊处理）
                     # 如持仓货币为人民币且股票市场为港股，则为港股通持仓，需按港元汇率计算人民币市值
-                    if currency_name == '人民币' and pos.stock.market.transaction_currency == 2:
+                    # if currency_name == '人民币' and pos.stock.market.transaction_currency == 2:
+                    if currency_name == '人民币' and pos.stock.market.currency_id == 2: # 不能用pos.stock.market.currency,应该用pos.stock.market.currency_id
                         exchange_rate = rate_dict.get((current_date, '港元'))
                         if exchange_rate is None:
                             raise ValueError(
@@ -3368,7 +3387,13 @@ def test(request):
     # current_H000300 = float(df[df['日期'] == '2012-12-31']['收盘'].iloc[0])
     # print(current_H000300)
 
-    migrate_market_currencies()
+    df = ak.stock_hk_spot()
+    print(df)
+    price = df.query("symbol=='00040'")['lasttrade'].iloc[0]
+    print(price)
+    stock_hk_daily_hfq_df = ak.stock_hk_daily(symbol="00700", adjust="hfq")
+    print(stock_hk_daily_hfq_df)
+    # migrate_market_currencies()
 
     return render(request, templates_path + 'test.html', locals())
 

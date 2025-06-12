@@ -125,7 +125,7 @@ def get_stock_price(stock_code):
     if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0) or index == -1:
     # if (time2 - time1).total_seconds() >= 0: # 用于调试
         # 1.从雪球网抓取实时行情
-        # price, increase, color = get_quote_snowball(stock_code)
+        price, increase, color = get_quote_snowball(stock_code)
 
         # 2.通过pysnowball API抓取雪球网实时行情
         # price, increase, color = get_quote_pysnowball(stock_code)
@@ -133,8 +133,8 @@ def get_stock_price(stock_code):
         # 3.从http://qt.gtimg.cn/抓取实时行情
         # price, increase, color = get_quote_gtimg(stock_code)
 
-        # 4.从akshare抓取实时行情
-        price, increase, color = get_quote_akshare(stock_code)
+        # 4.从akshare抓取实时行情 东财和新浪接口都只返回前100条数据
+        # price, increase, color = get_quote_akshare(stock_code)
 
         # 写入json文件
         if index == -1:
@@ -213,9 +213,12 @@ def get_quote_akshare(stock_code):
     stock_object = stock.objects.get(stock_code=stock_code)
     market_name = stock_object.market.market_name
     if market_name == '港股':
-        df = ak.stock_hk_spot_em()
-        price = float(df.query('代码=="' + stock_code + '"')['最新价'].iloc[0])
-        increase = float(df.query('代码=="' + stock_code + '"')['涨跌幅'].iloc[0])
+        # df = ak.stock_hk_spot_em()
+        # price = float(df.query('代码=="' + stock_code + '"')['最新价'].iloc[0])
+        # increase = float(df.query('代码=="' + stock_code + '"')['涨跌幅'].iloc[0])
+        df = ak.stock_hk_spot()
+        price = float(df.query('symbol=="' + stock_code + '"')['lasttrade'].iloc[0])
+        increase = float(df.query('symbol=="' + stock_code + '"')['changepercent'].iloc[0])
     elif market_name == '沪市B股' or market_name == '深市B股':
         df = ak.stock_zh_b_spot_em()
         price = float(df.query('代码=="' + stock_code + '"')['最新价'].iloc[0])

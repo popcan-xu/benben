@@ -87,7 +87,8 @@
                                         <th>交易日期</th>
                                         <th>账户</th>
                                         <th>股票/代码</th>
-                                        <th>价格（{{ market.get_transaction_currency_display }}）</th>
+{#                                        <th>价格（{{ market.get_transaction_currency_display }}）</th>#}
+                                        <th>价格（{{ market.currency.name }}）</th>
                                         <th>数量</th>
                                         <th>交易金额</th>
                                     </tr>
@@ -177,7 +178,8 @@
                                         <th>交易日期</th>
                                         <th>账户</th>
                                         <th>股票/代码</th>
-                                        <th>价格（{{ market.get_transaction_currency_display }}）</th>
+{#                                        <th>价格（{{ market.get_transaction_currency_display }}）</th>#}
+                                        <th>价格（{{ market.currency.name }}）</th>
                                         <th>数量</th>
                                         <th>交易金额</th>
                                     </tr>
