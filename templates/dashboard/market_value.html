@@ -100,10 +100,10 @@
                                     <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
                                             <th>股票/代码</th>
-                                            <th>价格（元）</th>
+                                            <th>价格（{{ currency_dict|get_index:1|safe }}）</th>
                                             <th>涨跌幅</th>
                                             <th>持仓数量（股）</th>
-                                            <th>金额（{{ currency_CNY }}）</th>
+                                            <th>金额（{{ currency_dict|get_index:1|safe }}）</th>
                                             <th>百分比</th>
                                         </tr>
                                     </thead>
@@ -155,10 +155,10 @@
                                     <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
                                             <th>股票/代码</th>
-                                            <th>价格（元）</th>
+                                            <th>价格（{{ currency_dict|get_index:2|safe }}）</th>
                                             <th>涨跌幅</th>
                                             <th>持仓数量（股）</th>
-                                            <th>金额（{{ currency_HKD }}）</th>
+                                            <th>金额（{{ currency_dict|get_index:2|safe }}）</th>
                                             <th>百分比</th>
                                         </tr>
                                     </thead>
@@ -210,10 +210,10 @@
                                     <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
                                             <th>股票/代码</th>
-                                            <th>价格（元）</th>
+                                            <th>价格（{{ currency_dict|get_index:3|safe }}）</th>
                                             <th>涨跌幅</th>
                                             <th>持仓数量（股）</th>
-                                            <th>金额（{{ currency_USD }}）</th>
+                                            <th>金额（{{ currency_dict|get_index:3|safe }}）</th>
                                             <th>百分比</th>
                                         </tr>
                                     </thead>

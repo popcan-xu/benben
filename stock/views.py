@@ -38,7 +38,14 @@ templates_path = 'dashboard/'
 
 # 总览
 def overview(request):
-    currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
+    currency_dict = {}
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_dict = dict(zip(keys, values))
+
     rate_HKD, rate_USD = get_rate()
 
     path = pathlib.Path("./templates/dashboard/overview.json")
@@ -57,12 +64,15 @@ def overview(request):
         funds_currency_array = []
         bar_name_array = ['资产', '本金']
         for rs in funds_list:
-            funds_currency_array.append(currency_dict.get(rs.funds_currency, "未知货币"))
-            if rs.funds_currency == 2: # 港元
+            # funds_currency_array.append(currency_dict.get(rs.funds_currency, "未知货币"))
+            funds_currency_array.append(currency_dict.get(rs.currency_id, "未知货币"))
+            # if rs.funds_currency == 2: # 港元
+            if rs.currency_id == 2: # 港元
                 funds_value_array.append(round(float(rs.funds_value) * rate_HKD))
                 funds_principal_array.append(round(float(rs.funds_principal) * rate_HKD))
                 funds_value_sum += round(float(rs.funds_value) * rate_HKD)
-            elif rs.funds_currency == 3: # 美元
+            # elif rs.funds_currency == 3:  # 美元
+            elif rs.currency_id == 3: # 美元
                 funds_value_array.append(round(float(rs.funds_value) * rate_USD))
                 funds_principal_array.append(round(float(rs.funds_principal) * rate_USD))
                 funds_value_sum += round(float(rs.funds_value) * rate_USD)
@@ -75,15 +85,17 @@ def overview(request):
         funds_percent_dict = {1: 0, 2: 0, 3: 0}
         funds_net_value_weighting = 0
         for key in currency_dict:
-            funds_percent_dict[key] = float(funds_list.get(funds_currency=key).funds_value) / funds_value_sum
-            funds_net_value_weighting += float(funds_list.get(funds_currency=key).funds_net_value) * funds_percent_dict[key]
+            # funds_percent_dict[key] = float(funds_list.get(funds_currency=key).funds_value) / funds_value_sum
+            funds_percent_dict[key] = float(funds_list.get(currency_id=key).funds_value) / funds_value_sum
+            # funds_net_value_weighting += float(funds_list.get(funds_currency=key).funds_net_value) * funds_percent_dict[key]
+            funds_net_value_weighting += float(funds_list.get(currency_id=key).funds_net_value) * funds_percent_dict[key]
 
         # 计算人民币持仓市值总和，用于进一步计算人民币基金的持仓比例
         stock_dict = position.objects.values("stock").annotate(
             count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
         stock_code_array = []
-        for dict in stock_dict:
-            stock_code = dict['stock__stock_code']
+        for d in stock_dict:
+            stock_code = d['stock__stock_code']
             stock_code_array.append(stock_code)
         price_array = get_stock_array_price(stock_code_array)
         content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD, rate_USD)
@@ -107,7 +119,8 @@ def overview(request):
             max_date_funds = None
 
         for key, value in currency_dict.items():
-            funds_id = funds.objects.get(funds_currency=key).id
+            # funds_id = funds.objects.get(funds_currency=key).id
+            funds_id = funds.objects.get(currency_id=key).id
             funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
             market_value_dict[key] = historical_market_value.objects.get(currency=value, date=max_date_funds).value
             position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
@@ -161,8 +174,8 @@ def overview(request):
         stock_dict = position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
 
         stock_code_array = []
-        for dict in stock_dict:
-            stock_code = dict['stock__stock_code']
+        for d in stock_dict:
+            stock_code = d['stock__stock_code']
             stock_code_array.append(stock_code)
         price_array = get_stock_array_price(stock_code_array)
 
@@ -463,23 +476,27 @@ def view_funds_details(request, funds_id):
 
 # 持仓市值
 def market_value(request):
-    currency_CNY = '人民币'
-    currency_HKD = '港元'
-    currency_USD = '美元'
     rate_HKD, rate_USD = get_rate()
     # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
     stock_dict = position.objects.values("stock").annotate(
         count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
     stock_code_array = []
-    for dict in stock_dict:
-        stock_code = dict['stock__stock_code']
+    for d in stock_dict:
+        stock_code = d['stock__stock_code']
         stock_code_array.append(stock_code)
     price_array = get_stock_array_price(stock_code_array)
     content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD, rate_USD)
     content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array, rate_HKD, rate_USD)
     content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array, rate_HKD, rate_USD)
 
-    currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
+    currency_dict = {}
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_dict = dict(zip(keys, values))
+
     value_dict = {}
     result = historical_market_value.objects.aggregate(
         max_date=Max('date')  # 最大值（最新日期）
@@ -511,7 +528,8 @@ def market_value(request):
         max_date_funds = None
 
     for key, value in currency_dict.items():
-        funds_id = funds.objects.get(funds_currency=key).id
+        # funds_id = funds.objects.get(funds_currency=key).id
+        funds_id = funds.objects.get(currency_id=key).id
         funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
         market_value_dict[key] = historical_market_value.objects.get(currency=value, date=max_date_funds).value
         position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
@@ -1966,14 +1984,22 @@ def list_dividend_history(request):
 
 # 基金表增删改查
 def add_funds(request):
-    currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     if request.method == 'POST':
         funds_name = request.POST.get('funds_name')
-        funds_currency = request.POST.get('funds_currency')
+        # funds_currency = request.POST.get('funds_currency')
+        currency_value = request.POST.get('currency')
         funds_create_date = request.POST.get('funds_create_date')
         funds_value = request.POST.get('funds_value')
         funds_principal = request.POST.get('funds_principal')
@@ -1987,7 +2013,8 @@ def add_funds(request):
         try:
             p = funds.objects.create(
                 funds_name=funds_name,
-                funds_currency=funds_currency,
+                # funds_currency=funds_currency,
+                currency_id=currency_value,
                 funds_create_date=funds_create_date,
                 funds_value=funds_value,
                 funds_principal=funds_principal,
@@ -2012,15 +2039,23 @@ def del_funds(request, funds_id):
 
 
 def edit_funds(request, funds_id):
-    currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     if request.method == 'POST':
         id = request.POST.get('id')
         funds_name = request.POST.get('funds_name')
-        funds_currency = request.POST.get('funds_currency')
+        # funds_currency = request.POST.get('funds_currency')
+        currency_value = request.POST.get('currency')
         funds_create_date = request.POST.get('funds_create_date')
         funds_value = request.POST.get('funds_value')
         funds_principal = request.POST.get('funds_principal')
@@ -2031,7 +2066,8 @@ def edit_funds(request, funds_id):
         funds_object = funds.objects.get(id=id)
         try:
             funds_object.funds_name = funds_name
-            funds_object.funds_currency = funds_currency
+            # funds_object.funds_currency = funds_currency
+            funds_object.currency_id = currency_value
             funds_object.funds_create_date = funds_create_date
             funds_object.funds_value = funds_value
             funds_object.funds_principal = funds_principal
@@ -3408,7 +3444,8 @@ def test(request):
 
 
     # migrate_market_currencies()
-    migrate_position_currencies()
+    # migrate_position_currencies()
+    migrate_funds_currencies()
 
     return render(request, templates_path + 'test.html', locals())
 
@@ -3532,6 +3569,67 @@ def migrate_position_currencies():
     if remaining > 0:
         print("\n处理失败的可能原因:")
         print("1. 市场记录中有未知的position_currency值")
+        print("2. 缺少对应的currency记录")
+        print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
+
+def migrate_funds_currencies():
+    """
+    迁移funds表中货币字段的数据
+    根据funds_currency值设置currency外键字段
+    """
+    from .models import funds, currency
+    # 创建货币映射字典
+    currency_mapping = {
+        funds.CNY: 'CNY',
+        funds.HKD: 'HKD',
+        funds.USD: 'USD',
+    }
+
+    # 获取所有未迁移的市场记录
+    funds_to_migrate = funds.objects.filter(currency__isnull=True)
+    total_count = funds_to_migrate.count()
+    migrated_count = 0
+
+    if total_count == 0:
+        print("没有需要迁移的记录")
+        return
+
+    print(f"发现 {total_count} 条需要迁移货币字段的记录")
+
+    # 处理每条记录
+    for funds_record in funds_to_migrate.iterator():
+        # 获取原字段值对应的货币代码
+        currency_code = currency_mapping.get(funds_record.funds_currency)
+
+        if not currency_code:
+            print(f"警告: 有未知的货币ID: {funds_record.funds_currency}")
+            continue
+
+        try:
+            # 获取对应的货币对象
+            currency_obj = currency.objects.get(code=currency_code)
+
+            # 更新currency字段
+            funds_record.currency = currency_obj
+            funds_record.save(update_fields=['currency'])
+
+            migrated_count += 1
+
+        except currency.DoesNotExist:
+            print(f"错误: 找不到代码为 {currency_code} 的货币记录")
+            continue
+
+    # 统计结果
+    remaining = funds.objects.filter(currency__isnull=True).count()
+
+    print(f"\n迁移完成!")
+    print(f"成功迁移记录: {migrated_count}")
+    print(f"迁移失败记录: {total_count - migrated_count}")
+    print(f"仍需处理的记录: {remaining}")
+
+    if remaining > 0:
+        print("\n处理失败的可能原因:")
+        print("1. 市场记录中有未知的funds_currency值")
         print("2. 缺少对应的currency记录")
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
 

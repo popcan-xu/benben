@@ -42,7 +42,8 @@
                                 <td>{{ funds.funds_principal }}</td>
                                 <td>{{ funds.funds_PHR }}</td>
                                 <td>{{ funds.funds_net_value }}</td>
-                                <td>{{ funds.get_funds_currency_display }}</td>
+{#                                <td>{{ funds.get_funds_currency_display }}</td>#}
+                                <td>{{ funds.currency.name }}</td>
                                 <td>{{ funds.funds_create_date|date:'Y-m-d' }}</td>
                                 <td>{{ funds.update_date|date:'Y-m-d' }}</td>
                                 <td>{{ funds.funds_baseline }}</td>
