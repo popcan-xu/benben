@@ -431,7 +431,7 @@ def get_dividend_stock_content(currency):
     stock_name_array = []
     amount_array = []
     percent_array = []
-    stock_dict = dividend.objects.filter(dividend_currency=currency).values("stock").annotate(
+    stock_dict = dividend.objects.filter(currency_id=currency).values("stock").annotate(
         amount=Sum("dividend_amount")).values('stock__stock_code', 'stock__stock_name', 'amount')
     for dict in stock_dict:
         amount = 0.0
@@ -462,7 +462,7 @@ def get_dividend_year_content(currency):
     amount_array = []
     percent_array = []
     # 通过dividend_date__year按年份分组
-    year_dict = dividend.objects.filter(dividend_currency=currency).values("dividend_date__year").annotate(
+    year_dict = dividend.objects.filter(currency_id=currency).values("dividend_date__year").annotate(
         amount=Sum("dividend_amount")).values('dividend_date__year', 'amount')
     for dict in year_dict:
         name_array1 = []
@@ -470,7 +470,7 @@ def get_dividend_year_content(currency):
         year = dict['dividend_date__year']
         amount = dict['amount']
         amount_sum += float(amount)
-        record_list = dividend.objects.filter(dividend_date__year=year, dividend_currency=currency).values(
+        record_list = dividend.objects.filter(dividend_date__year=year, currency_id=currency).values(
             'stock__stock_name')
         for record in record_list:
             stock_name = record['stock__stock_name']
@@ -508,7 +508,7 @@ def get_dividend_industry_content(currency):
     amount_array = []
     percent_array = []
     # 通过stock__industry按股票所属行业分组
-    industry_dict = dividend.objects.filter(dividend_currency=currency).values("stock__industry").annotate(
+    industry_dict = dividend.objects.filter(currency_id=currency).values("stock__industry").annotate(
         amount=Sum("dividend_amount")).values(
         'stock__industry__id',
         'stock__industry__industry_name',
@@ -522,7 +522,7 @@ def get_dividend_industry_content(currency):
         amount = dict['amount']
         amount_sum += float(amount)
         #percent = format(float(amount) / amount_sum, '.2%')
-        record_list = dividend.objects.filter(stock__industry=industry_id, dividend_currency=currency).values(
+        record_list = dividend.objects.filter(stock__industry=industry_id, currency_id=currency).values(
             'stock__stock_name')
         for record in record_list:
             stock_name = record['stock__stock_name']
@@ -562,7 +562,7 @@ def get_dividend_market_content(currency):
     amount_array = []
     percent_array = []
     # 通过stock__industry按股票所属行业分组
-    market_dict = dividend.objects.filter(dividend_currency=currency).values("stock__market").annotate(
+    market_dict = dividend.objects.filter(currency_id=currency).values("stock__market").annotate(
         amount=Sum("dividend_amount")).values(
         'stock__market__id',
         'stock__market__market_name',
@@ -576,7 +576,7 @@ def get_dividend_market_content(currency):
         amount = dict['amount']
         amount_sum += float(amount)
         #percent = format(float(amount) / amount_sum, '.2%')
-        record_list = dividend.objects.filter(stock__market=market_id, dividend_currency=currency).values(
+        record_list = dividend.objects.filter(stock__market=market_id, currency_id=currency).values(
             'stock__stock_name')
         for record in record_list:
             stock_name = record['stock__stock_name']
@@ -616,7 +616,7 @@ def get_dividend_account_content(currency):
     amount_array = []
     percent_array = []
     # 通过stock__account按股票所属账号分组
-    account_dict = dividend.objects.filter(dividend_currency=currency).values("account").annotate(
+    account_dict = dividend.objects.filter(currency_id=currency).values("account").annotate(
         amount=Sum("dividend_amount")).values(
         'account__id',
         'account__account_abbreviation',
@@ -630,7 +630,7 @@ def get_dividend_account_content(currency):
         amount = dict['amount']
         amount_sum += float(amount)
         #percent = format(float(amount) / amount_sum, '.2%')
-        record_list = dividend.objects.filter(account=account_id, dividend_currency=currency).values(
+        record_list = dividend.objects.filter(account=account_id, currency_id=currency).values(
             'stock__stock_name')
         for record in record_list:
             stock_name = record['stock__stock_name']

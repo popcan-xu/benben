@@ -35,7 +35,8 @@
                                 <td>{{ dividend.stock.stock_name }}（{{ dividend.stock.stock_code }}）</td>
                                 <td>{{ dividend.dividend_amount|floatformat:0 }}</td>
                                 <!-- 用get_属性_display来显示包含choice参数的字段值 // -->
-                                <td>{{ dividend.get_dividend_currency_display }}</td>
+{#                                <td>{{ dividend.get_dividend_currency_display }}</td>#}
+                                <td>{{ dividend.currency.name }}</td>
                                 <td>{{ dividend.account.account_abbreviation }}</td>
                                 <td>{{ dividend.modified_time|date:'Y-m-d H:i' }}</td>
                                 <td>

@@ -94,14 +94,14 @@
                                     <label class="control-label">货币：</label>
                                 </div>
                                 <div class="col-md-10">
-                                    {% for key,v in dividend_currency_items %}
+                                    {% for key,v in currency_items %}
                                     <div class="custom-control custom-radio custom-control-inline">
-                                        {% if key == dividend_currency %}
-                                            <input type="radio" class="custom-control-input" name="dividend_currency" id="dividend_currency{{ key }}" value="{{ key }}" checked />
-                                            <label class="custom-control-label" for="dividend_currency{{ key }}">{{ v }}</label>
+                                        {% if key == currency_value %}
+                                            <input type="radio" class="custom-control-input" name="currency" id="currency{{ key }}" value="{{ key }}" checked />
+                                            <label class="custom-control-label" for="currency{{ key }}">{{ v }}</label>
                                         {% else %}
-                                            <input type="radio" class="custom-control-input" name="dividend_currency" id="dividend_currency{{ key }}" value="{{ key }}" />
-                                            <label class="custom-control-label" for="dividend_currency{{ key }}">{{ v }}</label>
+                                            <input type="radio" class="custom-control-input" name="currency" id="currency{{ key }}" value="{{ key }}" />
+                                            <label class="custom-control-label" for="currency{{ key }}">{{ v }}</label>
                                         {% endif %}
                                     </div>
                                     {% endfor %}
@@ -129,7 +129,7 @@
                                 <th>股票/代码</th>
                                 <th>账户</th>
                                 <th>分红日期</th>
-                                <th>金额({{ dividend_currency_name }})</th>
+                                <th>金额({{ currency_name }})</th>
                             </tr>
                         </thead>
                         <tbody>

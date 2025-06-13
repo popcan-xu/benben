@@ -140,14 +140,14 @@ def overview(request):
 
         current_year = datetime.datetime.now().year
         # 获得人民币、港元、美元分红总收益
-        dividend_sum_CNY = dividend.objects.filter(dividend_currency=1).aggregate(amount=Sum('dividend_amount'))['amount']
-        dividend_sum_HKD = dividend.objects.filter(dividend_currency=2).aggregate(amount=Sum('dividend_amount'))['amount']
-        dividend_sum_USD = dividend.objects.filter(dividend_currency=3).aggregate(amount=Sum('dividend_amount'))['amount']
+        dividend_sum_CNY = dividend.objects.filter(currency_id=1).aggregate(amount=Sum('dividend_amount'))['amount']
+        dividend_sum_HKD = dividend.objects.filter(currency_id=2).aggregate(amount=Sum('dividend_amount'))['amount']
+        dividend_sum_USD = dividend.objects.filter(currency_id=3).aggregate(amount=Sum('dividend_amount'))['amount']
         dividend_sum = float(dividend_sum_CNY) + float(dividend_sum_HKD) * rate_HKD + float(dividend_sum_USD) * rate_USD
         # 获得当年人民币、港元、美元分红总收益
-        current_dividend_sum_CNY = dividend.objects.filter(dividend_currency=1, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
-        current_dividend_sum_HKD = dividend.objects.filter(dividend_currency=2, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
-        current_dividend_sum_USD = dividend.objects.filter(dividend_currency=3, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
+        current_dividend_sum_CNY = dividend.objects.filter(currency_id=1, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
+        current_dividend_sum_HKD = dividend.objects.filter(currency_id=2, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
+        current_dividend_sum_USD = dividend.objects.filter(currency_id=3, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
         if current_dividend_sum_CNY == None:
             current_dividend_sum_CNY = 0
         if current_dividend_sum_HKD == None:
@@ -647,7 +647,7 @@ def view_market_value_details(request, currency_id):
     # 获得近期分红列表
     # dividend_list_TOP = dividend.objects.filter(dividend_currency=currency_id).order_by('-dividend_date', '-modified_time')[:10]
     dividend_list_TOP = dividend.objects.filter(
-        dividend_currency=currency_id
+        currency_id=currency_id
     ).select_related('stock').values(
         'dividend_date',
         'stock_id',  # 使用stock_id分组（或直接使用'stock'获取股票对象ID）
@@ -746,11 +746,18 @@ def input_trade(request):
 
 # 分红录入
 def input_dividend(request):
-    dividend_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # dividend_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     account_active = account.objects.filter(is_active=True)
     account_not_active = account.objects.filter(is_active=False)
     stock_hold, stock_not_hold = get_stock_hold_or_not()
@@ -760,7 +767,7 @@ def input_dividend(request):
         stock_id = request.POST.get('stock_id')
         dividend_date = request.POST.get('dividend_date')
         dividend_amount = request.POST.get('dividend_amount')
-        dividend_currency = request.POST.get('dividend_currency')
+        currency_value = request.POST.get('currency')
         if stock_id.strip() == '':
             return render(request, templates_path + 'input/input_dividend.html', locals())
         try:
@@ -769,7 +776,7 @@ def input_dividend(request):
                 stock_id=stock_id,
                 dividend_date=dividend_date,
                 dividend_amount=dividend_amount,
-                dividend_currency=dividend_currency
+                currency_id=currency_value
             )
             return redirect('/benben/list_dividend/')
         except Exception as e:
@@ -915,30 +922,37 @@ def stats_dividend(request):
         (4, '市场'),
         (5, '账户'),
     )
-    dividend_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # dividend_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     caliber = 1
-    dividend_currency = 1
-    currency_name = dividend_currency_items[dividend_currency-1][1]
+    currency_value = 1
+    currency_name = currency_items[currency_value-1][1]
     condition_id = '11'
     if request.method == 'POST':
         caliber = int(request.POST.get('caliber'))
-        dividend_currency = int(request.POST.get('dividend_currency'))
-        currency_name = dividend_currency_items[dividend_currency - 1][1]
-        condition_id = str(caliber) + str(dividend_currency)
+        currency_value = int(request.POST.get('currency'))
+        currency_name = currency_items[currency_value - 1][1]
+        condition_id = str(caliber) + str(currency_value)
         if caliber == 1:
-            content, amount_sum, name_array, value_array = get_dividend_stock_content(dividend_currency)
+            content, amount_sum, name_array, value_array = get_dividend_stock_content(currency_value)
         elif caliber == 2:
-            content, amount_sum, name_array, value_array = get_dividend_year_content(dividend_currency)
+            content, amount_sum, name_array, value_array = get_dividend_year_content(currency_value)
         elif caliber == 3:
-            content, amount_sum, name_array, value_array = get_dividend_industry_content(dividend_currency)
+            content, amount_sum, name_array, value_array = get_dividend_industry_content(currency_value)
         elif caliber == 4:
-            content, amount_sum, name_array, value_array = get_dividend_market_content(dividend_currency)
+            content, amount_sum, name_array, value_array = get_dividend_market_content(currency_value)
         elif caliber == 5:
-            content, amount_sum, name_array, value_array = get_dividend_account_content(dividend_currency)
+            content, amount_sum, name_array, value_array = get_dividend_account_content(currency_value)
         else:
             pass
 
@@ -1047,11 +1061,18 @@ def query_trade(request):
 
 # 分红金额查询
 def query_dividend_value(request):
-    dividend_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # dividend_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     stock_list = stock.objects.all().values('stock_code', 'stock_name', 'last_dividend_date', 'next_dividend_date')
     # 持仓股票列表，通过.filter(dividend__stock_id__isnull = False)，过滤出在dividend表中存在的stock_id所对应的stock表记录
     dividends_stock_list = stock_list.filter(dividend__stock_id__isnull=False).distinct()
@@ -1060,9 +1081,9 @@ def query_dividend_value(request):
     # 按账号对应的券商备注（境内券商或境外券商）排序
     account_list = account.objects.all().order_by('broker__broker_script')
     # 第一次进入页面，默认货币为人民币，账户全选、年份全选为否。
-    dividend_currency = 1
+    currency_value = 1
     # 根据dividend_currency的值从dividend_currency_items中生成dividend_currency_name
-    dividend_currency_name = dividend_currency_items[dividend_currency-1][1]
+    currency_name = currency_items[currency_value-1][1]
     is_all_account_checked = "false"
     is_all_year_checked = "false"
     if request.method == 'POST':
@@ -1080,20 +1101,20 @@ def query_dividend_value(request):
         dividend_account_list = request.POST.getlist('dividend_account_list')
         # 将列表中的字符串变成数字，方法二：使用内置map返回一个map对象，再用list将其转换为列表
         dividend_account_list = list(map(int, dividend_account_list))
-        dividend_currency = int(request.POST.get('dividend_currency'))
+        currency_value = int(request.POST.get('currency'))
         is_all_account_checked = request.POST.get('all_account')
         is_all_year_checked = request.POST.get('all_year')
         conditions = dict()
         conditions['stock'] = stock_id
         conditions['dividend_date__year__in'] = dividend_year_list
         conditions['account__in'] = dividend_account_list
-        conditions['dividend_currency'] = dividend_currency
+        conditions['currency_id'] = currency_value
         dividend_list = dividend.objects.all().filter(**conditions).order_by('-dividend_date')
         amount_sum = 0
         for i in dividend_list:
             amount_sum += i.dividend_amount
     # 根据dividend_currency的值从dividend_currency_items中生成dividend_currency_name
-    dividend_currency_name = dividend_currency_items[dividend_currency-1][1]
+    currency_name = currency_items[currency_value-1][1]
     return render(request, templates_path + 'query/query_dividend_value.html', locals())
 
 
@@ -1744,11 +1765,18 @@ def list_trade(request):
 
 # 分红表增删改查
 def add_dividend(request):
-    dividend_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # dividend_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     account_list = account.objects.all()
     stock_list = stock.objects.all().order_by('stock_code')
     if request.method == 'POST':
@@ -1756,7 +1784,7 @@ def add_dividend(request):
         stock_id = request.POST.get('stock_id')
         dividend_date = request.POST.get('dividend_date')
         dividend_amount = request.POST.get('dividend_amount')
-        dividend_currency = request.POST.get('dividend_currency')
+        currency_value = request.POST.get('currency')
         if stock_id.strip() == '':
             error_info = '股票不能为空！'
             return render(request, templates_path + 'backstage/add_dividend.html', locals())
@@ -1766,7 +1794,7 @@ def add_dividend(request):
                 stock_id=stock_id,
                 dividend_date=dividend_date,
                 dividend_amount=dividend_amount,
-                dividend_currency=dividend_currency
+                currency_id=currency_value
             )
             return redirect('/benben/list_dividend/')
         except Exception as e:
@@ -1784,11 +1812,18 @@ def del_dividend(request, dividend_id):
 
 
 def edit_dividend(request, dividend_id):
-    dividend_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # dividend_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     account_list = account.objects.all()
     stock_list = stock.objects.all()
     if request.method == 'POST':
@@ -1797,14 +1832,14 @@ def edit_dividend(request, dividend_id):
         stock_id = request.POST.get('stock_id')
         dividend_date = request.POST.get('dividend_date')
         dividend_amount = request.POST.get('dividend_amount')
-        dividend_currency = request.POST.get('dividend_currency')
+        currency_value = request.POST.get('currency')
         dividend_object = dividend.objects.get(id=id)
         try:
             dividend_object.account_id = account_id
             dividend_object.stock_id = stock_id
             dividend_object.dividend_date = dividend_date
             dividend_object.dividend_amount = dividend_amount
-            dividend_object.dividend_currency = dividend_currency
+            dividend_object.currency_id = currency_value
             dividend_object.save()
         except Exception as e:
             error_info = '输入信息有错误！'
@@ -3445,7 +3480,8 @@ def test(request):
 
     # migrate_market_currencies()
     # migrate_position_currencies()
-    migrate_funds_currencies()
+    # migrate_funds_currencies()
+    migrate_dividend_currencies()
 
     return render(request, templates_path + 'test.html', locals())
 
@@ -3630,6 +3666,67 @@ def migrate_funds_currencies():
     if remaining > 0:
         print("\n处理失败的可能原因:")
         print("1. 市场记录中有未知的funds_currency值")
+        print("2. 缺少对应的currency记录")
+        print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
+
+def migrate_dividend_currencies():
+    """
+    迁移dividend表中货币字段的数据
+    根据dividend_currency值设置currency外键字段
+    """
+    from .models import dividend, currency
+    # 创建货币映射字典
+    currency_mapping = {
+        dividend.CNY: 'CNY',
+        dividend.HKD: 'HKD',
+        dividend.USD: 'USD',
+    }
+
+    # 获取所有未迁移的市场记录
+    dividend_to_migrate = dividend.objects.filter(currency__isnull=True)
+    total_count = dividend_to_migrate.count()
+    migrated_count = 0
+
+    if total_count == 0:
+        print("没有需要迁移的记录")
+        return
+
+    print(f"发现 {total_count} 条需要迁移货币字段的记录")
+
+    # 处理每条记录
+    for dividend_record in dividend_to_migrate.iterator():
+        # 获取原字段值对应的货币代码
+        currency_code = currency_mapping.get(dividend_record.dividend_currency)
+
+        if not currency_code:
+            print(f"警告: 有未知的货币ID: {dividend_record.dividend_currency}")
+            continue
+
+        try:
+            # 获取对应的货币对象
+            currency_obj = currency.objects.get(code=currency_code)
+
+            # 更新currency字段
+            dividend_record.currency = currency_obj
+            dividend_record.save(update_fields=['currency'])
+
+            migrated_count += 1
+
+        except currency.DoesNotExist:
+            print(f"错误: 找不到代码为 {currency_code} 的货币记录")
+            continue
+
+    # 统计结果
+    remaining = funds.objects.filter(currency__isnull=True).count()
+
+    print(f"\n迁移完成!")
+    print(f"成功迁移记录: {migrated_count}")
+    print(f"迁移失败记录: {total_count - migrated_count}")
+    print(f"仍需处理的记录: {remaining}")
+
+    if remaining > 0:
+        print("\n处理失败的可能原因:")
+        print("1. 市场记录中有未知的dividend_currency值")
         print("2. 缺少对应的currency记录")
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
 

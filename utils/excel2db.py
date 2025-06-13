@@ -128,24 +128,24 @@ def excel2dividend(file_name, sheet_name, start_row, end_row):
                             account_abbreviation = '银河1'
                         account_id = account.objects.get(account_abbreviation=account_abbreviation).id
                         if j < 13:
-                            dividend_currency = 1  # 人民币分红
+                            currency_value = 1  # 人民币分红
                         elif j < 19:
-                            dividend_currency = 2  # 港元分红
+                            currency_value = 2  # 港元分红
                         else:
-                            dividend_currency = 3  # 美元分虹
+                            currency_value = 3  # 美元分虹
                         try:
                             p = dividend.objects.create(
                                 dividend_date=dividend_date,
                                 stock_id=stock_id,
                                 account_id=account_id,
                                 dividend_amount=dividend_amount,
-                                dividend_currency=dividend_currency
+                                currency_id=currency_value
                             )
                             print('导入记录成功！', dividend_date, stock_id, stock_name, account_id, dividend_amount,
-                                  dividend_currency)
+                                  currency_value)
                         except:
                             print('失败！', dividend_date, stock_id, stock_name, account_id, dividend_amount,
-                                  dividend_currency)
+                                  currency_value)
     return ()
 
 
