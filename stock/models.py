@@ -65,22 +65,13 @@ class trade(models.Model):
         (BUY, '买入'),
         (SELL, '卖出'),
     )
-    # 定义结算货币数据字典
-    CNY = 1
-    HKD = 2
-    USD = 3
-    SETTLEMENT_CURRENCY_ITEMS = (
-        (CNY, '人民币'),
-        (HKD, '港元'),
-        (USD, '美元'),
-    )
     account = models.ForeignKey(to="account", on_delete=models.CASCADE, verbose_name='证券账户', db_index=True)
     stock = models.ForeignKey(to="stock", on_delete=models.CASCADE, verbose_name='股票', db_index=True)
     trade_date = models.DateField(verbose_name='交易日期')
     trade_type = models.PositiveIntegerField(default=BUY, choices=TRADE_TYPE_ITEMS, verbose_name='交易类型')
     trade_quantity = models.IntegerField(default=0, verbose_name='交易数量')
     trade_price = models.DecimalField(max_digits=8, decimal_places=3, verbose_name='交易价格')
-    settlement_currency = models.PositiveIntegerField(default=CNY, choices=SETTLEMENT_CURRENCY_ITEMS, verbose_name='结算货币')
+    currency = models.ForeignKey(to="currency", on_delete=models.CASCADE, verbose_name='货币', db_index=True, null=True, blank=True)
     filed_time = models.DateTimeField(default=datetime.datetime(1970, 1, 1, 0, 0, 0), verbose_name='归档时间')
     created_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')

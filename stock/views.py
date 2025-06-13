@@ -249,7 +249,8 @@ def overview(request):
                 float(i.trade_price),
                 i.trade_quantity,
                 float(i.trade_price * i.trade_quantity),
-                str(i.get_settlement_currency_display()),
+                # str(i.get_settlement_currency_display()),
+                str(i.currency.name),
                 i.account.account_abbreviation
             ))
         overview.update(trade_array=trade_array)
@@ -548,7 +549,15 @@ def market_value(request):
 
 
 def view_market_value_details(request, currency_id):
-    currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
+    # currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
+    currency_dict = {}
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_dict = dict(zip(keys, values))
+
     result = historical_market_value.objects.aggregate(
         max_date=Max('date')  # 最大值（最新日期）
     )
@@ -617,7 +626,7 @@ def view_market_value_details(request, currency_id):
     # 获得近期交易列表
     # trade_list_TOP = trade.objects.filter(settlement_currency=currency_id).order_by('-trade_date', '-modified_time')[:10]
     trade_list_TOP = trade.objects.filter(
-        settlement_currency=currency_id
+        currency_id=currency_id
     ).select_related('stock').values(
         'trade_date',
         'stock_id',
@@ -681,11 +690,18 @@ def input_trade(request):
         (1, '买'),
         (2, '卖'),
     )
-    settlement_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # settlement_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     account_active = account.objects.filter(is_active=True)
     account_not_active = account.objects.filter(is_active=False)
     stock_hold, stock_not_hold = get_stock_hold_or_not()
@@ -697,7 +713,7 @@ def input_trade(request):
         trade_type = request.POST.get('trade_type')
         trade_price = request.POST.get('trade_price')
         trade_quantity = request.POST.get('trade_quantity')
-        settlement_currency = request.POST.get('settlement_currency')
+        currency_value = request.POST.get('currency')
         if stock_id.strip() == '':
             error_info = "股票不能为空！"
             return render(request, templates_path + 'input/input_trade.html', locals())
@@ -710,7 +726,7 @@ def input_trade(request):
                 trade_type=trade_type,
                 trade_price=trade_price,
                 trade_quantity=trade_quantity,
-                settlement_currency=settlement_currency,
+                currency_id=currency_value,
                 filed_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
             # 更新（删除）或新增一条仓位记录
@@ -733,7 +749,7 @@ def input_trade(request):
                     stock_id=stock_id,
                     position_quantity=trade_quantity,
                     # position_currency=settlement_currency
-                    currency_id=settlement_currency
+                    currency_id=currency_value
                 )
             return redirect('/benben/list_trade/')
         except Exception as e:
@@ -1671,11 +1687,18 @@ def add_trade(request):
         (1, '买'),
         (2, '卖'),
     )
-    settlement_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # settlement_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     account_list = account.objects.all()
     stock_list = stock.objects.all().order_by('stock_code')
     if request.method == 'POST':
@@ -1685,7 +1708,7 @@ def add_trade(request):
         trade_type = request.POST.get('trade_type')
         trade_price = request.POST.get('trade_price')
         trade_quantity = request.POST.get('trade_quantity')
-        settlement_currency = request.POST.get('settlement_currency')
+        currency_value = request.POST.get('currency')
         if stock_id.strip() == '':
             error_info = "股票不能为空！"
             return render(request, templates_path + 'backstage/add_trade.html', locals())
@@ -1697,7 +1720,7 @@ def add_trade(request):
                 trade_type=trade_type,
                 trade_price=trade_price,
                 trade_quantity=trade_quantity,
-                settlement_currency=settlement_currency,
+                currency_id=currency_value,
                 filed_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
             return redirect('/benben/list_trade/')
@@ -1721,11 +1744,18 @@ def edit_trade(request, trade_id):
         (1, '买'),
         (2, '卖'),
     )
-    settlement_currency_items = (
-        (1, '人民币'),
-        (2, '港元'),
-        (3, '美元'),
-    )
+    # settlement_currency_items = (
+    #     (1, '人民币'),
+    #     (2, '港元'),
+    #     (3, '美元'),
+    # )
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
     account_list = account.objects.all()
     stock_list = stock.objects.all()
     if request.method == 'POST':
@@ -1736,7 +1766,7 @@ def edit_trade(request, trade_id):
         trade_type = request.POST.get('trade_type')
         trade_price = request.POST.get('trade_price')
         trade_quantity = request.POST.get('trade_quantity')
-        settlement_currency = request.POST.get('settlement_currency')
+        currency_value = request.POST.get('currency')
         trade_object = trade.objects.get(id=id)
         try:
             trade_object.account_id = account_id
@@ -1745,7 +1775,7 @@ def edit_trade(request, trade_id):
             trade_object.trade_type = trade_type
             trade_object.trade_price = trade_price
             trade_object.trade_quantity = trade_quantity
-            trade_object.settlement_currency = settlement_currency
+            trade_object.currency_id = currency_value
             trade_object.save()
         except Exception as e:
             error_info = "输入信息有错误！"
@@ -1759,7 +1789,7 @@ def edit_trade(request, trade_id):
 
 
 def list_trade(request):
-    trade_list = trade.objects.all().order_by('-trade_date', '-modified_time')
+    trade_list = trade.objects.all().order_by('-trade_date', '-modified_time')[:100]
     return render(request, templates_path + 'backstage/list_trade.html', locals())
 
 
@@ -2587,7 +2617,7 @@ def generate_historical_positions(start_date, end_date):
             trade_date__lte=end_date
         ).order_by('trade_date').values(
             'trade_date', 'stock_id',
-            'settlement_currency', 'trade_type',
+            'currency_id', 'trade_type',
             'trade_quantity'
         )
 
@@ -2598,7 +2628,7 @@ def generate_historical_positions(start_date, end_date):
             daily_trades = defaultdict(lambda: {'buy': 0, 'sell': 0})
             for t in relevant_trades:
                 if t['trade_date'] == processing_date:
-                    key = (t['stock_id'], t['settlement_currency'])
+                    key = (t['stock_id'], t['currency_id'])
                     if t['trade_type'] == trade.BUY:
                         daily_trades[key]['buy'] += t['trade_quantity']
                     else:
@@ -3481,7 +3511,8 @@ def test(request):
     # migrate_market_currencies()
     # migrate_position_currencies()
     # migrate_funds_currencies()
-    migrate_dividend_currencies()
+    # migrate_dividend_currencies()
+    migrate_trade_currencies()
 
     return render(request, templates_path + 'test.html', locals())
 
@@ -3730,6 +3761,67 @@ def migrate_dividend_currencies():
         print("2. 缺少对应的currency记录")
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
 
+def migrate_trade_currencies():
+    """
+    迁移trade表中货币字段的数据
+    根据settlement_currency值设置currency外键字段
+    """
+    from .models import trade, currency
+    # 创建货币映射字典
+    currency_mapping = {
+        trade.CNY: 'CNY',
+        trade.HKD: 'HKD',
+        trade.USD: 'USD',
+    }
+
+    # 获取所有未迁移的市场记录
+    trade_to_migrate = trade.objects.filter(currency__isnull=True)
+    total_count = trade_to_migrate.count()
+    migrated_count = 0
+
+    if total_count == 0:
+        print("没有需要迁移的记录")
+        return
+
+    print(f"发现 {total_count} 条需要迁移货币字段的记录")
+
+    # 处理每条记录
+    for trade_record in trade_to_migrate.iterator():
+        # 获取原字段值对应的货币代码
+        currency_code = currency_mapping.get(trade_record.settlement_currency)
+
+        if not currency_code:
+            print(f"警告: 有未知的货币ID: {trade_record.settlement_currency}")
+            continue
+
+        try:
+            # 获取对应的货币对象
+            currency_obj = currency.objects.get(code=currency_code)
+
+            # 更新currency字段
+            trade_record.currency = currency_obj
+            trade_record.save(update_fields=['currency'])
+
+            migrated_count += 1
+
+        except currency.DoesNotExist:
+            print(f"错误: 找不到代码为 {currency_code} 的货币记录")
+            continue
+
+    # 统计结果
+    remaining = funds.objects.filter(currency__isnull=True).count()
+
+    print(f"\n迁移完成!")
+    print(f"成功迁移记录: {migrated_count}")
+    print(f"迁移失败记录: {total_count - migrated_count}")
+    print(f"仍需处理的记录: {remaining}")
+
+    if remaining > 0:
+        print("\n处理失败的可能原因:")
+        print("1. 市场记录中有未知的settlement_currency值")
+        print("2. 缺少对应的currency记录")
+        print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
+
 # 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值
 @register.filter
 def get_index(mylist, i):
@@ -3809,7 +3901,7 @@ def reverse_generate_positions_111(start_date, end_date):
             trades = trade.objects.filter(trade_date=processing_date)
             delta_dict = defaultdict(int)
             for t in trades:
-                key = (t.stock_id, t.settlement_currency)
+                key = (t.stock_id, t.currency_id)
                 delta = t.trade_quantity if t.trade_type == trade.BUY else -t.trade_quantity
                 delta_dict[key] += delta
 

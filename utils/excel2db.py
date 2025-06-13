@@ -18,9 +18,9 @@ def excel2trade(file_name, sheet_name, start_row, end_row):
     workbook = xlrd.open_workbook(file_name)
     sht = workbook.sheet_by_name(sheet_name)
     if sheet_name == '香港1' or sheet_name == '香港2' or sheet_name == '中银' or sheet_name == '盈透':
-        trade_settlement_currency = 2
+        currency_value = 2
     else:
-        trade_settlement_currency = 1
+        currency_value = 1
     if sheet_name != '打新':
         trade_account_id = account.objects.get(account_abbreviation=sheet_name).id
     # 获取总行数
@@ -90,7 +90,7 @@ def excel2trade(file_name, sheet_name, start_row, end_row):
                     trade_type=trade_type,
                     trade_price=trade_price,
                     trade_quantity=trade_quantity,
-                    settlement_currency=trade_settlement_currency,
+                    currency_id=currency_value,
                     filed_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 )
             except:
