@@ -71,10 +71,24 @@
                                 <input type="number" step="0.0001" class="form-control" name="funds_net_value" id="funds_net_value" value="{{ funds_object.funds_net_value|safe }}">
                             </div>
                         </div>
+{#                        <div class="row form-group">#}
+{#                            <label for="funds_baseline" class="col-md-4 control-label text-right">比较基准：</label>#}
+{#                            <div class="col-md-8">#}
+{#                                <input type="text" class="form-control" name="funds_baseline" id="funds_baseline" value="{{ funds_object.funds_baseline|safe }}">#}
+{#                            </div>#}
+{#                        </div>#}
                         <div class="row form-group">
-                            <label for="funds_baseline" class="col-md-4 control-label text-right">比较基准：</label>
+                            <label for="baseline" class="col-md-4 control-label text-right">比较基准：</label>
                             <div class="col-md-8">
-                                <input type="text" class="form-control" name="funds_baseline" id="funds_baseline" value="{{ funds_object.funds_baseline|safe }}">
+                                <select class="form-control" name="baseline" id="baseline">
+                                    {% for baseline in baseline_list %}
+                                        {% if baseline.code ==  funds_object.baseline.code %}
+                                            <option value="{{ baseline.id }}" selected>{{ baseline.name }}({{ baseline.code }})</option>
+                                        {% else %}
+                                            <option value="{{ baseline.id }}">{{ baseline.name }}({{ baseline.code }})</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                         <div class="row form-group">

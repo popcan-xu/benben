@@ -71,9 +71,13 @@
                             </div>
                         </div>
                         <div class="row form-group">
-                            <label for="funds_baseline" class="col-md-4 control-label text-right">比较基准：</label>
+                            <label for="baseline" class="col-md-4 control-label text-right">比较基准：</label>
                             <div class="col-md-8">
-                                <input type="text" class="form-control"  name="funds_baseline" id="funds_baseline" placeholder="请录入比较基准">
+                                <select class="form-control" name="baseline" id="baseline">
+                                    {% for baseline in baseline_list %}
+                                        <option value="{{ baseline.id }}">{{ baseline.name }}({{ baseline.code }})</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                         <div class="row form-group">

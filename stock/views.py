@@ -308,7 +308,8 @@ def view_funds_details(request, funds_id):
 
     funds_details_list = funds_details.objects.filter(funds=funds_id).order_by("date")
     funds_name = funds.objects.get(id=funds_id).funds_name
-    funds_baseline_name = funds.objects.get(id=funds_id).funds_baseline
+    # funds_baseline_name = funds.objects.get(id=funds_id).funds_baseline
+    baseline_name = funds.objects.get(id=funds_id).baseline.name
     max_date = get_max_date(funds_id)
     min_date = get_min_date(funds_id)
     years = max_date.year - min_date.year
@@ -335,7 +336,7 @@ def view_funds_details(request, funds_id):
         year_change_net_value_rate = 0
 
     name_list.append(funds_name)
-    name_list.append(funds_baseline_name)
+    name_list.append(baseline_name)
 
     path = pathlib.Path("./templates/dashboard/baseline.json")
     if path.is_file() == True and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取需要的数据以提高性能
@@ -349,7 +350,7 @@ def view_funds_details(request, funds_id):
     with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
         baseline = json.load(f)
 
-    min_date_baseline_value = get_baseline_closing_price(baseline[funds_baseline_name], int(min_date.year))
+    min_date_baseline_value = get_baseline_closing_price(baseline[baseline_name], int(min_date.year))
 
     # 按年份分组并计数
     rs = funds_details_list.annotate(year=ExtractYear('date')).values('year').annotate(count=Count('id')).order_by('year')
@@ -364,7 +365,7 @@ def view_funds_details(request, funds_id):
         funds_profit_rate = funds_net_value / pre_funds_net_value - 1
         pre_funds_net_value = funds_net_value
 
-        baseline_value = get_baseline_closing_price(baseline[funds_baseline_name], int(r['year']))
+        baseline_value = get_baseline_closing_price(baseline[baseline_name], int(r['year']))
         baseline_net_value = baseline_value / min_date_baseline_value
         list2.append(baseline_net_value)
         baseline_profit_rate = baseline_net_value / pre_baseline_net_value -1
@@ -2048,11 +2049,7 @@ def list_dividend_history(request):
 
 # 基金表增删改查
 def add_funds(request):
-    # currency_items = (
-    #     (1, '人民币'),
-    #     (2, '港元'),
-    #     (3, '美元'),
-    # )
+    baseline_list = baseline.objects.all().order_by('currency_id', 'code')
     currency_items = ()
     keys = []
     values = []
@@ -2069,7 +2066,7 @@ def add_funds(request):
         funds_principal = request.POST.get('funds_principal')
         funds_PHR = request.POST.get('funds_PHR')
         funds_net_value = request.POST.get('funds_net_value')
-        funds_baseline = request.POST.get('funds_baseline')
+        baseline_value = request.POST.get('baseline')
         funds_script = request.POST.get('funds_script')
         if funds_name.strip() == '':
             error_info = "基金名称不能为空！"
@@ -2084,7 +2081,7 @@ def add_funds(request):
                 funds_principal=funds_principal,
                 funds_PHR=funds_PHR,
                 funds_net_value=funds_net_value,
-                funds_baseline=funds_baseline,
+                baseline_id=baseline_value,
                 funds_script=funds_script
             )
             return redirect('/benben/list_funds/')
@@ -2103,11 +2100,7 @@ def del_funds(request, funds_id):
 
 
 def edit_funds(request, funds_id):
-    # currency_items = (
-    #     (1, '人民币'),
-    #     (2, '港元'),
-    #     (3, '美元'),
-    # )
+    baseline_list = baseline.objects.all().order_by('currency_id', 'code')
     currency_items = ()
     keys = []
     values = []
@@ -2125,7 +2118,7 @@ def edit_funds(request, funds_id):
         funds_principal = request.POST.get('funds_principal')
         funds_PHR = request.POST.get('funds_PHR')
         funds_net_value = request.POST.get('funds_net_value')
-        funds_baseline = request.POST.get('funds_baseline')
+        baseline_value = request.POST.get('baseline')
         funds_script = request.POST.get('funds_script')
         funds_object = funds.objects.get(id=id)
         try:
@@ -2137,7 +2130,7 @@ def edit_funds(request, funds_id):
             funds_object.funds_principal = funds_principal
             funds_object.funds_PHR = funds_PHR
             funds_object.funds_net_value = funds_net_value
-            funds_object.funds_baseline = funds_baseline
+            funds_object.baseline_id = baseline_value
             funds_object.funds_script = funds_script
             funds_object.save()
         except Exception as e:

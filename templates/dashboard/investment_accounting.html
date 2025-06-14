@@ -92,7 +92,7 @@
                                         <td>{{ funds.funds_PHR }}</td>
                                         <td>{{ funds.funds_net_value }}</td>
                                         <td>{{ funds.funds_create_date|date:'Y-m-d' }}</td>
-                                        <td>{{ funds.funds_baseline }}</td>
+                                        <td>{{ funds.baseline.name }}</td>
                                         <td>
                                             <a href="/benben/view_funds_details/{{ funds.id|safe }}" class="btn btn-default btn-sm">
                                                 详情

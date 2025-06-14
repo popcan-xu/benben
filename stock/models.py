@@ -126,7 +126,7 @@ class funds(models.Model):
     funds_name = models.CharField(max_length=32, verbose_name='基金名称', unique=True, db_index=True)
     funds_script = models.CharField(max_length=128, verbose_name='备注', null=True)
     currency = models.ForeignKey(to="currency", on_delete=models.CASCADE, verbose_name='货币', db_index=True, null=True, blank=True)
-    funds_baseline = models.CharField(max_length=32, verbose_name='比较基准', null=True)
+    baseline = models.ForeignKey(to="baseline", on_delete=models.CASCADE, verbose_name='比较基准', db_index=True, null=True, blank=True)
     funds_create_date = models.DateField(verbose_name='基金创立日期', null=True, blank=True)
     funds_value = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金价值')
     funds_principal = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金本金')
