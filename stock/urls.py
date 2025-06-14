@@ -111,6 +111,11 @@ urlpatterns = [
     path('edit_funds_details/<int:funds_details_id>/', edit_funds_details),
     path('list_funds_details/', list_funds_details),
 
+    path('add_baseline/', add_baseline),
+    path('del_baseline/<int:baseline_id>/', del_baseline),
+    path('edit_baseline/<int:baseline_id>/', edit_baseline),
+    path('list_baseline/', list_baseline),
+
     path('capture_dividend_history/', capture_dividend_history),
 
     path('batch_import/', batch_import),

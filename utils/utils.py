@@ -626,7 +626,7 @@ def get_stock_dividend_history(stock_code):
     # 使用雪球账号登录后的cookie，只需替换xq_a_token
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
-        "Cookie": "xq_a_token=ea36863c38e7d49d603a8879d2a2fea43081002e"
+        "Cookie": "xq_a_token=5d548d8ac1918f30d26af0751f438e71b45a54d4"
     }
     # headers = {
     #     "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",

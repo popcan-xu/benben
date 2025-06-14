@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.shortcuts import render, redirect, HttpResponse
 from django.db import models, connection
 from .models import currency, broker, market, account, industry, stock, position, trade, dividend, subscription, dividend_history, \
-    funds, funds_details, historical_position, historical_rate, historical_market_value
+    funds, funds_details, baseline, historical_position, historical_rate, historical_market_value
 from utils.excel2db import *
 from utils.statistics import *
 from utils.utils import *
@@ -24,10 +24,9 @@ import json
 import pandas as pd
 
 from django.db import transaction
-from django.db.models import Sum, Q, Window, F, Min, Max
 from django.db.models.functions import Lag
 from collections import defaultdict
-from django.db.models import Sum, Case, When, F, Max, Value, DecimalField, IntegerField
+from django.db.models import Sum, Q, Window, F, Min, Max, Case, When, Value, DecimalField, IntegerField
 
 import threading
 
@@ -2297,6 +2296,84 @@ def edit_funds_details(request, funds_details_id):
 def list_funds_details(request):
     funds_details_list = funds_details.objects.all()
     return render(request,  templates_path + 'backstage/list_funds_details.html', locals())
+
+
+# 比较基准表增删改查
+def add_baseline(request):
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
+    if request.method == 'POST':
+        baseline_code = request.POST.get('code')
+        baseline_name = request.POST.get('name')
+        baseline_currency = request.POST.get('currency')
+        baseline_script = request.POST.get('script')
+        if baseline_code.strip() == '':
+            error_info = " 代码不能为空！"
+            return render(request, templates_path + 'backstage/add_baseline.html', locals())
+        try:
+            p = baseline.objects.create(
+                code=baseline_code,
+                name=baseline_name,
+                currency_id=baseline_currency,
+                script=baseline_script
+            )
+            return redirect('/benben/list_baseline/')
+        except Exception as e:
+            error_info = "输入信息有错误！"
+            return render(request, templates_path + 'backstage/add_baseline.html', locals())
+        finally:
+            pass
+    return render(request, templates_path + 'backstage/add_baseline.html', locals())
+
+
+def del_baseline(request, baseline_id):
+    baseline_object = baseline.objects.get(id=baseline_id)
+    baseline_object.delete()
+    return redirect('/benben/list_baseline/')
+
+
+def edit_baseline(request, baseline_id):
+    currency_items = ()
+    keys = []
+    values = []
+    for rs in currency.objects.all():
+        keys.append(rs.id)
+        values.append(rs.name)
+    currency_items = tuple(zip(keys, values))
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        baseline_code = request.POST.get('code')
+        baseline_name = request.POST.get('name')
+        baseline_currency = request.POST.get('currency')
+        baseline_script = request.POST.get('script')
+        baseline_object = baseline.objects.get(id=id)
+        try:
+            baseline_object.code = baseline_code
+            baseline_object.name = baseline_name
+            baseline_object.currency_id = baseline_currency
+            baseline_object.script = baseline_script
+            baseline_object.save()
+        except Exception as e:
+            error_info = "输入信息有错误！"
+            return render(request, templates_path + 'backstage/edit_baseline.html', locals())
+        finally:
+            pass
+        return redirect('/benben/list_baseline/')
+    else:
+        baseline_object = baseline.objects.get(id=baseline_id)
+        return render(request, templates_path + 'backstage/edit_baseline.html', locals())
+
+
+def list_baseline(request):
+    baseline_list = baseline.objects.all().order_by('id')
+    for b in baseline_list:
+        print(b.currency.name)
+    return render(request,  templates_path + 'backstage/list_baseline.html', locals())
 
 
 # 从网站中抓取数据导入数据库

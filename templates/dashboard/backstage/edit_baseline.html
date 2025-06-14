@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block page_content %}
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-2 text-gray-800">修改比较基准</h1>
+    <p class="mb-4">请在这里修改比较基准</p>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">比较基准</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col-md-6">
+                    <form action="" method="post" class="form-horizontal" role="form" onsubmit="return sumbit_sure()">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" id="id" value="{{ baseline_object.id|safe }}" >
+                        <div class="row form-group">
+                            <label for="code" class="col-md-4 control-label text-right">代码：</label>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control"  name="code" id="code" value="{{ baseline_object.code|safe }}">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="name" class="col-md-4 control-label text-right">名称：</label>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control"  name="name" id="name" value="{{ baseline_object.name|safe }}">
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="currency" class="col-md-4 control-label text-right">货币类型：</label>
+                            <div class="col-md-8">
+                                {% for key,v in currency_items %}
+                                <label class="custom-control custom-radio custom-control-inline">
+                                    {% if key == baseline_object.currency_id %}
+                                    <input type="radio" class="custom-control-input" name="currency" id="currency{{ key }}" value="{{ key }}" checked />
+                                    <label class="custom-control-label" for="currency{{ key }}">{{ v }}</label>
+                                    {% else %}
+                                    <input type="radio" class="custom-control-input" name="currency" id="currency{{ key }}" value="{{ key }}" />
+                                    <label class="custom-control-label" for="currency{{ key }}">{{ v }}</label>
+                                    {% endif %}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="row form-group">
+                            <label for="script" class="col-md-4 control-label text-right">备注：</label>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control" name="script" id="script" value="{{ baseline_object.script|safe }}">
+                            </div>
+                        </div>
+                        <div class="row form-group" style="text-align:center">
+                            <div class="col-md-offset-4 col-md-12">
+                                <input type="submit" class="btn btn-primary" value="保存">
+                                <input type="reset" class="btn btn-primary" value="取消">
+                            </div>
+                        </div>
+                    </form>
+                    {{ error_info }}
+                </div>
+                <div class="col-md-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sumbit_sure() {
+    var gnl=confirm("确定要提交?");
+    if (gnl==true) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+</script>
+
+{% endblock %}

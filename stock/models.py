@@ -152,6 +152,15 @@ class funds_details(models.Model):
     funds_annualized_profit_rate = models.DecimalField(default=0.0, max_digits=12, decimal_places=4, verbose_name='基金年化收益率')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
 
+
+# 比较基准数据模型
+class baseline(models.Model):
+    code = models.CharField(max_length=32, verbose_name='代码', unique=True, db_index=True)
+    name = models.CharField(max_length=32, verbose_name='名称', db_index=True)
+    currency = models.ForeignKey(to="currency", on_delete=models.CASCADE, verbose_name='货币', db_index=True)
+    script = models.CharField(max_length=32, verbose_name='备注', null=True)
+
+
 # 历史持仓数据模型
 class historical_position(models.Model):
     # 定义持仓货币数据字典
