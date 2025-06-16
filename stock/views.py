@@ -346,7 +346,10 @@ def view_funds_details(request, funds_id):
         get_his_index()
     else: #点击刷新按钮
         # 更新当年指数数据
-        get_current_index()
+        baseline_name_array = []
+        for rs in funds.objects.all():
+            baseline_name_array.append(rs.baseline.name)
+        get_current_index(baseline_name_array)
     with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
         baseline = json.load(f)
 
@@ -1422,7 +1425,7 @@ def edit_account(request, account_id):
         broker_id = request.POST.get('broker_id')
         account_abbreviation = request.POST.get('account_abbreviation')
         is_active = request.POST.get('is_active')
-        print(is_active)
+        # print(is_active)
         account_object = account.objects.get(id=id)
         try:
             account_object.account_number = account_number
@@ -2364,8 +2367,6 @@ def edit_baseline(request, baseline_id):
 
 def list_baseline(request):
     baseline_list = baseline.objects.all().order_by('id')
-    for b in baseline_list:
-        print(b.currency.name)
     return render(request,  templates_path + 'backstage/list_baseline.html', locals())
 
 
@@ -3582,7 +3583,11 @@ def test(request):
     # migrate_position_currencies()
     # migrate_funds_currencies()
     # migrate_dividend_currencies()
-    migrate_trade_currencies()
+    # migrate_trade_currencies()
+
+    df = ak.stock_zh_index_daily(symbol="sz399006").sort_values(by='date',ascending=False)
+    current_latest = float(df.head(1)['close'].iloc[0])
+    print(current_latest)
 
     return render(request, templates_path + 'test.html', locals())
 

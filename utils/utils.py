@@ -966,6 +966,75 @@ def getDateRate_usd(date):
 
 # 从指数历史数据生成json文件
 def get_his_index():
+    # 上证指数
+    item = []
+    data = []
+    df = ak.stock_zh_index_daily(symbol="sh000001").sort_values(by='date',ascending=False)
+    current_year = df.head(1)['date'].iloc[0].year
+    current_latest = float(df.head(1)['close'].iloc[0])
+    item.append(current_year)
+    item.append(current_latest)
+    data.append(item)
+    item = []
+    for index in df.index:
+        row = df.loc[index]
+        year = row['date'].year
+        if year != current_year:
+            current_year = year
+            item.append(year)
+            item.append(float(row['close']))
+            data.append(item)
+            item = []
+    df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
+    dict_data_sh000001 = df.to_dict(orient='records')
+
+    # 深证成份指数
+    item = []
+    data = []
+    df = ak.stock_zh_index_daily(symbol="sz399001").sort_values(by='date',ascending=False)
+    current_year = df.head(1)['date'].iloc[0].year
+    current_latest = float(df.head(1)['close'].iloc[0])
+    item.append(current_year)
+    item.append(current_latest)
+    data.append(item)
+    item = []
+    for index in df.index:
+        row = df.loc[index]
+        year = row['date'].year
+        if year != current_year:
+            current_year = year
+            item.append(year)
+            item.append(float(row['close']))
+            data.append(item)
+            item = []
+    df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
+    dict_data_sz399001 = df.to_dict(orient='records')
+
+    # 创业板指数
+    item = []
+    data = []
+    df = ak.stock_zh_index_daily(symbol="sz399006").sort_values(by='date',ascending=False)
+    current_year = df.head(1)['date'].iloc[0].year
+    current_latest = float(df.head(1)['close'].iloc[0])
+    item.append(current_year)
+    item.append(current_latest)
+    data.append(item)
+    item = []
+    for index in df.index:
+        row = df.loc[index]
+        year = row['date'].year
+        if year != current_year:
+            current_year = year
+            item.append(year)
+            item.append(float(row['close']))
+            data.append(item)
+            item = []
+    # 添加akshare缺失年份的新数据
+    new_years_data = [2009, 1000.00]
+    data.append(new_years_data)
+    df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
+    dict_data_sz399006 = df.to_dict(orient='records')
+
     # 沪深300指数
     item = []
     data = []
@@ -989,7 +1058,7 @@ def get_his_index():
             data.append(item)
             item = []
     df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
-    dict_data_HS300 = df.to_dict(orient='records')
+    dict_data_sh000300 = df.to_dict(orient='records')
 
     # 沪深300全收益指数
     item = []
@@ -1020,7 +1089,6 @@ def get_his_index():
     data.append(new_years_data)
     new_years_data = [2011, 2511.63]
     data.append(new_years_data)
-    print(data)
     df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
     dict_data_H00300 = df.to_dict(orient='records')
 
@@ -1051,6 +1119,64 @@ def get_his_index():
     df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
     dict_data_HSI = df.to_dict(orient='records')
 
+
+    # 国企指数
+    item = []
+    data = []
+    df = ak.stock_hk_index_daily_sina(symbol="HSCEI").sort_values(by='date',ascending=False)
+    current_year = df.head(1)['date'].iloc[0].year
+    current_latest = float(df.head(1)['close'].iloc[0])
+    item.append(current_year)
+    item.append(current_latest)
+    data.append(item)
+    item = []
+    for index in df.index:
+        row = df.loc[index]
+        # year = datetime.datetime.strptime(row['date'], "%Y-%m-%d").year
+        year = row['date'].year
+        if year != current_year:
+            current_year = year
+            item.append(year)
+            item.append(float(row['close']))
+            data.append(item)
+            item = []
+    df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
+    dict_data_HSCEI = df.to_dict(orient='records')
+
+    # 恒生科技指数
+    item = []
+    data = []
+    df = ak.stock_hk_index_daily_sina(symbol="HSTECH").sort_values(by='date',ascending=False)
+    current_year = df.head(1)['date'].iloc[0].year
+    current_latest = float(df.head(1)['close'].iloc[0])
+    item.append(current_year)
+    item.append(current_latest)
+    data.append(item)
+    item = []
+    for index in df.index:
+        row = df.loc[index]
+        # year = datetime.datetime.strptime(row['date'], "%Y-%m-%d").year
+        year = row['date'].year
+        if year != current_year:
+            current_year = year
+            item.append(year)
+            item.append(float(row['close']))
+            data.append(item)
+            item = []
+    # 添加akshare缺失年份的新数据
+    new_years_data = [2015, 3309.53]
+    data.append(new_years_data)
+    new_years_data = [2016, 3668.26]
+    data.append(new_years_data)
+    new_years_data = [2017, 5549.89]
+    data.append(new_years_data)
+    new_years_data = [2018, 3460.42]
+    data.append(new_years_data)
+    new_years_data = [2019, 4714.81]
+    data.append(new_years_data)
+    df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
+    dict_data_HSTECH = df.to_dict(orient='records')
+
     # 标普500指数
     item = []
     data = []
@@ -1073,11 +1199,62 @@ def get_his_index():
     df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
     dict_data_INX = df.to_dict(orient='records')
 
+    # 道琼斯指数
+    item = []
+    data = []
+    df = ak.index_us_stock_sina(symbol=".DJI").sort_values(by='date',ascending=False) #标普500指数历史
+    current_year = df.head(1)['date'].iloc[0].year
+    current_close = float(df.head(1)['close'].iloc[0])
+    item.append(current_year)
+    item.append(current_close)
+    data.append(item)
+    item = []
+    for index in df.index:
+        row = df.loc[index]
+        year = row['date'].year
+        if year != current_year:
+            current_year = year
+            item.append(year)
+            item.append(float(row['close']))
+            data.append(item)
+            item = []
+    df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
+    dict_data_DJI = df.to_dict(orient='records')
+
+    # 纳斯达克指数
+    item = []
+    data = []
+    df = ak.index_us_stock_sina(symbol=".IXIC").sort_values(by='date',ascending=False) #标普500指数历史
+    current_year = df.head(1)['date'].iloc[0].year
+    current_close = float(df.head(1)['close'].iloc[0])
+    item.append(current_year)
+    item.append(current_close)
+    data.append(item)
+    item = []
+    for index in df.index:
+        row = df.loc[index]
+        year = row['date'].year
+        if year != current_year:
+            current_year = year
+            item.append(year)
+            item.append(float(row['close']))
+            data.append(item)
+            item = []
+    df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
+    dict_data_IXIC = df.to_dict(orient='records')
+
     baseline = {}
-    baseline.update(沪深300指数=dict_data_HS300)
+    baseline.update(上证指数=dict_data_sh000001)
+    baseline.update(深证成份指数=dict_data_sz399001)
+    baseline.update(创业板指数=dict_data_sz399006)
+    baseline.update(沪深300指数=dict_data_sh000300)
     baseline.update(沪深300全收益指数=dict_data_H00300)
     baseline.update(恒生指数=dict_data_HSI)
+    baseline.update(国企指数=dict_data_HSCEI)
+    baseline.update(恒生科技指数=dict_data_HSTECH)
     baseline.update(标普500指数=dict_data_INX)
+    baseline.update(道琼斯指数=dict_data_DJI)
+    baseline.update(纳斯达克指数=dict_data_IXIC)
     # 打时间戳
     baseline.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     # 写入json文件
@@ -1086,57 +1263,70 @@ def get_his_index():
     return
 
 # 从指数当年数据更新json文件
-def get_current_index():
-    # 沪深300全收益指数
-    end_date_str = datetime.datetime.now().strftime('%Y%m%d')
-    start_date_str = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y%m%d')
-    df = ak.stock_zh_index_hist_csindex(symbol="H00300", start_date=start_date_str, end_date=end_date_str).sort_values(by='日期',ascending=False)
-    current_H00300 = float(df.head(1)['收盘'].iloc[0])
-    # current_year_H00300 = df.head(1)['日期'].iloc[0].year
-    current_year_H00300 = datetime.datetime.now().year
-
-    # 沪深300指数
-    df = ak.stock_zh_index_spot_sina()
-    current_HS300 = float(df[df['代码'] == 'sh000300']['最新价'].iloc[0])
-    current_year_HS300 = datetime.datetime.now().year
-
-    # 恒生指数
-    df = ak.stock_hk_index_spot_sina()
-    current_HSI = float(df[df['代码'] == 'HSI']['最新价'].iloc[0])
-    current_year_HSI = datetime.datetime.now().year
-
-
-    # 标普500指数
-    df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date',ascending=False).head(1)
-    # current_year_INX = df['date'].iloc[0].year
-    current_INX = float(df['close'].iloc[0])
-    current_year_INX = datetime.datetime.now().year
-
+def get_current_index(baseline_name_array):
     # 1. 读取JSON文件
     #baseline = FileOperate(filepath='./templates/dashboard/', filename='baseline.json').operation_file()
     with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
         baseline = json.load(f)
-
-    # 2. 查找并修改当年数据
-    for item in baseline["沪深300全收益指数"]:
-        if item["Year"] == current_year_H00300:
-            item["ClosingPrice"] = current_H00300  # 替换成你的新数值
-            break  # 找到后立即退出循环
-    for item in baseline["沪深300指数"]:
-        if item["Year"] == current_year_HS300:
-            item["ClosingPrice"] = current_HS300  # 替换成你的新数值
-            break  # 找到后立即退出循环
-    for item in baseline["恒生指数"]:
-        if item["Year"] == current_year_HSI:
-            item["ClosingPrice"] = current_HSI  # 替换成你的新数值
-            break  # 找到后立即退出循环
-    for item in baseline["标普500指数"]:
-        if item["Year"] == current_year_INX:
-            item["ClosingPrice"] = current_INX  # 替换成你的新数值
-            break  # 找到后立即退出循环
+    current_year = datetime.datetime.now().year
+    for baseline_name in baseline_name_array:
+        if baseline_name == '上证指数':
+            # 上证指数
+            df = ak.stock_zh_index_spot_sina()
+            current_price = float(df[df['代码'] == 'sh000001']['最新价'].iloc[0])
+        elif baseline_name == '深证成份指数':
+            # 深证成份指数
+            df = ak.stock_zh_index_spot_sina()
+            current_price = float(df[df['代码'] == 'sz399001']['最新价'].iloc[0])
+        elif baseline_name == '创业板指数':
+            # 创业板指数
+            df = ak.stock_zh_index_spot_sina()
+            current_price = float(df[df['代码'] == 'sz399006']['最新价'].iloc[0])
+        elif baseline_name == '沪深300指数':
+            # 沪深300指数
+            df = ak.stock_zh_index_spot_sina()
+            current_price = float(df[df['代码'] == 'sh000300']['最新价'].iloc[0])
+        elif baseline_name == '沪深300全收益指数':
+            # 沪深300全收益指数
+            end_date_str = datetime.datetime.now().strftime('%Y%m%d')
+            start_date_str = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y%m%d')
+            df = ak.stock_zh_index_hist_csindex(symbol="H00300", start_date=start_date_str,
+                                                end_date=end_date_str).sort_values(by='日期', ascending=False)
+            current_price = float(df.head(1)['收盘'].iloc[0])
+        elif baseline_name == '恒生指数':
+            # 恒生指数
+            df = ak.stock_hk_index_spot_sina()
+            current_price = float(df[df['代码'] == 'HSI']['最新价'].iloc[0])
+        elif baseline_name == '国企指数':
+            # 国企指数
+            df = ak.stock_hk_index_spot_sina()
+            current_price = float(df[df['代码'] == 'HSCEI']['最新价'].iloc[0])
+        elif baseline_name == '恒生科技指数':
+            # 恒生科技指数
+            df = ak.stock_hk_index_spot_sina()
+            current_price = float(df[df['代码'] == 'HSTECH']['最新价'].iloc[0])
+        elif baseline_name == '标普500指数':
+            # 标普500指数
+            df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date', ascending=False).head(1)
+            current_price = float(df['close'].iloc[0])
+        elif baseline_name == '道琼斯指数':
+            # 道琼斯指数
+            df = ak.index_us_stock_sina(symbol=".DJI").sort_values(by='date', ascending=False).head(1)
+            current_price = float(df['close'].iloc[0])
+        elif baseline_name == '纳斯达克指数':
+            # 纳斯达克指数
+            df = ak.index_us_stock_sina(symbol=".IXIC").sort_values(by='date', ascending=False).head(1)
+            current_price = float(df['close'].iloc[0])
+        else:
+            current_price = 0
+        for item in baseline[baseline_name]:
+            if item["Year"] == current_year:
+                item["ClosingPrice"] = current_price  # 替换成你的新数值
+                # print(baseline_name,current_year,current_price)
+                break  # 找到后立即退出循环
     baseline["modified_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # 3. 写回JSON文件（保留原有格式）
+    # 2. 写回JSON文件（保留原有格式）
     with open('./templates/dashboard/baseline.json', 'w', encoding='utf-8') as f:
         json.dump(baseline, f, ensure_ascii=False, indent=2)  # 保持中文可读性
 
