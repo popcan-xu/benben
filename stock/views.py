@@ -656,8 +656,80 @@ def view_market_value_details(request, currency_id):
         latest_modified=Max('modified_time')
     ).order_by('-trade_date', '-latest_modified')[:10]
 
+    updating_time = current_date
+    return render(request, templates_path + 'view_market_value_details.html', locals())
+
+
+# 交易详情
+def view_trade_details(request, currency_id):
+    return render(request, templates_path + 'view_trade_details.html', locals())
+
+# 分红概览
+def view_dividend(request):
+    dividend_summary = []
+    for rs in currency.objects.all():
+        currency_id = rs.id
+        currency_code = rs.code
+        currency_name = rs.name
+        total_amount = get_dividend_summary(currency_id)
+        year_amount = get_dividend_current_year(currency_id)
+        dividend_summary.append({
+            'currency_id': currency_id,
+            'currency_code': currency_code,
+            'currency_name': currency_name,
+            'total_amount': total_amount,
+            'year_amount': year_amount
+        })
+    return render(request, templates_path + 'view_dividend.html', locals())
+
+# 分红详情
+def view_dividend_details(request, currency_id):
+    currency_name = currency.objects.get(id=currency_id).name
+    result = dividend.objects.aggregate(
+        max_date=Max('dividend_date')  # 最大值（最新日期）
+    )
+    current_date = result['max_date']
+
+    # 1. 累计分红
+    total_dividends = get_dividend_summary(currency_id)
+
+    # 2. 年内分红
+    year_dividends = get_dividend_current_year(currency_id)
+
+    # 3. 上年分红
+    dividends_avg_amount_1 = get_dividend_annual_average(currency_id, 1)
+    dividends_in_past_year = get_dividend_in_past_year(currency_id)
+
+    # 4. 近三年平均分红
+    dividends_avg_amount_3 = get_dividend_annual_average(currency_id, 3)
+
+    # 5. 近五年平均分红
+    dividends_avg_amount_5 = get_dividend_annual_average(currency_id, 5)
+
+    # 6. 近七年平均分红
+    dividends_avg_amount_7 = get_dividend_annual_average(currency_id, 7)
+
+    # 7.总分红率
+    min_year, max_year, year_span = get_year_span(currency_id=currency_id)
+    dividend_yearly_avg = total_dividends / year_span
+    funds_id = funds.objects.get(currency_id=currency_id).id
+    result = calculate_fund_yearly_avg(funds_id=funds_id)
+    funds_value_yearly_agv = result['avg_year_end_value']
+    dividend_rate_total = dividend_yearly_avg / (funds_value_yearly_agv if funds_value_yearly_agv != 0 else -1)
+    print(f"基金名称: {result['funds_name']}")
+    print(f"年平均年终值: {result['avg_year_end_value']}")
+    print(f"数据覆盖年份: {result['min_year']}-{result['max_year']} ({result['years_count']}年)")
+
+    # 8.年内分红率
+    market_value_current_year = historical_market_value.objects.filter(currency=currency_name).order_by('-date').first().value
+    dividend_rate_current_year = year_dividends / (market_value_current_year if market_value_current_year != 0 else 1)
+
+    # 9.上年分红率
+    market_value_pre_year = historical_market_value.objects.filter(currency=currency_name, date__year=datetime.datetime.now().year-1).order_by('-date').first().value
+    dividend_rate_pre_year = dividends_avg_amount_1 / (market_value_pre_year if market_value_pre_year != 0 else 1)
+
+
     # 获得近期分红列表
-    # dividend_list_TOP = dividend.objects.filter(dividend_currency=currency_id).order_by('-dividend_date', '-modified_time')[:10]
     dividend_list_TOP = dividend.objects.filter(
         currency_id=currency_id
     ).select_related('stock').values(
@@ -674,16 +746,44 @@ def view_market_value_details(request, currency_id):
     )[:10]
     # print(dividend_list_TOP)
 
+    # 获得分红图表数据
+    current_year = datetime.datetime.now().year
+    dividend_current_year = dividend.objects.filter(
+        dividend_date__year=current_year,
+        currency_id=currency_id,
+        currency__isnull=False  # 排除货币为空的记录
+    ).values(
+        stock_name=F('stock__stock_name')  # 股票名称
+    ).annotate(
+        total_dividend=Sum('dividend_amount'),  # 合并分红金额
+    ).order_by(
+        '-total_dividend'
+    )
+    name_current_year_list = []
+    dividend_current_year_list = []
+    for item in dividend_current_year:
+        name_current_year_list.append(item['stock_name'])
+        dividend_current_year_list.append(round(item['total_dividend']))
+
+    dividend_total = dividend.objects.filter(
+        currency_id=currency_id,
+        currency__isnull=False  # 排除货币为空的记录
+    ).values(
+        stock_name=F('stock__stock_name')  # 股票名称
+    ).annotate(
+        total_dividend=Sum('dividend_amount'),  # 合并分红金额
+    ).order_by(
+        '-total_dividend'
+    )[:20]
+    name_total_list = []
+    dividend_total_list = []
+    for item in dividend_total:
+        name_total_list.append(item['stock_name'])
+        dividend_total_list.append(round(item['total_dividend']))
+
+
     updating_time = current_date
-    return render(request, templates_path + 'view_market_value_details.html', locals())
 
-
-# 交易详情
-def view_trade_details(request, currency_id):
-    return render(request, templates_path + 'view_trade_details.html', locals())
-
-# 分红详情
-def view_dividend_details(request, currency_id):
     return render(request, templates_path + 'view_dividend_details.html', locals())
 
 

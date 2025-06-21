@@ -10,7 +10,8 @@ import django
 import datetime, time
 import pathlib
 import requests
-from django.db.models import Max, Min
+from django.db.models import Max, Min, Sum
+from django.db.models.functions import ExtractYear
 
 # import tushare as ts
 import akshare as ak
@@ -27,7 +28,7 @@ import re
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import market, stock, trade, position, dividend, subscription, funds_details
+from stock.models import market, stock, trade, position, dividend, subscription, funds_details, currency, funds
 
 
 # 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
@@ -1650,3 +1651,229 @@ def get_account_used_or_not():
     return stock_hold, stock_not_hold
 
 
+def get_dividend_summary(currency_id):
+    result = dividend.objects.filter(
+        currency_id=currency_id
+    ).aggregate(
+        total_amount=Sum('dividend_amount')
+    )
+    return result['total_amount'] or Decimal('0.00')
+
+def get_dividend_current_year(currency_id):
+    current_year = datetime.datetime.now().year
+    result = dividend.objects.filter(
+        currency_id=currency_id,
+        dividend_date__year=current_year
+    ).aggregate(
+        total_amount=Sum('dividend_amount')
+    )
+    return result['total_amount'] or Decimal('0.00')
+
+def get_dividend_in_past_year(currency_id):
+    # 计算日期范围
+    today = datetime.datetime.now().date()
+    one_year_ago = today - datetime.timedelta(days=365)
+    # 查询近一年的分红总额
+    result = dividend.objects.filter(
+        currency_id=currency_id,
+        dividend_date__gte=one_year_ago,
+        dividend_date__lte=today
+    ).aggregate(
+        total_amount=Sum('dividend_amount')
+    )
+    return result['total_amount'] or Decimal('0.00')
+
+
+def get_dividend_annual_average(currency_id, years):
+    """按年度统计平均分红金额（每年总分红再平均）"""
+    current_year = datetime.datetime.now().year
+    start_year = current_year - years  # 近五年（不含当年）
+    end_year = current_year - 1
+
+    # 获取每年总分红
+    annual_totals = dividend.objects.filter(
+        currency_id=currency_id,
+        dividend_date__year__gte=start_year,
+        dividend_date__year__lte=end_year
+    ).values('dividend_date__year').annotate(
+        annual_total=Sum('dividend_amount')
+    )
+
+    # 计算years年平均值
+    total_amount = Decimal('0.00')
+    for entry in annual_totals:
+        total_amount += entry['annual_total'] or Decimal('0.00')
+
+    # 即使某些年份无分红，分母仍为years
+    avg_amount = total_amount / years
+
+    return avg_amount.quantize(Decimal('0.00'))
+
+
+def get_year_span(currency_id):
+    """
+    获取指定货币类型的分红记录年份跨度
+    :param currency_id: 货币ID
+    :return: (最早年份, 最晚年份, 年份跨度) 元组
+    """
+    # 获取该货币的所有分红记录中的最早和最晚日期
+    result = dividend.objects.filter(currency_id=currency_id).aggregate(
+        min_date=Min('dividend_date'),
+        max_date=Max('dividend_date')
+    )
+
+    min_date = result['min_date']
+    max_date = result['max_date']
+
+    if min_date is None or max_date is None:
+        # 没有分红记录时返回 (0, 0, 0)
+        return 0, 0, 0
+
+    # 计算年份数
+    min_year = min_date.year
+    max_year = max_date.year
+    year_span = max_year - min_year + 1  # 包括起始和结束年份
+
+    return min_year, max_year, year_span
+
+
+def calculate_fund_yearly_avg(funds_id=None):
+    """
+    计算基金每年年末funds_value的平均值
+
+    参数:
+    funds_id (int, 可选): 指定基金ID，如果提供则只返回该基金的结果
+
+    返回格式: [{
+        'funds_id': int,
+        'funds_name': str,
+        'avg_year_end_value': Decimal,
+        'years_count': int,
+        'min_year': int,
+        'max_year': int
+    }]
+    """
+    # 第一步：获取每年最大日期，可限制特定基金
+    base_query = funds_details.objects
+
+    # 如果提供了funds_id，则过滤特定基金
+    if funds_id is not None:
+        base_query = base_query.filter(funds_id=funds_id)
+
+    yearly_max_dates = (
+        base_query
+            .annotate(year=ExtractYear('date'))
+            .values('funds_id', 'year')
+            .annotate(max_date=Max('date'))
+            .order_by('funds_id', 'year')
+    )
+
+    # 如果没有查询到任何记录，返回空列表
+    if not yearly_max_dates:
+        return []
+
+    # 第二步：计算每年年末的实际值
+    yearly_values = []
+
+    for year_data in yearly_max_dates:
+        funds_id = year_data['funds_id']
+        year = year_data['year']
+        max_date = year_data['max_date']
+
+        # 获取该基金该年份最大日期的记录
+        max_date_value = funds_details.objects.filter(
+            funds_id=funds_id,
+            date=max_date
+        ).first()
+
+        # 如果最大日期的funds_value不为0，直接使用
+        if max_date_value and max_date_value.funds_value > 0:
+            yearly_values.append({
+                'funds_id': funds_id,
+                'year': year,
+                'year_end_value': max_date_value.funds_value
+            })
+        else:
+            # 查找该基金该年份最新的非零值
+            non_zero_value = (
+                funds_details.objects
+                    .filter(
+                    funds_id=funds_id,
+                    date__year=year,
+                    funds_value__gt=0
+                )
+                    .order_by('-date')
+                    .first()
+            )
+
+            # 如果有非零值则使用，否则记为0
+            value = non_zero_value.funds_value if non_zero_value else Decimal('0.0')
+            yearly_values.append({
+                'funds_id': funds_id,
+                'year': year,
+                'year_end_value': value
+            })
+
+    # 第三步：计算平均值
+    fund_stats = {}
+
+    for data in yearly_values:
+        current_funds_id = data['funds_id']
+
+        # 如果指定了特定的funds_id，只处理该基金
+        if funds_id is not None and current_funds_id != funds_id:
+            continue
+
+        if current_funds_id not in fund_stats:
+            fund_stats[current_funds_id] = {
+                'values': [],
+                'years': set(),
+                'total': Decimal('0.0'),
+                'count': 0
+            }
+
+        fund_stats[current_funds_id]['values'].append(data['year_end_value'])
+        fund_stats[current_funds_id]['years'].add(data['year'])
+        fund_stats[current_funds_id]['total'] += data['year_end_value']
+        fund_stats[current_funds_id]['count'] += 1
+
+    # 如果没有收集到任何数据，返回空列表
+    if not fund_stats:
+        return []
+
+    # 第四步：组装结果（包括基金名称）
+    # from .models import funds  # 导入基金模型
+
+    results = []
+
+    # 获取所有涉及的基金ID
+    funds_ids = list(fund_stats.keys())
+
+    # 一次性获取所有基金名称
+    fund_names = {
+        f.id: f.funds_name
+        for f in funds.objects.filter(id__in=funds_ids)
+    }
+
+    for funds_id, stats in fund_stats.items():
+        # 获取基金名称
+        fund_name = fund_names.get(funds_id, f"基金ID:{funds_id}")
+
+        # 计算平均值（保留2位小数）
+        avg_value = stats['total'] / stats['count'] if stats['count'] > 0 else Decimal('0.0')
+        avg_value = avg_value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        results.append({
+            'funds_id': funds_id,
+            'funds_name': fund_name,
+            'avg_year_end_value': avg_value,
+            'years_count': stats['count'],
+            'min_year': min(stats['years']),
+            'max_year': max(stats['years'])
+        })
+
+    # 如果指定了funds_id且结果存在，直接返回单个字典（为了向后兼容）
+    if funds_id is not None and results:
+        return results[0] if len(results) == 1 else results
+    else:
+        return results

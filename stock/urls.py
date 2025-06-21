@@ -22,7 +22,8 @@ urlpatterns = [
     path('view_market_value_details/<int:currency_id>/', view_market_value_details),
     # path('trade_overview/', trade_overview),
     path('view_trade_details/<int:currency_id>/', view_trade_details),
-    # path('dividend_overview/', dividend_overview),
+
+    path('view_dividend/', view_dividend),
     path('view_dividend_details/<int:currency_id>/', view_dividend_details),
 
     path('input_trade/', input_trade),

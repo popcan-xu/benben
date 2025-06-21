@@ -210,7 +210,7 @@
             <div class="card h-100 shadow mb-4">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">市值曲线</h6>
-                    <div class="btn-group">
+                    <div class="btn-group" id="market_value_viewSwitch">
                         <button
                             type="button"
                             class="btn btn-sm btn-outline-primary active"
@@ -431,47 +431,7 @@
             </div>
         </div>
 
-        <!-- 近期分红 -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">近期分红</h6>
-                </div>
-                <div class="card-body">
-                    <div style="height:500px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>分红日期</th>
-                                        <th>股票/代码</th>
-                                        <th>分红金额</th>
-                                        <th>更新时间</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for dividend in dividend_list_TOP %}
-                                        <tr>
-                                            <td>{{ dividend.dividend_date|date:'Y-m-d' }}</td>
-                                            <td>{{ dividend.stock__stock_name }}（{{ dividend.stock__stock_code }}）</td>
-                                            <td>{{ dividend.total_dividend|floatformat:0 }}</td>
-                                            <td>{{ dividend.latest_modified|date:'Y-m-d H:i' }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-white text-muted small">
-                    数据更新于：{{ updating_time|date:'Y-m-d' }}
-                </div>
-            </div>
-        </div>
-
     </div>
-
-
 
 </div>
 
@@ -674,9 +634,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 按钮事件
-    document.querySelectorAll('[data-range]').forEach(btn => {
+    document.querySelectorAll('#market_value_viewSwitch button').forEach(btn => {
         btn.addEventListener('click', function() {
-            document.querySelectorAll('[data-range]').forEach(b =>
+            document.querySelectorAll('#market_value_viewSwitch button').forEach(b =>
                 b.classList.remove('active'));
             this.classList.add('active');
             updateChart(this.dataset.range);
