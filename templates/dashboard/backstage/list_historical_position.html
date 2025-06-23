@@ -34,7 +34,7 @@
                                 <td>{{ historical_position.date|date:'Y-m-d' }}</td>
                                 <td>{{ historical_position.stock.stock_name }}({{ historical_position.stock.stock_code }})</td>
                                 <td>{{ historical_position.quantity }}</td>
-                                <td>{{ historical_position.get_currency_display }}</td>
+                                <td>{{ historical_position.currency.name }}</td>
                                 <td>{{ historical_position.closing_price|floatformat:3 }}</td>
                                 <td>{{ historical_position.modified_time|date:'Y-m-d H:i' }}</td>
                                 <td>
@@ -65,7 +65,7 @@ $(document).ready(function() {
     $('#dataTable').DataTable( {
         //先按第一列逆序排序，如果有相同，再按第二列顺序排序
         //order后面就是一个多维数组，可以自由增删
-        "order": [[ 4, "desc" ]]
+        "order": [[ 0, "desc" ]]
     } );
 } );
 </script>
