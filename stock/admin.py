@@ -11,11 +11,7 @@ class marketAdmin(admin.ModelAdmin):
 class accountAdmin(admin.ModelAdmin):
     list_display = ('account_number','broker')
 
-class historical_rate_Admin(admin.ModelAdmin):
-    list_display = ('date','currency','rate')
-
 
 admin.site.register(broker,brokerAdmin)
 admin.site.register(market,marketAdmin)
 admin.site.register(account,accountAdmin)
-admin.site.register(historical_rate,historical_rate_Admin)

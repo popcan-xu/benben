@@ -174,8 +174,6 @@ class historical_position(models.Model):
         db_index=True,
         null=True,
         blank=True,
-        # 保持原数据库列名不变
-        db_column='currency_type_id'
     )
     closing_price = models.DecimalField(default=0.0, max_digits=8, decimal_places=3, verbose_name='收盘价格')
     created_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
@@ -197,7 +195,13 @@ class historical_position(models.Model):
 # 历史汇率数据模型
 class historical_rate(models.Model):
     date = models.DateField(verbose_name='日期')
-    currency = models.CharField(max_length=16, verbose_name='货币')
+    currency = models.ForeignKey(
+        to="currency",
+        on_delete=models.SET_NULL,
+        verbose_name='货币外键',
+        null=True,  # 关键：允许空值
+        blank=True
+    )
     rate = models.DecimalField(max_digits=8, decimal_places=4, verbose_name='汇率')
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
     class Meta:
@@ -208,7 +212,13 @@ class historical_rate(models.Model):
 # 历史持仓市值数据模型
 class historical_market_value(models.Model):
     date = models.DateField(verbose_name='日期')
-    currency = models.CharField(max_length=16, verbose_name='货币')
+    currency = models.ForeignKey(  # 添加允许为空的临时外键字段
+        to="currency",
+        on_delete=models.SET_NULL,
+        verbose_name='货币外键',
+        null=True,  # 关键：允许空值
+        blank=True
+    )
     value = models.DecimalField(max_digits=16, decimal_places=4, verbose_name='市值')
     prev_value = models.DecimalField(max_digits=16, decimal_places=4, default=0, verbose_name='前一日市值')
     change_amount = models.DecimalField(max_digits=16, decimal_places=4, default=0, verbose_name='变化值')
