@@ -62,6 +62,7 @@ def get_position_content(currency):
 
 # def get_value_stock_content(position_currency, price_increase_array, HKD_rate, USD_rate):
 def get_value_stock_content(currency_value, price_increase_array, HKD_rate, USD_rate):
+    stock_id_array = []
     stock_table_array = []
     stock_chart_array = []
     price_array = []
@@ -77,6 +78,7 @@ def get_value_stock_content(currency_value, price_increase_array, HKD_rate, USD_
         # 对position表分组查询，按stock字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
         stock_dict = position.objects.values("stock").annotate(
             quantity=Sum("position_quantity")).values(
+            'stock_id',
             'stock__stock_name',
             'stock__stock_code',
             'quantity',
@@ -88,6 +90,7 @@ def get_value_stock_content(currency_value, price_increase_array, HKD_rate, USD_
         # stock_dict = position.objects.filter(position_currency=position_currency).values("stock").annotate(
         stock_dict = position.objects.filter(currency_id=currency_value).values("stock").annotate(
             quantity=Sum("position_quantity")).values(
+            'stock_id',
             'stock__stock_name',
             'stock__stock_code',
             'quantity',
@@ -96,6 +99,7 @@ def get_value_stock_content(currency_value, price_increase_array, HKD_rate, USD_
         )
     for dict in stock_dict:
         # 从字典tmp中取出’stock__stock_name‘的值
+        stock_id = dict['stock_id']
         stock_name = dict['stock__stock_name']
         stock_code = dict['stock__stock_code']
         quantity = dict['quantity']
@@ -126,13 +130,14 @@ def get_value_stock_content(currency_value, price_increase_array, HKD_rate, USD_
         color_array.append(color)
         quantity_array.append(quantity)
         amount_array.append(amount)
+        stock_id_array.append(stock_id)
     i = 0
     while i < len(amount_array):
         percent = format(float(amount_array[i]) / amount_sum, '.2%')
         percent_array.append(percent)
         i += 1
     stock_table_content = list(
-        zip(stock_table_array, price_array, increase_array, color_array, quantity_array, amount_array, percent_array))
+        zip(stock_table_array, price_array, increase_array, color_array, quantity_array, amount_array, percent_array, stock_id_array))
     stock_chart_content = list(
         zip(stock_chart_array, price_array, increase_array, color_array, quantity_array, amount_array, percent_array))
     stock_table_content.sort(key=take_col6, reverse=True)  # 对stock_content列表按第6列（金额）降序排序

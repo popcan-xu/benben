@@ -110,7 +110,7 @@
                                     <tbody>
                                         {% for i in content_CNY %}
                                             <tr>
-                                                <td>{{ i.0|stringformat:"s" }}</td>
+                                                <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>
                                                 <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
                                                 <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
                                                 <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
@@ -119,10 +119,7 @@
                                             </tr>
                                         {% endfor %}
                                         <tr>
-                                            <td><b>合计</b></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
+                                            <td colspan="4"><b>合计</b>（股票数量：{{ content_CNY|length }}）</td>
                                             <td style="text-align: right"><b>{{ amount_sum_CNY|floatformat:0 }}</b></td>
                                             <td style="text-align: right"><b>100.00%</b></td>
                                         </tr>
@@ -165,7 +162,7 @@
                                     <tbody>
                                         {% for i in content_HKD %}
                                             <tr>
-                                                <td>{{ i.0|stringformat:"s" }}</td>
+                                                <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>
                                                 <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
                                                 <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
                                                 <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
@@ -174,7 +171,7 @@
                                             </tr>
                                         {% endfor %}
                                         <tr>
-                                            <td><b>合计</b></td>
+                                            <td><b>合计</b>（股票数量：{{ content_HKD|length }}）</td>
                                             <td></td>
                                             <td></td>
                                             <td></td>
@@ -220,7 +217,7 @@
                                     <tbody>
                                         {% for i in content_USD %}
                                             <tr>
-                                                <td>{{ i.0|stringformat:"s" }}</td>
+                                                <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>
                                                 <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
                                                 <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
                                                 <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
@@ -229,7 +226,7 @@
                                             </tr>
                                         {% endfor %}
                                         <tr>
-                                            <td><b>合计</b></td>
+                                            <td><b>合计</b>（股票数量：{{ content_USD|length }}）</td>
                                             <td></td>
                                             <td></td>
                                             <td></td>

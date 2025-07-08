@@ -5,6 +5,7 @@ import datetime
 class currency(models.Model):
     code = models.CharField(max_length=32, verbose_name='代码', unique=True, db_index=True)
     name = models.CharField(max_length=32, verbose_name='名称', db_index=True)
+    unit = models.CharField(max_length=32, verbose_name='单位', null=True)
     script = models.CharField(max_length=32, verbose_name='备注', null=True)
 
 

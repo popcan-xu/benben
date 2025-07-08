@@ -146,7 +146,7 @@
         <div class="col-xl-4" style="text-align:right">
             <div class="col-auto">
                 <div class="h6 mb-0 text-gray-500">
-                    <a href="/benben/investment_accounting/" style="color: inherit; text-decoration: none;">返回 ></a>
+                    <a href="javascript:history.back()" style="color: inherit; text-decoration: none;">返回 ></a>
                 </div>
             </div>
         </div>
@@ -190,11 +190,12 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">上期资产（元）</div>
-                            <div class="small mb-0 text-gray-500">{{ second_max_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>
+                            <div class="small mb-0 text-gray-500">{{ second_max_date|date:'y/m/d' }}</div>
                             <div class="h4 mb-0 text-gray-800 font"><span style="">{{ last_period_value|floatformat:0 }}</span></div>
                         </div>
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">当期资产（元）</div>
+                            <div class="small mb-0 text-gray-500">{{ max_date|date:'y/m/d' }}</div>
                             <div class="h4 mb-0 text-gray-800 font">{{ current_funds_details_object.funds_value|floatformat:0 }}</div>
                         </div>
                         <div class="col mr-2">
@@ -1088,7 +1089,9 @@ document.addEventListener('DOMContentLoaded', function() {
             {
             //name: '净值',
             type: 'value',
-            //min:0, // 配置 Y 轴刻度最小值
+            position: 'right',   // 右侧显示
+            alignTicks: true, // 设置为与主坐标轴刻度对齐
+            // min:0, // 配置 Y 轴刻度最小值
             //max:line_data['max_net_value'],  // 配置 Y 轴刻度最大值
             //splitNumber:7,  // 配置 Y 轴数值间隔
             axisLabel: {

@@ -5,7 +5,8 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.shortcuts import render, redirect, HttpResponse
 from django.db import models, connection
-from .models import currency, broker, market, account, industry, stock, position, trade, dividend, subscription, dividend_history, \
+from .models import currency, broker, market, account, industry, stock, position, trade, dividend, subscription, \
+    dividend_history, \
     funds, funds_details, baseline, historical_position, historical_rate, historical_market_value
 from utils.excel2db import *
 from utils.statistics import *
@@ -26,14 +27,16 @@ import pandas as pd
 from django.db import transaction
 from django.db.models.functions import Lag
 from collections import defaultdict
-from django.db.models import Sum, Q, Window, F, Min, Max, Case, When, Value, DecimalField, IntegerField
+from django.db.models import Sum, Q, Window, F, Min, Max, Case, When, Value, DecimalField, IntegerField, Prefetch
 
 import threading
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 templates_path = 'dashboard/'
+
 
 # 总览
 def overview(request):
@@ -48,12 +51,12 @@ def overview(request):
     rate_HKD, rate_USD = get_rate()
 
     path = pathlib.Path("./templates/dashboard/overview.json")
-    if path.is_file() and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
+    if path.is_file() and request.method != 'POST':  # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
         # 读取overview.json
         # overview = FileOperate(filepath='./templates/dashboard/', filename='overview.json').operation_file()
         with open('./templates/dashboard/overview.json', 'r', encoding='utf-8') as f:
             overview = json.load(f)
-    else: # 若json文件不存在or点击了刷新按钮，重写json文件（文件不存在则创建文件），再从json文件中读取overview页面需要的数据
+    else:  # 若json文件不存在or点击了刷新按钮，重写json文件（文件不存在则创建文件），再从json文件中读取overview页面需要的数据
         # 计算基金价值总和
         funds_value_sum = 0
         funds_list = funds.objects.all()
@@ -66,16 +69,16 @@ def overview(request):
             # funds_currency_array.append(currency_dict.get(rs.funds_currency, "未知货币"))
             funds_currency_array.append(currency_dict.get(rs.currency_id, "未知货币"))
             # if rs.funds_currency == 2: # 港元
-            if rs.currency_id == 2: # 港元
+            if rs.currency_id == 2:  # 港元
                 funds_value_array.append(round(float(rs.funds_value) * rate_HKD))
                 funds_principal_array.append(round(float(rs.funds_principal) * rate_HKD))
                 funds_value_sum += round(float(rs.funds_value) * rate_HKD)
             # elif rs.funds_currency == 3:  # 美元
-            elif rs.currency_id == 3: # 美元
+            elif rs.currency_id == 3:  # 美元
                 funds_value_array.append(round(float(rs.funds_value) * rate_USD))
                 funds_principal_array.append(round(float(rs.funds_principal) * rate_USD))
                 funds_value_sum += round(float(rs.funds_value) * rate_USD)
-            else: # 人民币
+            else:  # 人民币
                 funds_value_array.append(round(rs.funds_value))
                 funds_principal_array.append(round(rs.funds_principal))
                 funds_value_sum += round(rs.funds_value)
@@ -87,7 +90,8 @@ def overview(request):
             # funds_percent_dict[key] = float(funds_list.get(funds_currency=key).funds_value) / funds_value_sum
             funds_percent_dict[key] = float(funds_list.get(currency_id=key).funds_value) / funds_value_sum
             # funds_net_value_weighting += float(funds_list.get(funds_currency=key).funds_net_value) * funds_percent_dict[key]
-            funds_net_value_weighting += float(funds_list.get(currency_id=key).funds_net_value) * funds_percent_dict[key]
+            funds_net_value_weighting += float(funds_list.get(currency_id=key).funds_net_value) * funds_percent_dict[
+                key]
 
         # 计算人民币持仓市值总和，用于进一步计算人民币基金的持仓比例
         stock_dict = position.objects.values("stock").annotate(
@@ -97,7 +101,8 @@ def overview(request):
             stock_code = d['stock__stock_code']
             stock_code_array.append(stock_code)
         price_array = get_stock_array_price(stock_code_array)
-        content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD, rate_USD)
+        content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD,
+                                                                                               rate_USD)
 
         # 计算仓位
         position_percent_dict = {}
@@ -121,7 +126,7 @@ def overview(request):
             # funds_id = funds.objects.get(funds_currency=key).id
             funds_id = funds.objects.get(currency_id=key).id
             funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
-            market_value_dict[key] = historical_market_value.objects.get(currency=value, date=max_date_funds).value
+            market_value_dict[key] = historical_market_value.objects.get(currency_id=key, date=max_date_funds).value
             position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
         # 人民币基金的持仓比例通过511880的市值占比计算
         current_price, increase, color = get_quote_snowball('511880')  # 银华日利
@@ -144,18 +149,23 @@ def overview(request):
         dividend_sum_USD = dividend.objects.filter(currency_id=3).aggregate(amount=Sum('dividend_amount'))['amount']
         dividend_sum = float(dividend_sum_CNY) + float(dividend_sum_HKD) * rate_HKD + float(dividend_sum_USD) * rate_USD
         # 获得当年人民币、港元、美元分红总收益
-        current_dividend_sum_CNY = dividend.objects.filter(currency_id=1, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
-        current_dividend_sum_HKD = dividend.objects.filter(currency_id=2, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
-        current_dividend_sum_USD = dividend.objects.filter(currency_id=3, dividend_date__year=current_year).aggregate(amount=Sum('dividend_amount'))['amount']
+        current_dividend_sum_CNY = dividend.objects.filter(currency_id=1, dividend_date__year=current_year).aggregate(
+            amount=Sum('dividend_amount'))['amount']
+        current_dividend_sum_HKD = dividend.objects.filter(currency_id=2, dividend_date__year=current_year).aggregate(
+            amount=Sum('dividend_amount'))['amount']
+        current_dividend_sum_USD = dividend.objects.filter(currency_id=3, dividend_date__year=current_year).aggregate(
+            amount=Sum('dividend_amount'))['amount']
         if current_dividend_sum_CNY == None:
             current_dividend_sum_CNY = 0
         if current_dividend_sum_HKD == None:
             current_dividend_sum_HKD = 0
         if current_dividend_sum_USD == None:
             current_dividend_sum_USD = 0
-        current_dividend_sum = float(current_dividend_sum_CNY) + float(current_dividend_sum_HKD) * rate_HKD + float(current_dividend_sum_USD) * rate_USD
+        current_dividend_sum = float(current_dividend_sum_CNY) + float(current_dividend_sum_HKD) * rate_HKD + float(
+            current_dividend_sum_USD) * rate_USD
         # 获得新股、新债总收益、中签数量
-        subscription_sum = float(subscription.objects.aggregate(amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount'])
+        subscription_sum = float(subscription.objects.aggregate(
+            amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount'])
         subscription_stock_num = subscription.objects.filter(subscription_type=1).count()
         subscription_band_num = subscription.objects.filter(subscription_type=2).count()
         # 获得当年新股、新债总收益、中签数量
@@ -164,8 +174,10 @@ def overview(request):
         if current_subscription_sum == None:
             current_subscription_sum = 0
         current_subscription_sum = float(current_subscription_sum)
-        current_subscription_stock_num = subscription.objects.filter(subscription_date__year=current_year, subscription_type=1).count()
-        current_subscription_band_num = subscription.objects.filter(subscription_date__year=current_year, subscription_type=2).count()
+        current_subscription_stock_num = subscription.objects.filter(subscription_date__year=current_year,
+                                                                     subscription_type=1).count()
+        current_subscription_band_num = subscription.objects.filter(subscription_date__year=current_year,
+                                                                    subscription_type=2).count()
         # 获取持仓股票数量
         holding_stock_number = position.objects.values("stock").annotate(count=Count("stock")).count()
         # 获得总市值、持仓股票一览数据、持仓前五占比数据
@@ -202,7 +214,7 @@ def overview(request):
         # 写入overview.json
         overview = {}
         # 汇率
-        #overview.update(rate_HKD=rate_HKD, rate_USD=rate_USD)
+        # overview.update(rate_HKD=rate_HKD, rate_USD=rate_USD)
         # 总市值、分红收益、当年分红、当年分红率、打新收益、当年打新、持股数量
         overview.update(funds_value_sum=funds_value_sum)
         overview.update(funds_net_value_weighting=funds_net_value_weighting)
@@ -224,7 +236,7 @@ def overview(request):
         # 持仓股票一览
         holding_stock_array = []
         for i in content:
-            holding_stock_array.append((i[0], i[1], i[2], i[3], i[4], i[5], i[6]))
+            holding_stock_array.append((i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7]))
         overview.update(holding_stock_array=holding_stock_array)
         # 持仓前五占比
         overview.update(top5_percent=top5_percent)
@@ -232,7 +244,7 @@ def overview(request):
         index = 0
         progress_bar_bg = ['primary', 'secondary', 'success', 'info', 'warning', 'danger']
         for i in top5_content:
-            top5_array.append((i[0], i[5], i[6], progress_bar_bg[index]))
+            top5_array.append((i[0], i[5], i[6], progress_bar_bg[index], i[7]))
             index += 1
         overview.update(top5_array=top5_array)
         # 持仓币种占比
@@ -250,7 +262,8 @@ def overview(request):
                 float(i.trade_price * i.trade_quantity),
                 # str(i.get_settlement_currency_display()),
                 str(i.currency.name),
-                i.account.account_abbreviation
+                i.account.account_abbreviation,
+                i.stock_id
             ))
         overview.update(trade_array=trade_array)
         # 近期分红
@@ -260,7 +273,8 @@ def overview(request):
                 i.dividend_date.strftime("%Y-%m-%d"),
                 str(i.stock.stock_name) + '（' + str(i.stock.stock_code) + '）',
                 float(i.dividend_amount),
-                i.account.account_abbreviation
+                i.account.account_abbreviation,
+                i.stock_id
             ))
         overview.update(dividend_array=dividend_array)
         # 近期打新
@@ -286,11 +300,11 @@ def overview(request):
 
 
 # 投资记账
-def investment_accounting(request):
+def view_funds(request):
     funds_list = funds.objects.all()
     rate_HKD, rate_USD = get_rate()
 
-    return render(request, templates_path + 'investment_accounting.html', locals())
+    return render(request, templates_path + 'view_funds.html', locals())
 
 
 def view_funds_details(request, funds_id):
@@ -314,7 +328,7 @@ def view_funds_details(request, funds_id):
     min_date = get_min_date(funds_id)
     years = max_date.year - min_date.year
     second_max_date = get_second_max_date(funds_id)
-    current_funds_details_object = funds_details_list.get(date=max_date) #生成概要数据
+    current_funds_details_object = funds_details_list.get(date=max_date)  # 生成概要数据
     profit_rate = current_funds_details_object.funds_profit / current_funds_details_object.funds_principal
     last_period_value = current_funds_details_object.funds_value - current_funds_details_object.funds_current_profit
     last_year_max_date = funds_details.objects.filter(
@@ -331,7 +345,7 @@ def view_funds_details(request, funds_id):
         year_change_rate = 0
     last_year_net_value = funds_details_list.get(date=last_year_max_date).funds_net_value
     if last_year_net_value != Decimal('0.0000'):
-        year_change_net_value_rate = current_funds_details_object.funds_net_value / last_year_net_value -1
+        year_change_net_value_rate = current_funds_details_object.funds_net_value / last_year_net_value - 1
     else:
         year_change_net_value_rate = 0
 
@@ -339,12 +353,12 @@ def view_funds_details(request, funds_id):
     name_list.append(baseline_name)
 
     path = pathlib.Path("./templates/dashboard/baseline.json")
-    if path.is_file() == True and request.method != 'POST': # 若json文件存在and未点击刷新按钮，从json文件中读取需要的数据以提高性能
+    if path.is_file() == True and request.method != 'POST':  # 若json文件存在and未点击刷新按钮，从json文件中读取需要的数据以提高性能
         pass
-    elif path.is_file() == False : # json文件不存在，则创建文件
+    elif path.is_file() == False:  # json文件不存在，则创建文件
         # 获取指数历史数据
         get_his_index()
-    else: #点击刷新按钮
+    else:  # 点击刷新按钮
         # 更新当年指数数据
         baseline_name_array = []
         for rs in funds.objects.all():
@@ -356,7 +370,8 @@ def view_funds_details(request, funds_id):
     min_date_baseline_value = get_baseline_closing_price(baseline[baseline_name], int(min_date.year))
 
     # 按年份分组并计数
-    rs = funds_details_list.annotate(year=ExtractYear('date')).values('year').annotate(count=Count('id')).order_by('year')
+    rs = funds_details_list.annotate(year=ExtractYear('date')).values('year').annotate(count=Count('id')).order_by(
+        'year')
     pre_funds_net_value = 1
     pre_baseline_net_value = 1
     for r in rs:
@@ -371,10 +386,10 @@ def view_funds_details(request, funds_id):
         baseline_value = get_baseline_closing_price(baseline[baseline_name], int(r['year']))
         baseline_net_value = baseline_value / min_date_baseline_value
         list2.append(baseline_net_value)
-        baseline_profit_rate = baseline_net_value / pre_baseline_net_value -1
+        baseline_profit_rate = baseline_net_value / pre_baseline_net_value - 1
         pre_baseline_net_value = baseline_net_value
 
-        earliest_date = funds.objects.get(id=funds_id).funds_create_date # 计算年化收益率的起始日期为基金的创立日期
+        earliest_date = funds.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
         # earliest_date = get_min_date(funds_id)
         years = float((year_end_date - earliest_date).days / 365)
         if years == 0:
@@ -402,28 +417,30 @@ def view_funds_details(request, funds_id):
 
         compare_profit_rate = float(funds_profit_rate) - float(baseline_profit_rate)
         compare_annualized_profit_rate = float(funds_annualized_profit_rate) - float(baseline_annualized_profit_rate)
-        compare_annualized_profit_rate_3years = float(funds_annualized_profit_rate_3years) - float(baseline_annualized_profit_rate_3years)
-        compare_annualized_profit_rate_5years = float(funds_annualized_profit_rate_5years) - float(baseline_annualized_profit_rate_5years)
+        compare_annualized_profit_rate_3years = float(funds_annualized_profit_rate_3years) - float(
+            baseline_annualized_profit_rate_3years)
+        compare_annualized_profit_rate_5years = float(funds_annualized_profit_rate_5years) - float(
+            baseline_annualized_profit_rate_5years)
 
         # 生成收益率对比数据
         item = []
-        item.append(str(year_end_date.year)) # 年份
-        item.append(Decimal(funds_value).quantize(Decimal('0'))) # 基金价值
-        item.append(Decimal(baseline_value).quantize(Decimal('0.00'))) # 比较基准点数
-        item.append(Decimal(funds_net_value).quantize(Decimal('0.0000'))) # 基金净值
-        item.append(Decimal(baseline_net_value).quantize(Decimal('0.0000'))) # 比较基准净值
-        item.append(Decimal(funds_profit_rate * 100).quantize(Decimal('0.00'))) # 基金收益率
-        item.append(Decimal(baseline_profit_rate * 100).quantize(Decimal('0.00'))) # 比较基准收益率
-        item.append(Decimal(compare_profit_rate * 100).quantize(Decimal('0.00'))) # 收益率对比
-        item.append(Decimal(funds_annualized_profit_rate * 100).quantize(Decimal('0.00'))) # 基金年化
-        item.append(Decimal(baseline_annualized_profit_rate * 100).quantize(Decimal('0.00'))) # 比较基准年化
-        item.append(Decimal(compare_annualized_profit_rate * 100).quantize(Decimal('0.00'))) # 年化对比
-        item.append(Decimal(funds_annualized_profit_rate_3years * 100).quantize(Decimal('0.00'))) # 基金连续3年年化
-        item.append(Decimal(baseline_annualized_profit_rate_3years * 100).quantize(Decimal('0.00'))) #比较基准连续3年年化
-        item.append(Decimal(compare_annualized_profit_rate_3years * 100).quantize(Decimal('0.00'))) #连续3年年化对比
-        item.append(Decimal(funds_annualized_profit_rate_5years * 100).quantize(Decimal('0.00'))) # 基金连续5年年化
-        item.append(Decimal(baseline_annualized_profit_rate_5years * 100).quantize(Decimal('0.00'))) # 比较基准连续5年年化
-        item.append(Decimal(compare_annualized_profit_rate_5years * 100).quantize(Decimal('0.00'))) # 连续5年年化对比
+        item.append(str(year_end_date.year))  # 年份
+        item.append(Decimal(funds_value).quantize(Decimal('0')))  # 基金价值
+        item.append(Decimal(baseline_value).quantize(Decimal('0.00')))  # 比较基准点数
+        item.append(Decimal(funds_net_value).quantize(Decimal('0.0000')))  # 基金净值
+        item.append(Decimal(baseline_net_value).quantize(Decimal('0.0000')))  # 比较基准净值
+        item.append(Decimal(funds_profit_rate * 100).quantize(Decimal('0.00')))  # 基金收益率
+        item.append(Decimal(baseline_profit_rate * 100).quantize(Decimal('0.00')))  # 比较基准收益率
+        item.append(Decimal(compare_profit_rate * 100).quantize(Decimal('0.00')))  # 收益率对比
+        item.append(Decimal(funds_annualized_profit_rate * 100).quantize(Decimal('0.00')))  # 基金年化
+        item.append(Decimal(baseline_annualized_profit_rate * 100).quantize(Decimal('0.00')))  # 比较基准年化
+        item.append(Decimal(compare_annualized_profit_rate * 100).quantize(Decimal('0.00')))  # 年化对比
+        item.append(Decimal(funds_annualized_profit_rate_3years * 100).quantize(Decimal('0.00')))  # 基金连续3年年化
+        item.append(Decimal(baseline_annualized_profit_rate_3years * 100).quantize(Decimal('0.00')))  # 比较基准连续3年年化
+        item.append(Decimal(compare_annualized_profit_rate_3years * 100).quantize(Decimal('0.00')))  # 连续3年年化对比
+        item.append(Decimal(funds_annualized_profit_rate_5years * 100).quantize(Decimal('0.00')))  # 基金连续5年年化
+        item.append(Decimal(baseline_annualized_profit_rate_5years * 100).quantize(Decimal('0.00')))  # 比较基准连续5年年化
+        item.append(Decimal(compare_annualized_profit_rate_5years * 100).quantize(Decimal('0.00')))  # 连续5年年化对比
         annual_data_group.append(item)
 
         # 生成年度收益率数据，用于图表
@@ -433,15 +450,17 @@ def view_funds_details(request, funds_id):
         funds_profit_rate_list.append(float(Decimal(funds_profit_rate * 100).quantize(Decimal('0.00'))))
         baseline_profit_rate_list.append(float(Decimal(baseline_profit_rate * 100).quantize(Decimal('0.00'))))
         # 生成年化收益率数据，用于图表
-        funds_annualized_profit_rate_list.append(float(Decimal(funds_annualized_profit_rate * 100).quantize(Decimal('0.00'))))
-        baseline_annualized_profit_rate_list.append(float(Decimal(baseline_annualized_profit_rate * 100).quantize(Decimal('0.00'))))
+        funds_annualized_profit_rate_list.append(
+            float(Decimal(funds_annualized_profit_rate * 100).quantize(Decimal('0.00'))))
+        baseline_annualized_profit_rate_list.append(
+            float(Decimal(baseline_annualized_profit_rate * 100).quantize(Decimal('0.00'))))
 
     line_year_end_date_list = year_end_date_list
     line_funds_net_value_list = funds_net_value_list
     line_baseline_net_value_list = baseline_net_value_list
-    bar_year_end_date_list = year_end_date_list[1:] # 柱图第一列去掉
-    bar_funds_profit_rate_list = funds_profit_rate_list[1:] # 柱图第一列去掉
-    bar_baseline_profit_rate_list = baseline_profit_rate_list[1:] # 柱图第一列去掉
+    bar_year_end_date_list = year_end_date_list[1:]  # 柱图第一列去掉
+    bar_funds_profit_rate_list = funds_profit_rate_list[1:]  # 柱图第一列去掉
+    bar_baseline_profit_rate_list = baseline_profit_rate_list[1:]  # 柱图第一列去掉
 
     # 生成资产变化日历字典数据assetChanges
     assetChanges = {}
@@ -475,11 +494,11 @@ def view_funds_details(request, funds_id):
 
     updating_time = datetime.datetime.now()
 
-    return render(request,  templates_path + 'view_funds_details.html', locals())
+    return render(request, templates_path + 'view_funds_details.html', locals())
 
 
 # 持仓市值
-def market_value(request):
+def view_market_value(request):
     rate_HKD, rate_USD = get_rate()
     # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
     stock_dict = position.objects.values("stock").annotate(
@@ -489,9 +508,13 @@ def market_value(request):
         stock_code = d['stock__stock_code']
         stock_code_array.append(stock_code)
     price_array = get_stock_array_price(stock_code_array)
-    content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD, rate_USD)
-    content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array, rate_HKD, rate_USD)
-    content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array, rate_HKD, rate_USD)
+
+    content_CNY, amount_sum_CNY, name_array_CNY, value_array_CNY = get_value_stock_content(1, price_array, rate_HKD,
+                                                                                           rate_USD)
+    content_HKD, amount_sum_HKD, name_array_HKD, value_array_HKD = get_value_stock_content(2, price_array, rate_HKD,
+                                                                                           rate_USD)
+    content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array, rate_HKD,
+                                                                                           rate_USD)
 
     currency_dict = {}
     keys = []
@@ -532,15 +555,14 @@ def market_value(request):
         max_date_funds = None
 
     for key, value in currency_dict.items():
-        # funds_id = funds.objects.get(funds_currency=key).id
         funds_id = funds.objects.get(currency_id=key).id
         funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
         market_value_dict[key] = historical_market_value.objects.get(currency_id=key, date=max_date_funds).value
         position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
 
     # 人民币基金的持仓比例通过511880的市值占比计算
-    current_price, increase, color = get_quote_snowball('511880') #银华日利
-    positions = position.objects.filter(stock=93) #银华日利
+    current_price, increase, color = get_quote_snowball('511880')  # 银华日利
+    positions = position.objects.filter(stock=93)  # 银华日利
     quantity = 0
     for pos in positions:
         quantity += pos.position_quantity
@@ -548,7 +570,7 @@ def market_value(request):
     position_percent_dict[1] = 1 - cash_like_assets_CNY / amount_sum_CNY
 
     updating_time = current_date
-    return render(request, templates_path + 'market_value.html', locals())
+    return render(request, templates_path + 'view_market_value.html', locals())
 
 
 def view_market_value_details(request, currency_id):
@@ -605,7 +627,6 @@ def view_market_value_details(request, currency_id):
         year_change_rate = year_change_amount / last_year_value
     else:
         year_change_rate = 0
-
 
     # 生成持仓市值曲线数据data
     data_market_value = []
@@ -665,6 +686,7 @@ def view_market_value_details(request, currency_id):
 def view_trade_details(request, currency_id):
     return render(request, templates_path + 'view_trade_details.html', locals())
 
+
 # 分红概览
 def view_dividend(request):
     dividend_summary = []
@@ -683,9 +705,10 @@ def view_dividend(request):
         })
     return render(request, templates_path + 'view_dividend.html', locals())
 
+
 # 分红详情
 def view_dividend_details(request, currency_id):
-    # currency_name = currency.objects.get(id=currency_id).name
+    currency_name = currency.objects.get(id=currency_id).name
     result = dividend.objects.aggregate(
         max_date=Max('dividend_date')  # 最大值（最新日期）
     )
@@ -710,25 +733,53 @@ def view_dividend_details(request, currency_id):
     # 6. 近七年平均分红
     dividends_avg_amount_7 = get_dividend_annual_average(currency_id, 7)
 
-    # 7.总分红率
-    min_year, max_year, year_span = get_year_span(currency_id=currency_id)
-    dividend_yearly_avg = total_dividends / year_span
-    funds_id = funds.objects.get(currency_id=currency_id).id
-    result = calculate_fund_yearly_avg(funds_id=funds_id)
-    funds_value_yearly_agv = result['avg_year_end_value']
-    dividend_rate_total = dividend_yearly_avg / (funds_value_yearly_agv if funds_value_yearly_agv != 0 else -1)
-    print(f"基金名称: {result['funds_name']}")
-    print(f"年平均年终值: {result['avg_year_end_value']}")
-    print(f"数据覆盖年份: {result['min_year']}-{result['max_year']} ({result['years_count']}年)")
+    # 7.总分红率、平均分红率
+    # min_year, max_year, year_span = get_year_span(currency_id=currency_id)
+    # dividend_yearly_avg = total_dividends / year_span # 计算年度分红平均值
+    # market_value_yearly_agv_results = calculate_market_value_yearly_avg(currency_id) # 生成年度市值平均值字典
+    # market_value_agv = calculate_overall_average(market_value_yearly_agv_results) # 计算市值总平均值
+    # dividend_rate_total = dividend_yearly_avg / (market_value_agv if market_value_agv != 0 else -1)
+
+    # 使用示例
+    result = calculate_dividend_data(currency_id)
+    # 正确计算总分红率
+    if result['overall_avg_market_value']:
+        # 总分红率 = 所有年份分红总额 ÷ 整体加权平均市值
+        # 这里考虑了不同时间市值的权重分配
+        dividend_rate_total = result['total_dividends'] / result['overall_avg_market_value']
+    else:
+        dividend_rate_total = Decimal('0.0')
+
+    year_array = []
+    dividend_yearly_total_array = []
+    market_value_yearly_avg_array = []
+    dividend_rate_yearly_array = []
+    year_array = result['year']  # 有效年份列表
+    dividend_yearly_total_array = result['dividend_yearly_total']  # 各年合计分红列表
+    market_value_yearly_avg_array = result['market_value_yearly_avg']  # 各年平均市值列表
+    dividend_rate_yearly_array = [x * 100 for x in result['dividend_rate_yearly']]  # 各年分红率列表
+    total_dividends = result['total_dividends']  # 总分红
+    overall_avg_market_value = result['overall_avg_market_value']  # 整体平均市值
+    avg_dividend_rate = result['avg_dividend_rate']  # 平均分红率（各年分红率的算术平均）
+
+    # print("年份：", year_array)
+    # print("各年合计分红：", dividend_yearly_total_array)
+    # print("各年平均市值：", market_value_yearly_avg_array)
+    # print("各年分红率：", dividend_rate_yearly_array)
+    # print("总分红：", total_dividends)
+    # print("整体平均市值：", overall_avg_market_value)
+    # print("整体分红率：", dividend_rate_total)
+    # print("平均分红率（各年分红率的算术平均）：", avg_dividend_rate)
 
     # 8.年内分红率
-    market_value_current_year = historical_market_value.objects.filter(currency_id=currency_id).order_by('-date').first().value
-    dividend_rate_current_year = year_dividends / (market_value_current_year if market_value_current_year != 0 else 1)
+    # market_value_current_year = historical_market_value.objects.filter(currency_id=currency_id).order_by('-date').first().value
+    # dividend_rate_current_year = year_dividends / (market_value_current_year if market_value_current_year != 0 else -1)
+    dividend_rate_current_year = result['dividend_rate_yearly'][-1]
 
     # 9.上年分红率
-    market_value_pre_year = historical_market_value.objects.filter(currency_id=currency_id, date__year=datetime.datetime.now().year-1).order_by('-date').first().value
-    dividend_rate_pre_year = dividends_avg_amount_1 / (market_value_pre_year if market_value_pre_year != 0 else 1)
-
+    # market_value_pre_year = historical_market_value.objects.filter(currency_id=currency_id, date__year=datetime.datetime.now().year-1).order_by('-date').first().value
+    # dividend_rate_pre_year = dividends_avg_amount_1 / (market_value_pre_year if market_value_pre_year != 0 else -1)
+    dividend_rate_pre_year = result['dividend_rate_yearly'][-2]
 
     # 获得近期分红列表
     dividend_list_TOP = dividend.objects.filter(
@@ -782,10 +833,233 @@ def view_dividend_details(request, currency_id):
         name_total_list.append(item['stock_name'])
         dividend_total_list.append(round(item['total_dividend']))
 
-
     updating_time = current_date
 
     return render(request, templates_path + 'view_dividend_details.html', locals())
+
+
+# 股票详情
+def view_stock_details1(request, stock_id):
+    rate_HKD, rate_USD = get_rate()
+    rate_dict = {1: 1, 2: rate_HKD, 3: rate_USD}
+    stock_obj = stock.objects.get(id=stock_id)
+    stock_name = stock_obj.stock_name
+    stock_code = stock_obj.stock_code
+    stock_market = stock_obj.market.market_name
+    stock_currency = stock_obj.market.currency.name
+    currency_obj = currency.objects.get(id=stock_obj.market.currency_id)
+    currency_id = currency_obj.id
+    currency_name = currency_obj.name
+    currency_unit = currency_obj.unit
+    position_quantity = position.objects.filter(stock_id=stock_id).aggregate(total=Sum('position_quantity'))[
+                            'total'] or 0
+    quantity_CNY = position.objects.filter(
+        Q(stock_id=stock_id) & (
+                Q(account__broker__broker_script='境内券商') &
+                ~Q(stock__market__market_name='深市B股') &
+                ~Q(stock__market__market_name='沪市B股')
+        )
+    ).aggregate(total=Sum('position_quantity'))['total'] or 0
+    quantity_HKD = position.objects.filter(
+        Q(stock_id=stock_id) & (
+                (Q(account__broker__broker_script='境内券商') & Q(stock__market__market_name='深市B股')) |
+                (Q(account__broker__broker_script='境外券商') & Q(stock__market__currency=2))
+        )
+    ).aggregate(total=Sum('position_quantity'))['total'] or 0
+    quantity_USD = position.objects.filter(
+        Q(stock_id=stock_id) & (
+                (Q(account__broker__broker_script='境内券商') & Q(stock__market__market_name='沪市B股')) |
+                (Q(account__broker__broker_script='境外券商') & Q(stock__market__currency=3))
+        )
+    ).aggregate(total=Sum('position_quantity'))['total'] or 0
+    quantity_total = quantity_CNY + quantity_HKD + quantity_USD
+    price, increase, color = get_quote_snowball(stock_code)
+    market_value = position_quantity * price * rate_dict[currency_id]
+    value_CNY = quantity_CNY * price * rate_dict[currency_id]
+    value_HKD = quantity_HKD * price * rate_dict[currency_id]
+    value_USD = quantity_USD * price * rate_dict[currency_id]
+    value_total = value_CNY + value_HKD + value_USD
+
+    dividend_data = get_dividend_summary_by_currency(stock_id)
+    print(dividend_data)
+    dividend_CNY = float(dividend_data[1])
+    dividend_HKD = float(dividend_data[2]) * rate_HKD
+    dividend_USD = float(dividend_data[3]) * rate_USD
+    dividend_total = calculate_total_dividend(dividend_data, rate_dict)
+
+    result = calculate_stock_trade_summary(stock_id)
+    print(result)
+
+    def get_amount(cid, trade_type):
+        return float(result.get(cid, {}).get(trade_type, Decimal('0.0')))
+
+    # 计算各种金额
+    cost_CNY = 0
+    cost_HKD = 0
+    cost_USD = 0
+    buy_amount_CNY = get_amount(1, 'buy')
+    sell_amount_CNY = get_amount(1, 'sell')
+    buy_amount_HKD = get_amount(2, 'buy')
+    sell_amount_HKD = get_amount(2, 'sell')
+    buy_amount_USD = get_amount(3, 'buy')
+    sell_amount_USD = get_amount(3, 'sell')
+    cost_CNY = buy_amount_CNY - sell_amount_CNY
+    cost_HKD = buy_amount_HKD - sell_amount_HKD
+    cost_USD = buy_amount_USD - sell_amount_USD
+
+    buy_amount_total = buy_amount_CNY + buy_amount_HKD + buy_amount_USD
+    sell_amount_total = sell_amount_CNY + sell_amount_HKD + sell_amount_USD
+    cost_total = cost_CNY + cost_HKD + cost_USD
+
+    profit = market_value - cost_total
+    profit_with_dividends = profit + dividend_total
+    profit_rate_with_dividends = profit_with_dividends / cost_total if cost_total > 0 else 0
+
+    profit_CNY = value_CNY + dividend_CNY - cost_CNY
+    profit_HKD = value_HKD + dividend_HKD - cost_HKD
+    profit_USD = value_USD + dividend_USD - cost_USD
+    profit_total = profit_CNY + profit_HKD + profit_USD
+
+    trade_list = trade.objects.filter(stock_id=stock_id).order_by('-trade_date', '-modified_time')
+    dividend_list = dividend.objects.filter(stock_id=stock_id).order_by('-dividend_date', '-modified_time')
+
+    return render(request, templates_path + 'view_stock_details.html', locals())
+
+
+def view_stock_details(request, stock_id):
+    # 1. 缓存汇率数据
+    rate_key = f"exchange_rates_{stock_id}"
+    rate_dict = cache.get(rate_key)
+    if not rate_dict:
+        rate_HKD, rate_USD = get_rate()
+        rate_dict = {1: 1, 2: rate_HKD, 3: rate_USD}
+        cache.set(rate_key, rate_dict, 3600)  # 缓存1小时
+
+    # 2. 预取相关对象，减少查询次数
+    stock_obj = stock.objects.select_related(
+        'market', 'market__currency'
+    ).prefetch_related(
+        Prefetch('position_set', queryset=position.objects.all()),
+        Prefetch('trade_set', queryset=trade.objects.all().order_by('-trade_date', '-modified_time')),
+        Prefetch('dividend_set', queryset=dividend.objects.all().order_by('-dividend_date', '-modified_time'))
+    ).get(id=stock_id)
+
+    # 3. 提取常用属性
+    stock_name = stock_obj.stock_name
+    stock_code = stock_obj.stock_code
+    stock_market = stock_obj.market.market_name
+    currency_id = stock_obj.market.currency_id
+    currency_name = stock_obj.market.currency.name
+    currency_unit = stock_obj.market.currency.unit
+
+    # 4. 批量计算持仓量（单次查询替代多次查询）
+    positions = stock_obj.position_set.all()
+    position_quantity = positions.aggregate(total=Sum('position_quantity'))['total'] or 0
+
+    '''
+    # 创建条件字典代替复杂的Q查询
+    currency_conditions = {
+        'CNY': (
+                Q(account__broker__broker_script='境内券商') &
+                ~Q(stock__market__market_name__in=['深市B股', '沪市B股'])
+        ),
+        'HKD': (
+                (Q(account__broker__broker_script='境内券商') & Q(stock__market__market_name='深市B股')) |
+                (Q(account__broker__broker_script='境外券商') & Q(stock__market__currency=2))
+        ),
+        'USD': (
+                (Q(account__broker__broker_script='境内券商') & Q(stock__market__market_name='沪市B股')) |
+                (Q(account__broker__broker_script='境外券商') & Q(stock__market__currency=3))
+        )
+    }
+
+    # 使用annotate+values_list代替多次聚合查询
+    position_currencies = positions.filter(
+        Q(stock_id=stock_id)
+    ).annotate(
+        currency_type=models.Case(
+            models.When(currency_conditions['CNY'], then=models.Value('CNY')),
+            models.When(currency_conditions['HKD'], then=models.Value('HKD')),
+            models.When(currency_conditions['USD'], then=models.Value('USD')),
+            default=models.Value('OTHER'),
+            output_field=models.CharField()
+        )
+    ).values_list('currency_type', 'position_quantity')
+
+    # 计算各类持仓量
+    quantity_dict = {'CNY': 0, 'HKD': 0, 'USD': 0}
+    for currency_type, qty in position_currencies:
+        if currency_type in quantity_dict:
+            quantity_dict[currency_type] += (qty or 0)
+
+    quantity_CNY = quantity_dict['CNY']
+    quantity_HKD = quantity_dict['HKD']
+    quantity_USD = quantity_dict['USD']
+    quantity_total = position_quantity
+    '''
+
+    # 5. 获取股票价格（考虑缓存）
+    quote_key = f"quote_{stock_code}"
+    price_data = cache.get(quote_key)
+    if price_data:
+        price, increase, color = price_data
+    else:
+        price, increase, color = get_quote_snowball(stock_code)
+        cache.set(quote_key, (price, increase, color), 300)  # 缓存5分钟
+
+    # 6. 计算市值
+    market_value = position_quantity * price * rate_dict[currency_id]
+
+    # 7. 计算分红数据
+    dividend_data = get_dividend_summary_by_currency(stock_id)
+    dividend_CNY = float(dividend_data.get(1, 0))
+    dividend_HKD = float(dividend_data.get(2, 0)) * rate_dict[2]
+    dividend_USD = float(dividend_data.get(3, 0)) * rate_dict[3]
+    dividend_total = calculate_total_dividend(dividend_data, rate_dict)
+
+    # 8. 计算交易汇总（单次获取代替多次函数调用）
+    trade_summary = calculate_stock_trade_summary(stock_id)
+
+    def get_amount(cid, trade_type):
+        return float(trade_summary.get(cid, {}).get(trade_type, 0.0))
+
+    # 计算各种金额
+    buy_amount_CNY = get_amount(1, 'buy')
+    sell_amount_CNY = get_amount(1, 'sell')
+    buy_amount_HKD = get_amount(2, 'buy')
+    sell_amount_HKD = get_amount(2, 'sell')
+    buy_amount_USD = get_amount(3, 'buy')
+    sell_amount_USD = get_amount(3, 'sell')
+
+    cost_CNY = buy_amount_CNY - sell_amount_CNY
+    cost_HKD = buy_amount_HKD - sell_amount_HKD
+    cost_USD = buy_amount_USD - sell_amount_USD
+    cost_total = cost_CNY + cost_HKD + cost_USD
+
+    buy_amount_total = buy_amount_CNY + buy_amount_HKD + buy_amount_USD
+    sell_amount_total = sell_amount_CNY + sell_amount_HKD + sell_amount_USD
+
+    # profit = market_value - cost_total
+    profit = market_value - cost_total + dividend_total
+    profit_rate = profit / cost_total if cost_total > 0 else 0
+
+    '''
+    value_CNY = quantity_CNY * price * rate_dict[currency_id]
+    value_HKD = quantity_HKD * price * rate_dict[currency_id]
+    value_USD = quantity_USD * price * rate_dict[currency_id]
+    value_total = value_CNY + value_HKD + value_USD
+
+    profit_CNY = value_CNY + dividend_CNY - cost_CNY
+    profit_HKD = value_HKD + dividend_HKD - cost_HKD
+    profit_USD = value_USD + dividend_USD - cost_USD
+    profit_total = profit_CNY + profit_HKD + profit_USD
+    '''
+
+    # 9. 获取交易和分红列表（已通过预取）
+    trade_list = stock_obj.trade_set.all()
+    dividend_list = stock_obj.dividend_set.all()
+
+    return render(request, templates_path + 'view_stock_details.html', locals())
 
 
 # 交易录入
@@ -971,7 +1245,7 @@ def stats_value(request):
     )
     caliber = 1
     currency = 1
-    currency_name = currency_items[currency-1][1]
+    currency_name = currency_items[currency - 1][1]
     condition_id = '11'
     price_array = []
     rate_HKD, rate_USD = get_rate()
@@ -979,11 +1253,12 @@ def stats_value(request):
     if request.method == 'POST':
         caliber = int(request.POST.get('caliber'))
         currency = int(request.POST.get('currency'))
-        currency_name = currency_items[currency-1][1]
+        currency_name = currency_items[currency - 1][1]
         condition_id = str(caliber) + str(currency)
         # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
         # stock_dict = position.objects.filter(position_currency=currency).values("stock").annotate(count=Count("stock")).values('stock__stock_code')
-        stock_dict = position.objects.filter(currency_id=currency).values("stock").annotate(count=Count("stock")).values('stock__stock_code')
+        stock_dict = position.objects.filter(currency_id=currency).values("stock").annotate(
+            count=Count("stock")).values('stock__stock_code')
         # for dict in stock_dict:
         #     stock_code = dict['stock__stock_code']
         #     price, increase, color = get_stock_price(stock_code)
@@ -994,13 +1269,17 @@ def stats_value(request):
             stock_code_array.append(stock_code)
         price_array = get_stock_array_price(stock_code_array)
         if caliber == 1:
-            content, amount_sum, name_array, value_array = get_value_stock_content(currency, price_array, rate_HKD, rate_USD)
+            content, amount_sum, name_array, value_array = get_value_stock_content(currency, price_array, rate_HKD,
+                                                                                   rate_USD)
         elif caliber == 2:
-            content, amount_sum, name_array, value_array = get_value_industry_content(currency, price_array, rate_HKD, rate_USD)
+            content, amount_sum, name_array, value_array = get_value_industry_content(currency, price_array, rate_HKD,
+                                                                                      rate_USD)
         elif caliber == 3:
-            content, amount_sum, name_array, value_array = get_value_market_content(currency, price_array, rate_HKD, rate_USD)
+            content, amount_sum, name_array, value_array = get_value_market_content(currency, price_array, rate_HKD,
+                                                                                    rate_USD)
         elif caliber == 4:
-            content, amount_sum, name_array, value_array = get_value_account_content(currency, price_array, rate_HKD, rate_USD)
+            content, amount_sum, name_array, value_array = get_value_account_content(currency, price_array, rate_HKD,
+                                                                                     rate_USD)
         else:
             pass
 
@@ -1029,7 +1308,8 @@ def stats_account(request):
             stock_code = dict['stock__stock_code']
             stock_code_array.append(stock_code)
         price_array = get_stock_array_price(stock_code_array)
-        stock_content, amount_sum, name_array, value_array = get_account_stock_content(account_id, price_array, rate_HKD, rate_USD)
+        stock_content, amount_sum, name_array, value_array = get_account_stock_content(account_id, price_array,
+                                                                                       rate_HKD, rate_USD)
     return render(request, templates_path + 'stats/stats_account.html', locals())
 
 
@@ -1056,7 +1336,7 @@ def stats_dividend(request):
     currency_items = tuple(zip(keys, values))
     caliber = 1
     currency_value = 1
-    currency_name = currency_items[currency_value-1][1]
+    currency_name = currency_items[currency_value - 1][1]
     condition_id = '11'
     if request.method == 'POST':
         caliber = int(request.POST.get('caliber'))
@@ -1092,12 +1372,12 @@ def stats_subscription(request):
     )
     caliber = 1
     subscription_type = 1
-    type_name = subscription_type_items[subscription_type-1][1]
+    type_name = subscription_type_items[subscription_type - 1][1]
     condition_id = '11'
     if request.method == 'POST':
         caliber = int(request.POST.get('caliber'))
         subscription_type = int(request.POST.get('subscription_type'))
-        type_name = subscription_type_items[subscription_type-1][1]
+        type_name = subscription_type_items[subscription_type - 1][1]
         condition_id = str(caliber) + str(subscription_type)
         if caliber == 1:
             content, amount_sum, name_array, value_array = get_subscription_year_content(subscription_type)
@@ -1120,7 +1400,8 @@ def stats_profit(request):
     cleared_profit_sum = 0
     holding_value_sum = 0
     holding_stock_list = stock.objects.filter(position__stock_id__isnull=False).distinct().order_by('stock_code')
-    cleared_stock_list = stock.objects.filter(position__stock_id__isnull=True, trade__stock_id__isnull=False).distinct().order_by('stock_code')
+    cleared_stock_list = stock.objects.filter(position__stock_id__isnull=True,
+                                              trade__stock_id__isnull=False).distinct().order_by('stock_code')
     for rs in holding_stock_list:
         stock_id = rs.id
         stock_code = rs.stock_code
@@ -1161,8 +1442,13 @@ def stats_profit(request):
 # 交易查询
 def query_trade(request):
     stock_list = stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
-    holding_stock_list = stock.objects.filter(position__stock_id__isnull=False).distinct().values('stock_name', 'stock_code').order_by('stock_code')
-    cleared_stock_list = stock.objects.filter(position__stock_id__isnull=True, trade__stock_id__isnull=False).distinct().values('stock_name', 'stock_code').order_by('stock_code')
+    holding_stock_list = stock.objects.filter(position__stock_id__isnull=False).distinct().values('stock_name',
+                                                                                                  'stock_code').order_by(
+        'stock_code')
+    cleared_stock_list = stock.objects.filter(position__stock_id__isnull=True,
+                                              trade__stock_id__isnull=False).distinct().values('stock_name',
+                                                                                               'stock_code').order_by(
+        'stock_code')
     if request.method == 'POST':
         form_type = request.POST.get("form_type")
         form = None
@@ -1170,7 +1456,8 @@ def query_trade(request):
             stock_code = request.POST.get('stock_code')
             stock_name = stock.objects.get(stock_code=stock_code).stock_name
             market = stock.objects.get(stock_code=stock_code).market
-            trade_array_1, amount_sum_1, value_1, quantity_sum_1, price_avg_1, price_1, profit_1, profit_margin_1, cost_sum_1 = get_holding_stock_profit(stock_code)
+            trade_array_1, amount_sum_1, value_1, quantity_sum_1, price_avg_1, price_1, profit_1, profit_margin_1, cost_sum_1 = get_holding_stock_profit(
+                stock_code)
         elif form_type == 'cleared_stock':
             stock_code = request.POST.get('stock_code')
             stock_name = stock.objects.get(stock_code=stock_code).stock_name
@@ -1203,7 +1490,7 @@ def query_dividend_value(request):
     # 第一次进入页面，默认货币为人民币，账户全选、年份全选为否。
     currency_value = 1
     # 根据dividend_currency的值从dividend_currency_items中生成dividend_currency_name
-    currency_name = currency_items[currency_value-1][1]
+    currency_name = currency_items[currency_value - 1][1]
     is_all_account_checked = "false"
     is_all_year_checked = "false"
     if request.method == 'POST':
@@ -1234,7 +1521,7 @@ def query_dividend_value(request):
         for i in dividend_list:
             amount_sum += i.dividend_amount
     # 根据dividend_currency的值从dividend_currency_items中生成dividend_currency_name
-    currency_name = currency_items[currency_value-1][1]
+    currency_name = currency_items[currency_value - 1][1]
     return render(request, templates_path + 'query/query_dividend_value.html', locals())
 
 
@@ -1242,13 +1529,17 @@ def query_dividend_value(request):
 def query_dividend_date(request):
     current_year = datetime.datetime.today().year
 
-    stock_list = stock.objects.all().values('stock_name', 'stock_code', 'last_dividend_date', 'next_dividend_date').order_by('stock_code')
+    stock_list = stock.objects.all().values('stock_name', 'stock_code', 'last_dividend_date',
+                                            'next_dividend_date').order_by('stock_code')
     # 持仓股票列表，通过.filter(position__stock_id__isnull = False)，过滤出在position表中存在的stock_id所对应的stock表记录
-    position_stock_list = stock_list.filter(position__stock_id__isnull=False).distinct().order_by('-next_dividend_date', '-last_dividend_date')
+    position_stock_list = stock_list.filter(position__stock_id__isnull=False).distinct().order_by('-next_dividend_date',
+                                                                                                  '-last_dividend_date')
     # 当年已分红股票列表
-    current_year_dividend_list = position_stock_list.filter(last_dividend_date__year=current_year).order_by('-next_dividend_date', '-last_dividend_date')
+    current_year_dividend_list = position_stock_list.filter(last_dividend_date__year=current_year).order_by(
+        '-next_dividend_date', '-last_dividend_date')
     # 当年未分红股票列表
-    current_year_no_dividend_list = position_stock_list.filter(next_dividend_date__year=current_year).order_by('-next_dividend_date', '-last_dividend_date')
+    current_year_no_dividend_list = position_stock_list.filter(next_dividend_date__year=current_year).order_by(
+        '-next_dividend_date', '-last_dividend_date')
 
     # stock_name_array = []
     # stock_code_array = []
@@ -1286,6 +1577,7 @@ def add_currency(request):
     if request.method == 'POST':
         code = request.POST.get('code')
         name = request.POST.get('name')
+        unit = request.POST.get('unit')
         script = request.POST.get('script')
         if code.strip() == '':
             error_info = '货币代码不能为空！'
@@ -1294,6 +1586,7 @@ def add_currency(request):
             p = currency.objects.create(
                 code=code,
                 name=name,
+                unit=unit,
                 script=script
             )
             return redirect('/benben/list_currency/')
@@ -1316,11 +1609,13 @@ def edit_currency(request, currency_id):
         id = request.POST.get('id')
         code = request.POST.get('code')
         name = request.POST.get('name')
+        unit = request.POST.get('unit')
         script = request.POST.get('script')
         currency_object = currency.objects.get(id=id)
         try:
             currency_object.code = code
             currency_object.name = name
+            currency_object.unit = unit
             currency_object.script = script
             currency_object.save()
         except Exception as e:
@@ -1453,13 +1748,13 @@ def edit_market(request, market_id):
         market_name = request.POST.get('market_name')
         market_abbreviation = request.POST.get('market_abbreviation')
         # transaction_currency = request.POST.get('transaction_currency')
-        currency_value = request.POST.get('currency') # 变量名为currency_value，以避免和表名currency混淆
+        currency_value = request.POST.get('currency')  # 变量名为currency_value，以避免和表名currency混淆
         market_object = market.objects.get(id=id)
         try:
             market_object.market_name = market_name
             market_object.market_abbreviation = market_abbreviation
             # market_object.transaction_currency = transaction_currency
-            market_object.currency_id = currency_value # 使用主键赋值（但需要通过赋值给currency_id字段，这是Django自动为ForeignKey字段创建的隐藏字段）
+            market_object.currency_id = currency_value  # 使用主键赋值（但需要通过赋值给currency_id字段，这是Django自动为ForeignKey字段创建的隐藏字段）
             market_object.save()
         except Exception as e:
             error_info = '输入市场名称重复或信息有错误！'
@@ -1608,7 +1903,7 @@ def edit_industry(request, industry_id):
 
 def list_industry(request):
     industry_list = industry.objects.all()
-    return render(request,  templates_path + 'backstage/list_industry.html', locals())
+    return render(request, templates_path + 'backstage/list_industry.html', locals())
 
 
 # 股票表的增删改查
@@ -1674,7 +1969,7 @@ def edit_stock(request, stock_id):
 
 def list_stock(request):
     stock_list = stock.objects.all()
-    return render(request,  templates_path + 'backstage/list_stock.html', locals())
+    return render(request, templates_path + 'backstage/list_stock.html', locals())
 
 
 # 持仓表增删改查
@@ -1768,22 +2063,27 @@ def edit_position(request, position_id):
 
 def list_position(request):
     position_list = position.objects.all()
-    return render(request,  templates_path + 'backstage/list_position.html', locals())
+    return render(request, templates_path + 'backstage/list_position.html', locals())
+
 
 def add_historical_position(request):
     return render(request, templates_path + 'backstage/add_historical_position.html', locals())
 
+
 def del_historical_position(request, historical_position_id):
     return redirect('/benben/list_historical_position/')
 
+
 def edit_historical_position(request, historical_position_id):
     return render(request, templates_path + 'backstage/edit_historical_position.html', locals())
+
 
 def list_historical_position(request):
     # historical_position_list = historical_position.objects.filter(date='2025-02-27')
     # historical_position_list = historical_position.objects.all()
     historical_position_list = historical_position.objects.order_by('-date')[:200]
-    return render(request,  templates_path + 'backstage/list_historical_position.html', locals())
+    return render(request, templates_path + 'backstage/list_historical_position.html', locals())
+
 
 # 交易表增删改查
 def add_trade(request):
@@ -1988,7 +2288,7 @@ def edit_dividend(request, dividend_id):
 
 def list_dividend(request):
     dividend_list = dividend.objects.all().order_by('-dividend_date', '-modified_time')
-    return render(request,  templates_path + 'backstage/list_dividend.html', locals())
+    return render(request, templates_path + 'backstage/list_dividend.html', locals())
 
 
 # 打新表增删改查
@@ -2072,7 +2372,7 @@ def edit_subscription(request, subscription_id):
 
 def list_subscription(request):
     subscription_list = subscription.objects.all().order_by('-subscription_date', '-modified_time')
-    return render(request,  templates_path + 'backstage/list_subscription.html', locals())
+    return render(request, templates_path + 'backstage/list_subscription.html', locals())
 
 
 # 分红历史表增删改查
@@ -2148,7 +2448,7 @@ def edit_dividend_history(request, dividend_history_id):
 
 def list_dividend_history(request):
     dividend_history_list = dividend_history.objects.all()
-    return render(request,  templates_path + 'backstage/list_dividend_history.html', locals())
+    return render(request, templates_path + 'backstage/list_dividend_history.html', locals())
 
 
 # 基金表增删改查
@@ -2250,7 +2550,7 @@ def edit_funds(request, funds_id):
 
 def list_funds(request):
     funds_list = funds.objects.all().order_by('id')
-    return render(request,  templates_path + 'backstage/list_funds.html', locals())
+    return render(request, templates_path + 'backstage/list_funds.html', locals())
 
 
 # 基金明细表增删改查
@@ -2261,13 +2561,13 @@ def add_funds_details(request, funds_id):
         date = datetime.datetime.strptime(request.POST.get('date'), "%Y-%m-%d").date()
         funds_value = request.POST.get('funds_value')
         funds_in_out = request.POST.get('funds_in_out')
-        #funds_principal = request.POST.get('funds_principal')
-        #funds_PHR = request.POST.get('funds_PHR')
-        #funds_net_value = request.POST.get('funds_net_value')
-        #funds_profit = request.POST.get('funds_profit')
-        #funds_profit_rate = request.POST.get('funds_profit_rate')
-        #funds_annualized_profit_rate = request.POST.get('funds_annualized_profit_rate')
-        #print(funds_id,date,funds_value,funds_in_out)
+        # funds_principal = request.POST.get('funds_principal')
+        # funds_PHR = request.POST.get('funds_PHR')
+        # funds_net_value = request.POST.get('funds_net_value')
+        # funds_profit = request.POST.get('funds_profit')
+        # funds_profit_rate = request.POST.get('funds_profit_rate')
+        # funds_annualized_profit_rate = request.POST.get('funds_annualized_profit_rate')
+        # print(funds_id,date,funds_value,funds_in_out)
         if funds_id.strip() == '':
             error_info = "基金名称不能为空！"
             return render(request, templates_path + 'backstage/add_funds_details.html', locals())
@@ -2278,16 +2578,19 @@ def add_funds_details(request, funds_id):
             earliest_date = funds.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
             # earliest_date = get_min_date(funds_id)
             years = float((latest_date - earliest_date).days / 365)
-            #print(latest_date,earliest_date,years)
-            latest_funds_value = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_value)
-            latest_funds_principal = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_principal)
-            latest_funds_PHR = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_PHR)
-            latest_funds_net_value = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_net_value)
-            latest_funds_profit_rate = float(funds_details.objects.get(funds_id=funds_id, date = latest_date).funds_profit_rate)
-            #print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR)
+            # print(latest_date,earliest_date,years)
+            latest_funds_value = float(funds_details.objects.get(funds_id=funds_id, date=latest_date).funds_value)
+            latest_funds_principal = float(
+                funds_details.objects.get(funds_id=funds_id, date=latest_date).funds_principal)
+            latest_funds_PHR = float(funds_details.objects.get(funds_id=funds_id, date=latest_date).funds_PHR)
+            latest_funds_net_value = float(
+                funds_details.objects.get(funds_id=funds_id, date=latest_date).funds_net_value)
+            latest_funds_profit_rate = float(
+                funds_details.objects.get(funds_id=funds_id, date=latest_date).funds_profit_rate)
+            # print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR)
 
             funds_principal = latest_funds_principal + funds_in_out
-            if latest_funds_PHR == 0: # 如果份数为0，则基金已经关闭，净值保持不变
+            if latest_funds_PHR == 0:  # 如果份数为0，则基金已经关闭，净值保持不变
                 funds_net_value = latest_funds_net_value
             else:
                 funds_net_value = (funds_value - funds_in_out) / latest_funds_PHR
@@ -2295,19 +2598,19 @@ def add_funds_details(request, funds_id):
             funds_current_profit = funds_value - funds_in_out - latest_funds_value
             funds_current_profit_rate = (funds_net_value - latest_funds_net_value) / latest_funds_net_value
             funds_profit = funds_value - funds_principal
-            if latest_funds_PHR == 0: # 如果份数为0，则基金已经关闭，累计收益率保持不变
+            if latest_funds_PHR == 0:  # 如果份数为0，则基金已经关闭，累计收益率保持不变
                 funds_profit_rate = latest_funds_profit_rate
             else:
                 funds_profit_rate = funds_profit / funds_principal
 
-            #print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR,funds_principal,funds_net_value,funds_PHR,funds_profit,funds_profit_rate)
-            #print(date, earliest_date)
+            # print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR,funds_principal,funds_net_value,funds_PHR,funds_profit,funds_profit_rate)
+            # print(date, earliest_date)
             years = float((date - earliest_date).days / 365)
-            #print(years)
+            # print(years)
             funds_annualized_profit_rate = funds_net_value ** (1 / years) - 1
-            #print(funds_annualized_profit_rate)
-            #funds_annualized_profit_rate = (funds_net_value ** (1 / float(((latest_date - earliest_date).days) / 365)) - 1) * 100
-            #print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR,funds_principal,funds_net_value,funds_PHR,funds_profit,funds_profit_rate,funds_annualized_profit_rate)
+            # print(funds_annualized_profit_rate)
+            # funds_annualized_profit_rate = (funds_net_value ** (1 / float(((latest_date - earliest_date).days) / 365)) - 1) * 100
+            # print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR,funds_principal,funds_net_value,funds_PHR,funds_profit,funds_profit_rate,funds_annualized_profit_rate)
             # 插入一条基金明细记录
             p = funds_details.objects.create(
                 funds_id=funds_id,
@@ -2336,7 +2639,8 @@ def add_funds_details(request, funds_id):
             return redirect('/benben/list_funds_details/')
         except Exception as e:
             error_info = "输入信息有错误！"
-            print(latest_date, earliest_date, latest_funds_principal, latest_funds_PHR, funds_principal,funds_net_value, funds_PHR, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
+            print(latest_date, earliest_date, latest_funds_principal, latest_funds_PHR, funds_principal,
+                  funds_net_value, funds_PHR, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
             return render(request, templates_path + 'backstage/add_funds_details.html', locals())
         finally:
             pass
@@ -2392,7 +2696,7 @@ def edit_funds_details(request, funds_details_id):
 
 def list_funds_details(request):
     funds_details_list = funds_details.objects.all()
-    return render(request,  templates_path + 'backstage/list_funds_details.html', locals())
+    return render(request, templates_path + 'backstage/list_funds_details.html', locals())
 
 
 # 比较基准表增删改查
@@ -2468,7 +2772,7 @@ def edit_baseline(request, baseline_id):
 
 def list_baseline(request):
     baseline_list = baseline.objects.all().order_by('id')
-    return render(request,  templates_path + 'backstage/list_baseline.html', locals())
+    return render(request, templates_path + 'backstage/list_baseline.html', locals())
 
 
 # 从网站中抓取数据导入数据库
@@ -2568,9 +2872,6 @@ def batch_import(request):
     return render(request, templates_path + 'other/batch_import.html', locals())  # 这里用'/'，‘//’或者‘/’代替'\'，防止'\b'被转义
 
 
-
-
-
 # 更新历史持仓市值数据（historical_position、historical_rate、historical_market_value表）
 
 # 全局变量，用于存储任务状态
@@ -2582,6 +2883,7 @@ task_status = {
     "start_time": None,
     "end_time": None
 }
+
 
 def update_historical_market_value(request):
     # 获取初始日期范围
@@ -2690,6 +2992,7 @@ def update_historical_market_value(request):
 
     return render(request, templates_path + 'other/update_historical_market_value.html')
 
+
 def get_task_status(request):
     status = cache.get('task_status', {})
     # print("[DEBUG] 当前任务状态:", status)  # 查看后端实际数据
@@ -2739,7 +3042,6 @@ def get_task_status(request):
         "duration": total_duration,
         "steps": steps  # 新增步骤数据
     })
-
 
 
 # 正向遍历trade表生成historical_position表
@@ -2854,6 +3156,7 @@ def generate_historical_positions(start_date, end_date):
         print("[INFO] 没有需要处理的日期范围")
         return 0
 
+
 # 从akshare获取股票历史收盘价
 def get_historical_closing_price(start_date, end_date):
     # while end_date.weekday() >= 5:
@@ -2863,14 +3166,14 @@ def get_historical_closing_price(start_date, end_date):
     start_date_str = start_date.strftime("%Y%m%d") if start_date else ""
     end_date_str = end_date.strftime("%Y%m%d") if end_date else ""
     date_list = list(historical_position.objects.filter(
-                date__gte=start_date,
-                date__lte=end_date
-            ).values_list('date', flat=True).distinct())
+        date__gte=start_date,
+        date__lte=end_date
+    ).values_list('date', flat=True).distinct())
     # 获取stock字段的去重值列表
     stock_list = list(historical_position.objects.filter(
-                date__gte=start_date,
-                date__lte=end_date
-            ).values_list('stock', flat=True).distinct())
+        date__gte=start_date,
+        date__lte=end_date
+    ).values_list('stock', flat=True).distinct())
     for i in stock_list:
         stock_code = stock.objects.get(id=i).stock_code
         market_name = stock.objects.get(id=i).market.market_name
@@ -2937,7 +3240,8 @@ def get_historical_closing_price(start_date, end_date):
         else:
             if market_name == '沪市B股' or market_name == '深市B股':
                 stock_code_str = market_abbreviation + stock_code
-                df = ak.stock_zh_b_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str, adjust="")
+                df = ak.stock_zh_b_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str,
+                                         adjust="")
             elif classify_stock_code(stock_code) == 'ETF':
                 stock_code_str = market_abbreviation + stock_code
                 df = ak.stock_zh_index_daily(symbol=stock_code_str)
@@ -2946,7 +3250,8 @@ def get_historical_closing_price(start_date, end_date):
                 df = ak.bond_zh_hs_daily(symbol=stock_code_str)
             else:
                 stock_code_str = market_abbreviation + stock_code
-                df = ak.stock_zh_a_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str, adjust="")
+                df = ak.stock_zh_a_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str,
+                                         adjust="")
             df['date'] = pd.to_datetime(df['date'])
             current_date = pd.to_datetime(start_date)
             # while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
@@ -2966,9 +3271,10 @@ def get_historical_closing_price(start_date, end_date):
         update_closing_prices(stock_code, price_dict)
     return
 
+
 def update_closing_prices(stock_code, price_dict):
     # 转换为日期索引的字典
-    #price_dict = {item['date']: item['price'] for item in price_list}
+    # price_dict = {item['date']: item['price'] for item in price_list}
 
     # 筛选需要更新的记录
     dates = price_dict.keys()
@@ -2986,6 +3292,7 @@ def update_closing_prices(stock_code, price_dict):
     except Exception as e:
         print(stock_code)
         print(f"历史收盘价格更新失败: {str(e)}")
+
 
 # 补充akshare数据中缺失的收盘价
 def fill_missing_closing_price(start_date, end_date):
@@ -3021,6 +3328,7 @@ def fill_missing_closing_price(start_date, end_date):
 
         return
 
+
 def get_today_price():
     current_date = datetime.date.today()
     while current_date.weekday() >= 5:
@@ -3035,10 +3343,11 @@ def get_today_price():
         update_today_prices(current_date, stock_code, price_dict)
     return
 
+
 def update_today_prices(current_date, stock_code, price_dict):
     # 筛选需要更新的记录
-    #dates = price_dict.keys()
-    #current_date = datetime.date.today()
+    # dates = price_dict.keys()
+    # current_date = datetime.date.today()
 
     records = historical_position.objects.filter(date=current_date, stock__stock_code=stock_code)
 
@@ -3054,6 +3363,7 @@ def update_today_prices(current_date, stock_code, price_dict):
     except Exception as e:
         print(stock_code)
         print(f"当日价格更新失败: {str(e)}")
+
 
 # 从akshare获取历史汇率
 def get_historical_rate(start_date, end_date):
@@ -3447,7 +3757,6 @@ def generate_workdays(start_date, end_date):
     return workdays
 
 
-
 # 关于
 def about(request):
     # 获取初始日期范围
@@ -3670,14 +3979,13 @@ def test(request):
     # current_H000300 = float(df[df['日期'] == '2012-12-31']['收盘'].iloc[0])
     # print(current_H000300)
 
-
     # migrate_market_currencies()
     # migrate_position_currencies()
     # migrate_funds_currencies()
     # migrate_dividend_currencies()
     # migrate_trade_currencies()
 
-    df = ak.stock_zh_index_daily(symbol="sz399006").sort_values(by='date',ascending=False)
+    df = ak.stock_zh_index_daily(symbol="sz399006").sort_values(by='date', ascending=False)
     current_latest = float(df.head(1)['close'].iloc[0])
     # print(current_latest)
 
@@ -3749,6 +4057,7 @@ def migrate_market_currencies():
         print("2. 缺少对应的currency记录")
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
 
+
 def migrate_position_currencies():
     """
     迁移position表中货币字段的数据
@@ -3809,6 +4118,7 @@ def migrate_position_currencies():
         print("1. 市场记录中有未知的position_currency值")
         print("2. 缺少对应的currency记录")
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
+
 
 def migrate_funds_currencies():
     """
@@ -3871,6 +4181,7 @@ def migrate_funds_currencies():
         print("2. 缺少对应的currency记录")
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
 
+
 def migrate_dividend_currencies():
     """
     迁移dividend表中货币字段的数据
@@ -3932,6 +4243,7 @@ def migrate_dividend_currencies():
         print("2. 缺少对应的currency记录")
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
 
+
 def migrate_trade_currencies():
     """
     迁移trade表中货币字段的数据
@@ -3992,6 +4304,7 @@ def migrate_trade_currencies():
         print("1. 市场记录中有未知的settlement_currency值")
         print("2. 缺少对应的currency记录")
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
+
 
 def migrate_historical_position_currencies():
     """
@@ -4084,6 +4397,7 @@ def migrate_historical_rate_currencies():
         print(f"警告：仍有 {missing} 条记录未成功迁移")
     else:
         print("迁移成功完成！所有记录均已完成迁移")
+
 
 def migrate_historical_market_value_currencies():
     print("开始迁移货币数据...")
@@ -4223,6 +4537,7 @@ def reverse_generate_positions_111(start_date, end_date):
     except RuntimeError as e:
         print(f"处理失败: {e}")
 
+
 def generate_historical_positions_bak0622(start_date, end_date):
     """
     生成历史持仓记录（支持从已有持仓初始化）
@@ -4334,6 +4649,7 @@ def generate_historical_positions_bak0622(start_date, end_date):
         print("[INFO] 没有需要处理的日期范围")
         return 0
 
+
 def generate_historical_positions_bak(start_date, end_date):
     """
     生成历史持仓记录（支持从已有持仓初始化）
@@ -4442,6 +4758,7 @@ def generate_historical_positions_bak(start_date, end_date):
         print("[INFO] 没有需要处理的日期范围")
         return 0
 
+
 def fill_missing_closing_price_bak0622(start_date, end_date):
     with transaction.atomic():
         # 获取指定日期范围内收盘价为0的所有记录
@@ -4475,6 +4792,7 @@ def fill_missing_closing_price_bak0622(start_date, end_date):
 
         return
 
+
 def fill_missing_closing_price_bak(start_date, end_date):
     with transaction.atomic():
         # 获取指定日期范围内收盘价为0的所有记录
@@ -4507,6 +4825,7 @@ def fill_missing_closing_price_bak(start_date, end_date):
         print(f"补全了 {count} 条缺失的收盘价格")
 
         return
+
 
 def fill_missing_historical_rates_bak0622():
     from .models import currency
@@ -4602,6 +4921,7 @@ def fill_missing_historical_rates_bak0622():
     #     print("发生错误：", "\n".join(errors))
     return len(new_rates), errors
 
+
 def fill_missing_historical_rates_bak():
     """
     自动补全historical_rate表中缺失的汇率记录
@@ -4693,6 +5013,7 @@ def fill_missing_historical_rates_bak():
     # if errors:
     #     print("发生错误：", "\n".join(errors))
 
+
 def calculate_market_value_bak0622(start_date, end_date):
     """
     生成历史市值数据并写入 historical_market_value 表
@@ -4779,6 +5100,7 @@ def calculate_market_value_bak0622(start_date, end_date):
     except Exception as e:
         print(f"历史持仓市值写入失败: {e}")
 
+
 def calculate_market_value_bak(start_date, end_date):
     """
     生成历史市值数据并写入 historical_market_value 表
@@ -4858,7 +5180,7 @@ def calculate_market_value_bak(start_date, end_date):
                     # 6.2 获取汇率（人民币特殊处理）
                     # 如持仓货币为人民币且股票市场为港股，则为港股通持仓，需按港元汇率计算人民币市值
                     # if currency_name == '人民币' and pos.stock.market.transaction_currency == 2:
-                    if currency_name == '人民币' and pos.stock.market.currency_id == 2: # 不能用pos.stock.market.currency,应该用pos.stock.market.currency_id
+                    if currency_name == '人民币' and pos.stock.market.currency_id == 2:  # 不能用pos.stock.market.currency,应该用pos.stock.market.currency_id
                         exchange_rate = rate_dict.get((current_date, '港元'))
                         if exchange_rate is None:
                             raise ValueError(
@@ -4891,8 +5213,6 @@ def calculate_market_value_bak(start_date, end_date):
         print(f"历史持仓市值写入失败: {e}")
 
 
-
-
 def get_historical_rate_bak(start_date, end_date):
     # 查询日期范围
     # result = historical_position.objects.aggregate(
@@ -4923,8 +5243,8 @@ def get_historical_rate_bak(start_date, end_date):
     except Exception as e:
         print(f"历史汇率写入失败: {str(e)}")
 
-
     return
+
 
 def update_historical_rate_bak(df: pd.DataFrame, currency_name: str, start_date, end_date) -> None:
     """
@@ -4945,7 +5265,7 @@ def update_historical_rate_bak(df: pd.DataFrame, currency_name: str, start_date,
         historical_rate(
             date=row['日期'],
             currency=currency_name,
-            rate=row['中行汇买价']/100
+            rate=row['中行汇买价'] / 100
         )
         for _, row in df.iterrows()
     ]
@@ -4953,12 +5273,13 @@ def update_historical_rate_bak(df: pd.DataFrame, currency_name: str, start_date,
     with transaction.atomic():
         # 删除该货币所有旧数据
         historical_rate.objects.filter(
-                currency=currency_name,
-                date__gte=start_date,
-                date__lte=end_date
-            ).delete()
+            currency=currency_name,
+            date__gte=start_date,
+            date__lte=end_date
+        ).delete()
         # 批量写入新数据
         historical_rate.objects.bulk_create(instances)
+
 
 def fill_missing_historical_rates_bak0623():
     from .models import currency
@@ -5054,6 +5375,7 @@ def fill_missing_historical_rates_bak0623():
     #     print("发生错误：", "\n".join(errors))
     return len(new_rates), errors
 
+
 def calculate_market_value_bak0623(start_date, end_date):
     """
     生成历史市值数据并写入 historical_market_value 表
@@ -5139,5 +5461,3 @@ def calculate_market_value_bak0623(start_date, end_date):
         print("历史持仓市值写入成功！")
     except Exception as e:
         print(f"历史持仓市值写入失败: {e}")
-
-

@@ -136,7 +136,7 @@
         <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">{{ currency_name|safe }}分红</h1>
         <div class="col-auto">
             <div class="h6 mb-0 text-gray-500">
-                <a href="/benben/view_dividend/" style="color: inherit; text-decoration: none;">返回 ></a>
+                <a href="javascript:history.back()" style="color: inherit; text-decoration: none;">返回 ></a>
             </div>
         </div>
     </div>
@@ -192,6 +192,10 @@
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">总分红率（%）</div>
                             <div class="h4 mb-0 text-gray-800 font">{{ dividend_rate_total|percent }}</div>
+                        </div>
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">平均分红率（%）</div>
+                            <div class="h4 mb-0 text-gray-800 font">{{ result.avg_dividend_rate|percent }}</div>
                         </div>
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">年内分红率（%）</div>
@@ -265,7 +269,7 @@
                                     {% for dividend in dividend_list_TOP %}
                                         <tr>
                                             <td>{{ dividend.dividend_date|date:'Y-m-d' }}</td>
-                                            <td>{{ dividend.stock__stock_name }}（{{ dividend.stock__stock_code }}）</td>
+                                            <td><a href="/benben/view_stock_details/{{ dividend.stock_id|safe }}" style="color: inherit; text-decoration: none;">{{ dividend.stock__stock_name }}（{{ dividend.stock__stock_code }}）</a></td>
                                             <td class="{% if dividend.total_dividend < 0 %}text-danger{% endif %}">{{ dividend.total_dividend|floatformat:0 }}</td>
                                             <td>{{ dividend.latest_modified|date:'Y-m-d H:i' }}</td>
                                         </tr>
@@ -318,6 +322,27 @@
         </div>
 
     </div>
+
+    <div class="row">
+        <!-- 年度收益率 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card h-100 shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">年度分红</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div id="bar_yearly_dividend" style="width:100%; height:400px;"></div><!--数据展现的容器1-->
+                </div>
+                <div class="card-footer bg-white text-muted small">
+                    数据更新于：<span id="updateTime_bar_yearly_dividend"></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
 
 </div>
 
@@ -525,6 +550,170 @@ document.addEventListener('DOMContentLoaded', function() {
     // updateChart();
     // window.addEventListener('resize', () => chart.resize());
 
+});
+
+// 年度分红柱图
+document.addEventListener('DOMContentLoaded', function() {
+    const chart = echarts.init(document.getElementById('bar_yearly_dividend'));
+    const year_array = {{ year_array|safe }};
+    const dividend_yearly_total_array = {{ dividend_yearly_total_array|safe }};
+    const dividend_rate_yearly_array = {{ dividend_rate_yearly_array|safe }};
+
+    // 更新时间显示
+    function updateTimestamp() {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        document.getElementById('updateTime_bar_yearly_dividend').textContent = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // 更新图表
+    function updateChart() {
+        const option = {
+        title: {
+            text: '',
+            subtext: '',
+            x: 'center'
+        },
+        legend: {
+            //data:bar_data['name_array']
+        },
+        grid: {
+            top: '10%',
+            left: '3%',
+            right: '3%',
+            bottom: '0%',
+            containLabel: true
+        },
+        tooltip: {
+            //trigger: 'axis',      // 默认触发方式（可被系列级配置覆盖）
+            //backgroundColor: '#fff'
+        },
+        xAxis: [
+            // 第一个 X 轴（柱状图使用，boundaryGap: false）
+            {
+                //name: '年份',
+                data: year_array,
+                boundaryGap: true,
+                axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                    show: true,
+                    interval: 'auto',
+                    rotate: 45,
+                    margin: 15,
+                    // formatter: null,
+                    textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                        color: '#333'
+                    }
+                },
+                show: true
+            }
+        ],
+        //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
+        yAxis: [
+            // 左侧 Y 轴（柱状图使用）
+            {
+                type: 'value',
+                //name: ' 收益率',  // 自定义单位名称
+                position: 'left',   // 左侧显示
+                axisLabel: {
+                    formatter: function(value) {
+                        // 转换为整数并添加千位分隔符
+                        return typeof value === 'number'
+                            ? Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                            : value;
+                    }
+                }
+            },
+            // 右侧 Y 轴（折线图使用）
+            {
+                //name: '净值',
+                type: 'value',
+                position: 'right',   // 右侧显示
+                alignTicks: true, // 设置为与主坐标轴刻度对齐
+                // min:0, // 配置 Y 轴刻度最小值
+                // max:12,  // 配置 Y 轴刻度最大值
+                //splitNumber:7,  // 配置 Y 轴数值间隔
+                axisLabel: {
+                    formatter: '{value}%'  // 标签格式（例如：100 单位）
+                },
+            }
+        ],
+        series: [
+            {
+                name: '分红金额',
+                type: 'bar',
+                data: dividend_yearly_total_array,
+                color: ['#1890ff'],
+                // xAxisIndex: 0,  // 对应 xAxis[0]
+                yAxisIndex: 0,  // 使用第一个 Y 轴（左侧）
+                tooltip: {
+                    trigger: "item",
+                    // formatter: "{a} <br/>{b} : {c}",
+                    formatter: function(params) {
+                        // 将值转为数值类型
+                        const numberValue = Number(params.value);
+
+                        // 格式化为带千位分隔符的整数
+                        let formattedValue;
+                        if (isNaN(numberValue)) {
+                            formattedValue = params.value;  // 非数值直接显示原内容
+                        } else {
+                            // 转为整数并添加千位分隔符
+                            formattedValue = numberValue.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                        }
+
+                        return `${params.seriesName} <br/>${params.name}: ${formattedValue}`;
+                    },
+                    //backgroundColor: '#ffffff',   // 白色背景
+                    borderColor: 'transparent',
+                    borderWidth: 0
+                }
+            },
+            {
+                //name: '人民币账户',
+                name: '分红率',
+                //data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
+                data: dividend_rate_yearly_array,
+                type: 'line',
+                color: ['#ee9945'],
+                smooth: false,
+                itemStyle: {
+                    // color: '#1890ff'
+                },
+                // xAxisIndex: 1,  // 对应 xAxis[1]
+                yAxisIndex: 1,  // 使用第二个 Y 轴（右侧）
+                tooltip: {
+                    trigger: "item",
+                    //formatter: "{a} <br/>{b} : {c}",
+                    formatter: function(params) {
+                        // 强制将值转为数值类型，并格式化为4位小数
+                        const numberValue = Number(params.value);
+                        const formattedValue = isNaN(numberValue)
+                            ? params.value  // 非数值直接显示原内容
+                            : numberValue.toFixed(2); // 数值转为4位小数
+                        return `
+                            ${params.seriesName} <br/>
+                            ${params.name}: ${formattedValue}%
+                        `;
+                    },
+                    //backgroundColor: '#ffffff',   // 白色背景
+                    borderColor: 'transparent',
+                    borderWidth: 0
+                }
+            },
+        ]
+    };
+        chart.setOption(option, true);
+        updateTimestamp();
+    }
+
+    // 初始加载
+    updateChart();
+    window.addEventListener('resize', () => chart.resize());
 });
 
 

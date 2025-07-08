@@ -34,7 +34,7 @@
                         {% for stock in stock_list %}
                             <tr>
                                 <td>{{ stock.stock_code }}</td>
-                                <td>{{ stock.stock_name }}</td>
+                                <td><a href="/benben/view_stock_details/{{ stock.id|safe }}" style="color: inherit; text-decoration: none;">{{ stock.stock_name }}</a></td>
                                 <td>{{ stock.industry.industry_name }}</td>
                                 <td>{{ stock.market.market_name }}</td>
                                 <td>{{ stock.last_dividend_date|date:'Y-m-d' }}</td>

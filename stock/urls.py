@@ -15,16 +15,19 @@ urlpatterns = [
     path('index/', overview),
     path('overview/', overview),
 
-    path('investment_accounting/', investment_accounting),
+    path('view_funds/', view_funds),
     path('view_funds_details/<int:funds_id>/', view_funds_details),
 
-    path('market_value/', market_value),
+    path('view_market_value/', view_market_value),
     path('view_market_value_details/<int:currency_id>/', view_market_value_details),
-    # path('trade_overview/', trade_overview),
-    path('view_trade_details/<int:currency_id>/', view_trade_details),
 
     path('view_dividend/', view_dividend),
     path('view_dividend_details/<int:currency_id>/', view_dividend_details),
+
+    # path('trade_overview/', trade_overview),
+    path('view_trade_details/<int:currency_id>/', view_trade_details),
+
+    path('view_stock_details/<int:stock_id>/', view_stock_details),
 
     path('input_trade/', input_trade),
     path('input_dividend/', input_dividend),

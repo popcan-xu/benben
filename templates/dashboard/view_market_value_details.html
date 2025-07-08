@@ -136,7 +136,7 @@
         <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">{{ currency_name|safe }}持仓</h1>
         <div class="col-auto">
             <div class="h6 mb-0 text-gray-500">
-                <a href="/benben/market_value/" style="color: inherit; text-decoration: none;">返回 ></a>
+                <a href="javascript:history.back()" style="color: inherit; text-decoration: none;">返回 ></a>
             </div>
         </div>
     </div>
@@ -393,7 +393,7 @@
                                     {% for trade in trade_list_TOP %}
                                         <tr>
                                             <td>{{ trade.trade_date|date:'Y-m-d' }}</td>
-                                            <td>{{ trade.stock__stock_name }}({{ trade.stock__stock_code }})</td>
+                                            <td><a href="/benben/view_stock_details/{{ trade.stock_id|safe }}" style="color: inherit; text-decoration: none;">{{ trade.stock__stock_name }}({{ trade.stock__stock_code }})</a></td>
 {#                                            <td>{{ trade.get_trade_type_display }}</td>#}
 {#                                            <td>{{ trade.trade_price }}</td>#}
 {#                                            <td>{{ trade.trade_quantity }}</td>#}

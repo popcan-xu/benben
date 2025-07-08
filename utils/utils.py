@@ -1,5 +1,6 @@
 import random
 from decimal import Decimal, ROUND_HALF_UP
+from multiprocessing import Value
 
 import requests
 from bs4 import BeautifulSoup
@@ -10,8 +11,10 @@ import django
 import datetime, time
 import pathlib
 import requests
-from django.db.models import Max, Min, Sum
-from django.db.models.functions import ExtractYear
+from django.db.models import Sum, Avg, Min, Max, Case, When, Q, F, IntegerField, Subquery
+from django.db import models
+from django.db.models.functions import ExtractYear, Coalesce, Cast
+from collections import defaultdict
 
 # import tushare as ts
 import akshare as ak
@@ -28,7 +31,7 @@ import re
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import market, stock, trade, position, dividend, subscription, funds_details, currency, funds
+from stock.models import market, stock, trade, position, dividend, subscription, funds_details, currency, funds, historical_market_value, historical_rate
 
 
 # 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
@@ -1737,143 +1740,342 @@ def get_year_span(currency_id):
     return min_year, max_year, year_span
 
 
-def calculate_fund_yearly_avg(funds_id=None):
-    """
-    计算基金每年年末funds_value的平均值
-
-    参数:
-    funds_id (int, 可选): 指定基金ID，如果提供则只返回该基金的结果
-
-    返回格式: [{
-        'funds_id': int,
-        'funds_name': str,
-        'avg_year_end_value': Decimal,
-        'years_count': int,
-        'min_year': int,
-        'max_year': int
-    }]
-    """
-    # 第一步：获取每年最大日期，可限制特定基金
-    base_query = funds_details.objects
-
-    # 如果提供了funds_id，则过滤特定基金
-    if funds_id is not None:
-        base_query = base_query.filter(funds_id=funds_id)
-
-    yearly_max_dates = (
-        base_query
-            .annotate(year=ExtractYear('date'))
-            .values('funds_id', 'year')
-            .annotate(max_date=Max('date'))
-            .order_by('funds_id', 'year')
-    )
-
-    # 如果没有查询到任何记录，返回空列表
-    if not yearly_max_dates:
+def calculate_market_value_yearly_avg(currency_id):
+    # 验证货币是否存在
+    if not currency.objects.filter(id=currency_id).exists():
         return []
 
-    # 第二步：计算每年年末的实际值
-    yearly_values = []
+    # 获取指定货币的记录
+    records = historical_market_value.objects.filter(currency_id=currency_id)
 
-    for year_data in yearly_max_dates:
-        funds_id = year_data['funds_id']
-        year = year_data['year']
-        max_date = year_data['max_date']
+    # 如果没有记录，返回空列表
+    if not records.exists():
+        return []
 
-        # 获取该基金该年份最大日期的记录
-        max_date_value = funds_details.objects.filter(
-            funds_id=funds_id,
-            date=max_date
-        ).first()
+    # 获取最小和最大年份
+    min_date = records.aggregate(min_date=Min('date'))['min_date']
+    max_date = records.aggregate(max_date=Max('date'))['max_date']
 
-        # 如果最大日期的funds_value不为0，直接使用
-        if max_date_value and max_date_value.funds_value > 0:
-            yearly_values.append({
-                'funds_id': funds_id,
-                'year': year,
-                'year_end_value': max_date_value.funds_value
-            })
-        else:
-            # 查找该基金该年份最新的非零值
-            non_zero_value = (
-                funds_details.objects
-                    .filter(
-                    funds_id=funds_id,
-                    date__year=year,
-                    funds_value__gt=0
-                )
-                    .order_by('-date')
-                    .first()
-            )
+    # 获取有记录且value不为0的最小日期
+    # min_date = records.exclude(value=0).aggregate(min_date=Min('date'))['min_date']
+    # max_date = records.exclude(value=0).aggregate(max_date=Max('date'))['max_date']
 
-            # 如果有非零值则使用，否则记为0
-            value = non_zero_value.funds_value if non_zero_value else Decimal('0.0')
-            yearly_values.append({
-                'funds_id': funds_id,
-                'year': year,
-                'year_end_value': value
-            })
+    min_year = min_date.year
+    max_year = max_date.year
+    print(min_year, max_year)
 
-    # 第三步：计算平均值
-    fund_stats = {}
+    # 计算每个年份的平均值
+    yearly_avg = records.annotate(
+        year=ExtractYear('date')
+    ).values('year').annotate(
+        avg_value=Avg('value')
+    ).order_by('year')
+    print('yearly_avg=',yearly_avg)
 
-    for data in yearly_values:
-        current_funds_id = data['funds_id']
+    # 转换为字典
+    avg_dict = {item['year']: item['avg_value'] for item in yearly_avg}
+    print('avg_dict=',avg_dict)
 
-        # 如果指定了特定的funds_id，只处理该基金
-        if funds_id is not None and current_funds_id != funds_id:
+    # 单独检查每个年份是否全为零
+    for year in range(min_year, max_year + 1):
+        # 如果该年份在结果中但值不为零，跳过
+        if year in avg_dict and avg_dict[year] != 0:
             continue
 
-        if current_funds_id not in fund_stats:
-            fund_stats[current_funds_id] = {
-                'values': [],
-                'years': set(),
-                'total': Decimal('0.0'),
-                'count': 0
-            }
+        # 检查该年份是否所有记录都为零
+        year_records = records.filter(date__year=year)
+        print('year_records=',year_records)
+        if year_records.exists() and year_records.exclude(value=0).count() == 0:
+            avg_dict[year] = 0.0
+        elif year not in avg_dict:
+            avg_dict[year] = 0.0
+    print('avg_dict=', avg_dict)
 
-        fund_stats[current_funds_id]['values'].append(data['year_end_value'])
-        fund_stats[current_funds_id]['years'].add(data['year'])
-        fund_stats[current_funds_id]['total'] += data['year_end_value']
-        fund_stats[current_funds_id]['count'] += 1
+    # 构建最终结果
+    result = [
+        {'year': year, 'average_value': avg_dict.get(year, 0.0)}
+        for year in range(min_year, max_year + 1)
+    ]
+    print('result=',result)
+    # 过滤掉 value = 0 的条目
+    result = [item for item in result if item['average_value'] != 0]
+    print('result=', result)
 
-    # 如果没有收集到任何数据，返回空列表
-    if not fund_stats:
-        return []
+    return result
 
-    # 第四步：组装结果（包括基金名称）
-    # from .models import funds  # 导入基金模型
 
-    results = []
+def calculate_overall_average(yearly_results):
+    """
+    计算所有年份平均值的总平均值
 
-    # 获取所有涉及的基金ID
-    funds_ids = list(fund_stats.keys())
+    参数:
+        yearly_results (list): 每年平均值列表，格式如：
+            [{'year': int, 'average_value': Decimal}, ...]
 
-    # 一次性获取所有基金名称
-    fund_names = {
-        f.id: f.funds_name
-        for f in funds.objects.filter(id__in=funds_ids)
+    返回:
+        Decimal: 所有年份平均值的平均
+    """
+    # 确保有数据
+    if not yearly_results:
+        return Decimal(0.0)
+
+    # 提取所有年份的平均值并求和
+    total = Decimal(0.0)
+    for entry in yearly_results:
+        # 确保值类型正确
+        if isinstance(entry['average_value'], Decimal):
+            total += entry['average_value']
+        else:
+            # 如果不是Decimal类型则转换为Decimal
+            total += Decimal(str(entry['average_value']))
+
+    # 计算平均值
+    overall_avg = total / Decimal(len(yearly_results))
+    print('overall_avg=',overall_avg,'years=',len(yearly_results))
+    return overall_avg
+
+
+def calculate_dividend_data(currency_id):
+    # 步骤1：获取所有有效日期范围
+    date_range = historical_market_value.objects.filter(currency_id=currency_id, value__gt=0).aggregate(
+        min_date=Min('date'),
+        max_date=Max('date')
+    )
+
+    if not date_range['min_date'] or not date_range['max_date']:
+        return {'year': [], 'dividend_yearly_total': [], 'market_value_yearly_avg': [], 'dividend_rate_yearly': []}
+
+    min_date = date_range['min_date']
+    max_date = date_range['max_date']
+    total_days = (max_date - min_date).days + 1
+
+    # 步骤2：计算整体加权平均市值
+    # 使用ORM直接计算所有记录的市值平均值
+    overall_avg_value = historical_market_value.objects.filter(
+        currency_id=currency_id,
+        value__gt=0
+    ).aggregate(avg_value=Avg('value'))['avg_value'] or Decimal('0.0')
+
+    # 步骤3：生成有效年份列表
+    years = list(range(min_date.year, max_date.year + 1))
+    valid_years = []
+    dividend_yearly_total = []
+    market_value_yearly_avg = []
+    dividend_rate_yearly = []
+
+    # 步骤4：遍历每个年份计算年度数据
+    for year in years:
+        # 检查年份有效性 (存在非零市值)
+        year_data = historical_market_value.objects.filter(
+            currency_id=currency_id,
+            date__year=year,
+            # value__gt=0 # 是否剔除max_date、min_date之间的市值为0的年份
+        )
+        if not year_data.exists():
+            continue
+
+        valid_years.append(year)
+
+        # 计算年度分红总额
+        yearly_dividends = dividend.objects.filter(
+            currency_id=currency_id,
+            dividend_date__year=year
+        ).aggregate(sum=Sum('dividend_amount'))['sum'] or Decimal('0.0')
+        dividend_yearly_total.append(float(yearly_dividends))
+
+        # 计算年度平均市值
+        yearly_avg = year_data.aggregate(avg=Avg('value'))['avg'] or Decimal('0.0')
+        market_value_yearly_avg.append(float(yearly_avg))
+
+        # 计算年度分红率
+        if yearly_avg:
+            dividend_rate_yearly.append(float(yearly_dividends / yearly_avg))
+        else:
+            dividend_rate_yearly.append(0)
+
+    # print(years,valid_years)
+    n = len([x for x in market_value_yearly_avg if x != 0]) # 用于计算avg_dividend_rate的年份数为market_value_yearly_avg列表中的非0元素的个数
+    # n = len(valid_years)
+    avg_dividend_rate = 0
+    if n > 0:
+        # 方法1：算术平均
+        avg_dividend_rate = sum(dividend_rate_yearly) / n
+
+    return {
+        'year': valid_years,
+        'dividend_yearly_total': dividend_yearly_total,
+        'market_value_yearly_avg': market_value_yearly_avg,
+        'dividend_rate_yearly': dividend_rate_yearly,
+        # 新增两个关键整体指标
+        'total_dividends': float(sum(dividend_yearly_total)) if dividend_yearly_total else 0,
+        'overall_avg_market_value': float(overall_avg_value),
+        'avg_dividend_rate': float(avg_dividend_rate)
     }
 
-    for funds_id, stats in fund_stats.items():
-        # 获取基金名称
-        fund_name = fund_names.get(funds_id, f"基金ID:{funds_id}")
 
-        # 计算平均值（保留2位小数）
-        avg_value = stats['total'] / stats['count'] if stats['count'] > 0 else Decimal('0.0')
-        avg_value = avg_value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+def get_dividend_summary_by_currency(stock_id):
+    """
+    获取指定股票在不同货币类型下的累计分红金额
 
-        results.append({
-            'funds_id': funds_id,
-            'funds_name': fund_name,
-            'avg_year_end_value': avg_value,
-            'years_count': stats['count'],
-            'min_year': min(stats['years']),
-            'max_year': max(stats['years'])
-        })
+    参数:
+        stock_id (int): 要查询的股票ID
 
-    # 如果指定了funds_id且结果存在，直接返回单个字典（为了向后兼容）
-    if funds_id is not None and results:
-        return results[0] if len(results) == 1 else results
-    else:
-        return results
+    返回:
+        dict: 货币ID为键，累计分红金额为值的字典
+              格式: {currency_id: total_dividend_amount}
+              包含汇总无货币记录的键为None的条目
+    """
+    summary = {
+        1: Decimal('0.0'),   # 基准货币
+        2: Decimal('0.0'),   # 港元
+        3: Decimal('0.0'),   # 美元
+        # 可以添加更多货币
+    }
+    # 分组聚合查询
+    results = dividend.objects.filter(
+        stock_id=stock_id
+    ).values('currency_id').annotate(
+        total_dividend=Sum('dividend_amount')
+    )
+
+    for item in results:
+        summary[item['currency_id']] = item['total_dividend']
+
+    # 将查询结果转换为字典
+    # summary = {
+    #     item['currency_id']: item['total_dividend']
+    #     for item in results
+    # }
+
+    # 处理没有货币记录的情况（默认Decimal(0.0)）
+    return summary if summary else {}
+
+
+def calculate_total_dividend(dividend_dict, exchange_rates):
+    """
+    将不同货币的分红金额按汇率转换为基准货币并求和
+
+    参数:
+        dividend_dict (dict): 分红字典 {currency_id: 分红金额}
+        exchange_rates (dict): 汇率字典 {currency_id: 汇率}
+
+    返回:
+        Decimal: 转换后的总分红金额（基准货币）
+
+    说明:
+        - 当货币ID在汇率字典中不存在时，该货币的分红将被忽略
+        - 当分红字典为空时返回0
+    """
+    total = Decimal('0.0')
+    for currency_id, amount in dividend_dict.items():
+        # 跳过无货币记录的情况
+        if currency_id is None:
+            continue
+
+        # 检查该货币是否有汇率
+        if currency_id in exchange_rates:
+            rate = exchange_rates[currency_id]
+
+            # 确保汇率是Decimal类型
+            if not isinstance(rate, Decimal):
+                rate = Decimal(str(rate))
+            total += amount * rate
+
+
+
+    return float(total)
+
+
+def calculate_stock_trade_summary(stock_id):
+    # 1. 获取股票信息并判断是否为港股
+    try:
+        stock_obj = stock.objects.select_related('market').get(id=stock_id)
+        is_hk_stock = (stock_obj.market_id == 5)  # 假设港股市场ID为5
+    except stock.DoesNotExist:
+        return {}
+
+    # 2. 获取目标股票的所有交易记录
+    trades = trade.objects.filter(stock_id=stock_id).select_related('currency')
+
+    # 3. 准备汇率查询数据
+    date_currency_pairs = []
+    hk_rate_dates = set()  # 存储需要查询港元汇率的日期
+
+    for t in trades:
+        # 判断是否港股通交易（港股且交易货币为基准货币）
+        if is_hk_stock and t.currency_id == 1:
+            # 标记需要查询港元汇率（假设港元currency_id=2）
+            date_currency_pairs.append((t.trade_date, 2))
+            hk_rate_dates.add(t.trade_date)
+        elif t.currency_id != 1:  # 非基准货币
+            date_currency_pairs.append((t.trade_date, t.currency_id))
+
+    # 4. 查询所需的历史汇率
+    rate_dict = {}
+    if date_currency_pairs:
+        # 去重处理
+        unique_pairs = set(date_currency_pairs)
+        dates = [pair[0] for pair in unique_pairs]
+        currency_ids = [pair[1] for pair in unique_pairs]
+
+        rate_records = historical_rate.objects.filter(
+            date__in=dates,
+            currency_id__in=currency_ids
+        ).values('date', 'currency_id', 'rate')
+
+        # 构建汇率字典 {(日期, 货币ID): 汇率}
+        rate_dict = {
+            (record['date'], record['currency_id']): record['rate']
+            for record in rate_records
+        }
+
+    # 5. 初始化汇总字典
+    # summary = defaultdict(lambda: {'buy': Decimal('0.0'), 'sell': Decimal('0.0')})
+    summary = {
+        1: {'buy': Decimal('0.0'), 'sell': Decimal('0.0')},  # 基准货币
+        2: {'buy': Decimal('0.0'), 'sell': Decimal('0.0')},  # 港元
+        3: {'buy': Decimal('0.0'), 'sell': Decimal('0.0')},  # 美元
+        # 可以添加更多货币
+    }
+
+    # 6. 处理每笔交易
+    for t in trades:
+        # 确定汇率逻辑
+        rate_val = None
+        target_currency_id = t.currency_id
+
+        # 处理港股通交易（港股且交易货币为基准货币）
+        if is_hk_stock and t.currency_id == 1:
+            # 使用港元汇率（2）进行计算，但最终归类到基准货币（1）
+            key = (t.trade_date, 2)
+            rate_val = rate_dict.get(key)
+            # 保持目标货币为基准货币
+            target_currency_id = 1
+        else:
+            # 非港股通交易
+            if t.currency_id == 1:
+                rate_val = Decimal('1.0')
+            else:
+                key = (t.trade_date, t.currency_id)
+                rate_val = rate_dict.get(key)
+
+        # 如果无法确定汇率则跳过该交易
+        if rate_val is None:
+            continue
+
+        # 计算交易金额
+        amount = t.trade_price * t.trade_quantity * rate_val
+
+        # 确保target_currency_id在summary中存在
+        if target_currency_id not in summary:
+            summary[target_currency_id] = {'buy': Decimal('0.0'), 'sell': Decimal('0.0')}
+
+        # 按交易类型分类累加到目标货币
+        if t.trade_type == trade.BUY:
+            summary[target_currency_id]['buy'] += amount
+        elif t.trade_type == trade.SELL:
+            summary[target_currency_id]['sell'] += amount
+
+    return dict(summary)
+
+

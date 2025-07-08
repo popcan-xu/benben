@@ -19,6 +19,7 @@
                         <tr>
                             <th>代码</th>
                             <th>名称</th>
+                            <th>单位</th>
                             <th>备注</th>
                             <th>操作</th>
                             <th>操作</th>
@@ -30,6 +31,7 @@
                             <tr>
                                 <td>{{ currency.code }}</td>
                                 <td>{{ currency.name }}</td>
+                                <td>{{ currency.unit }}</td>
                                 <td>{{ currency.script }}</td>
                                 <td>
                                     <a href="/benben/del_currency/{{ currency.id|safe }}/" class="btn btn-default btn-sm">

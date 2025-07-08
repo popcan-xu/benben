@@ -33,12 +33,12 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                <a href="/benben/investment_accounting/" style="color: inherit; text-decoration: none;">资产</a>
+                                <a href="/benben/view_funds/" style="color: inherit; text-decoration: none;">资产</a>
                             </div>
                         </div>
                         <div class="col-auto">
                             <div class="h6 mb-0 text-gray-500">
-                                <a href="/benben/investment_accounting/" style="color: inherit; text-decoration: none;">详情 ></a>
+                                <a href="/benben/view_funds/" style="color: inherit; text-decoration: none;">详情 ></a>
                             </div>
                         </div>
                     </div>
@@ -65,12 +65,12 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                <a href="/benben/market_value/" style="color: inherit; text-decoration: none;">市值</a>
+                                <a href="/benben/view_market_value/" style="color: inherit; text-decoration: none;">市值</a>
                             </div>
                         </div>
                         <div class="col-auto">
                             <div class="h6 mb-0 text-gray-500">
-                                <a href="/benben/market_value/" style="color: inherit; text-decoration: none;">详情 ></a>
+                                <a href="/benben/view_market_value/" style="color: inherit; text-decoration: none;">详情 ></a>
                             </div>
                         </div>
                     </div>
@@ -201,7 +201,7 @@
                 <div class="card-body">
                     <div style="height:320px; width:100%; display:block; overflow-y:auto;">
                         {% for i in overview.top5_array %}
-                            <h4 class="small font-weight-bold">{{ i.0 }}
+                            <h4 class="small font-weight-bold"><a href="/benben/view_stock_details/{{ i.4|safe }}" style="color: inherit; text-decoration: none;">{{ i.0 }}</a>
                                 <span>{{ i.1|floatformat:0 }}</span>
                                 <span class="float-right">{{ i.2|slice:":-1" }}%</span>
                             </h4>
@@ -245,7 +245,7 @@
                                     {% for i in overview.trade_array %}
                                         <tr>
                                             <td>{{ i.0 }}</td>
-                                            <td>{{ i.1 }}</td>
+                                            <td><a href="/benben/view_stock_details/{{ i.8|safe }}" style="color: inherit; text-decoration: none;">{{ i.1 }}</a></td>
                                             <td>{{ i.2 }}</td>
                                             <td>{{ i.3 }}</td>
                                             <td>{{ i.4 }}</td>
@@ -285,7 +285,7 @@
                                     {% for i in overview.dividend_array %}
                                         <tr>
                                             <td>{{ i.0 }}</td>
-                                            <td>{{ i.1 }}</td>
+                                            <td><a href="/benben/view_stock_details/{{ i.4|safe }}" style="color: inherit; text-decoration: none;">{{ i.1 }}</a></td>
                                             <td>{{ i.2|floatformat:0 }}</td>
                                             <td>{{ i.3 }}</td>
                                         </tr>
@@ -395,7 +395,7 @@
                                     <tbody>
                                         {% for i in overview.holding_stock_array %}
                                             <tr>
-                                                <td>{{ i.0|stringformat:"s" }}</td>
+                                                <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>
                                                 <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
                                                 <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
                                                 <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
@@ -404,10 +404,7 @@
                                             </tr>
                                         {% endfor %}
                                         <tr>
-                                            <td><b>合计</b></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
+                                            <td colspan="4"><b>合计</b>（股票数量：{{ overview.holding_stock_number }}）</td>
                                             <td style="text-align: right"><b>{{ overview.market_value_sum|floatformat:0 }}</b></td>
                                             <td style="text-align: right"><b>100.00%</b></td>
                                         </tr>
