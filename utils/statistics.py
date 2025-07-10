@@ -5,12 +5,12 @@ import django
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import market, stock, trade, position, dividend, subscription
+from stock.models import market, stock, trade, position, dividend, subscription, account
 from django.db.models import Avg, Max, Min, Count, Sum, F
 
 from utils.utils import *
 
-
+'''
 def get_position_content1(currency):
     rate_HKD, rate_USD = get_rate()
     rate_dict = {1: 1, 2: rate_HKD, 3: rate_USD}
@@ -150,7 +150,7 @@ def get_position_content2(currency):
     return position_content, abbreviation_array, account_num, stock_num
 
 
-def get_position_content(currency):
+def get_position_content_250710(currency):
     # 获取汇率
     rate_HKD, rate_USD = get_rate()
     rate_dict = {1: 1, 2: rate_HKD, 3: rate_USD}
@@ -244,8 +244,104 @@ def get_position_content(currency):
 
     stock_num = len(position_content)
     return position_content, abbreviation_array, account_num, stock_num
+'''
+
+def get_position_content(currency_id, rate_dict):
+    # 获取所有账户及缩写
+    accounts = account.objects.filter(
+        position__currency_id=currency_id
+    ).distinct().values('id', 'account_abbreviation')
+
+    account_map = {acc['id']: acc['account_abbreviation'] for acc in accounts}
+    account_ids = list(account_map.keys())
+    account_num = len(accounts)
+
+    # 优化：预取相关数据，减少查询次数
+    positions = position.objects.filter(
+        currency_id=currency_id
+    ).select_related('stock', 'stock__market')
+
+    # 按股票分组统计
+    stock_info = defaultdict(lambda: {
+        'name': '',
+        'code': '',
+        'currency_id': None,
+        'accounts': defaultdict(int),
+        'total_quantity': 0
+    })
+
+    for pos in positions:
+        stock = pos.stock
+        stock_id = stock.id
+
+        # 初始化股票信息
+        if not stock_info[stock_id]['name']:
+            stock_info[stock_id] = {
+                'name': stock.stock_name,
+                'code': stock.stock_code,
+                'currency_id': stock.market.currency_id,
+                'accounts': defaultdict(int),
+                'total_quantity': 0
+            }
+
+        # 累加账户持仓
+        stock_info[stock_id]['accounts'][pos.account_id] += pos.position_quantity
+        stock_info[stock_id]['total_quantity'] += pos.position_quantity
+
+    # 批量获取股票价格
+    stock_codes = [info['code'] for info in stock_info.values()]
+    price_array = get_stock_array_price(stock_codes)
+    price_dict = {item[0]: (item[1], item[2]) for item in price_array}  # (code -> (price, increase))
+
+    # 准备最终结果集
+    position_content = []
+
+    # 计算市值并排序
+    def get_market_value(stock_id):
+        info = stock_info[stock_id]
+        price = price_dict.get(info['code'], (0, 0))[0]
+        exchange_rate = rate_dict.get(info['currency_id'], 1)
+        return info['total_quantity'] * price * exchange_rate
+
+    sorted_stock_ids = sorted(
+        stock_info.keys(),
+        key=get_market_value,
+        reverse=True
+    )
+
+    # 构建表格行
+    for stock_id in sorted_stock_ids:
+        info = stock_info[stock_id]
+        stock_nc = f"{info['name']}（{info['code']}）"
+        row = [stock_nc]
+        total_quantity = 0
+
+        # 添加各账户持仓量
+        for acc_id in account_ids:
+            quantity = info['accounts'].get(acc_id, 0)
+            row.append(quantity)
+            total_quantity += quantity
+
+        row.append(total_quantity)  # 总持仓量
+
+        # 计算并添加市值（使用真实价格）
+        price = price_dict.get(info['code'], (0, 0))[0]
+        market_value = total_quantity * price * rate_dict[info['currency_id']]
+        row.append(round(market_value, 2))
+
+        position_content.append(row)
+
+    stock_num = len(position_content)
+
+    return {
+        'position_content': position_content,
+        'abbreviation_array': [account_map[acc_id] for acc_id in account_ids],
+        'account_num': account_num,
+        'stock_num': stock_num
+    }
 
 
+'''
 def get_value_stock_content1(currency_value, price_increase_array, HKD_rate, USD_rate):
     stock_id_array = []
     stock_table_array = []
@@ -320,7 +416,7 @@ def get_value_stock_content1(currency_value, price_increase_array, HKD_rate, USD
     stock_chart_content.sort(key=lambda x: x[5], reverse=True)  # 对stock_content列表按第6列（金额）降序排序
     name_array, value_array = get_chart_array(stock_chart_content, 11, 0, 5) # 取前十位，剩下的并入其他
     return stock_table_content, amount_sum, json.dumps(name_array), value_array
-
+'''
 
 def get_value_stock_content(currency_value, price_increase_array, HKD_rate, USD_rate):
     # 构建快速查找字典：股票代码 -> (价格, 涨幅, 颜色)
@@ -409,7 +505,6 @@ def get_value_stock_content(currency_value, price_increase_array, HKD_rate, USD_
     return stock_table_content, amount_sum, json.dumps(name_array), value_array
 
 
-# def get_value_industry_content(position_currency, price_array, HKD_rate, USD_rate):
 def get_value_industry_content(currency_value, price_array, HKD_rate, USD_rate):
     industry_table_array = []
     industry_chart_array = []
@@ -537,7 +632,6 @@ def get_value_market_sum(price_array, HKD_rate, USD_rate):
     return json.dumps(name_array), value_array
 
 
-# def get_value_market_content(position_currency, price_array, HKD_rate, USD_rate):
 def get_value_market_content(currency_value, price_array, HKD_rate, USD_rate):
     market_table_array = []
     market_chart_array = []
@@ -545,7 +639,6 @@ def get_value_market_content(currency_value, price_array, HKD_rate, USD_rate):
     percent_array = []
     amount_sum = 0.0
     # 对position表分组查询，按stock、industry跨表字段分组，返回每个分组的id（通过双下划线取得多级关联表的字段值）和每个分组的quantity个数
-    # market_dict = position.objects.filter(position_currency=position_currency).values("stock__market").annotate(
     market_dict = position.objects.filter(currency_id=currency_value).values("stock__market").annotate(
         count=Count("stock")).values(
         'stock__market__id',
@@ -616,7 +709,6 @@ def get_value_market_content(currency_value, price_array, HKD_rate, USD_rate):
     return market_table_content, amount_sum, json.dumps(name_array), value_array
 
 
-# def get_value_account_content(position_currency, price_array, HKD_rate, USD_rate):
 def get_value_account_content(currency_value, price_array, HKD_rate, USD_rate):
     account_table_array = []
     account_chart_array = []
@@ -624,7 +716,6 @@ def get_value_account_content(currency_value, price_array, HKD_rate, USD_rate):
     percent_array = []
     amount_sum = 0.0
     # 对position表分组查询，按account字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
-    # account_dict = position.objects.filter(position_currency=position_currency).values("account").annotate(
     account_dict = position.objects.filter(currency_id=currency_value).values("account").annotate(
         count=Count("account")).values(
         'account__id',

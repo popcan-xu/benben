@@ -8,6 +8,17 @@ class currency(models.Model):
     unit = models.CharField(max_length=32, verbose_name='单位', null=True)
     script = models.CharField(max_length=32, verbose_name='备注', null=True)
 
+    # 添加常量定义
+    CNY_ID = 1
+    HKD_ID = 2
+    USD_ID = 3
+
+    @classmethod
+    def currency_ids(cls):
+        return [cls.CNY_ID, cls.HKD_ID, cls.USD_ID]
+
+
+
 
 # 券商数据模型
 class broker(models.Model):

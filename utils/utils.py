@@ -343,27 +343,6 @@ def remove_prefix(stock_code):
     return stock_code
 
 
-# 通过pysnowball API抓取雪球网实时行情
-# def get_quote_pysnowball(stock_code):
-#     stock_object = stock.objects.get(stock_code=stock_code)
-#     market = stock_object.market.market_abbreviation
-#     ball.set_token('xq_a_token=a8d434ddd975f5752965fa782596bd0b5b008376;')
-#     if market == 'hk':
-#         code = stock_code
-#     else:
-#         code = market.upper() + stock_code
-#     quote_json = ball.quotec(code)
-#     price = quote_json['data'][0]['current']
-#     increase = quote_json['data'][0]['percent']
-#     if increase > 0:
-#         color = 'red'
-#     elif increase < 0:
-#         color = 'green'
-#     else:
-#         color = 'grey'
-#     return price, increase, color
-
-
 # 从http://qt.gtimg.cn/抓取实时行情
 def get_quote_gtimg(stock_code):
     price_str = []
@@ -538,107 +517,109 @@ def extract_rate(input_str: str) -> float or None:
     # except (IndexError, ValueError, TypeError):
     #     return None
 
+'''
 # 从https://wocha.cn/网站抓取汇率数据
-# def get_rate_wocha():
-#     rate_HKD = 1.0
-#     rate_USD = 1.0
-#     path = pathlib.Path("./templates/dashboard/rate.json")
-#     if path.is_file(): # 若json文件存在，从json文件中读取rate_HKD、rate_USD
-#         # 读取rate.json
-#         rate_dict = FileOperate(filepath='./templates/dashboard/', filename='rate.json').operation_file()
-#         rate_HKD = float(rate_dict['rate_HKD'])
-#         rate_USD = float(rate_dict['rate_USD'])
-#         rate_time = datetime.datetime.strptime(rate_dict['modified_time'], "%Y-%m-%d %H:%M:%S")
-#     else: # 若json文件不存在，创建json文件
-#         rate_dict = {}
-#         rate_dict.update(rate_HKD=1.0)
-#         rate_dict.update(rate_USD=1.0)
-#         rate_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
-#         rate_dict.update(modified_time=rate_time.strftime("%Y-%m-%d %H:%M:%S"))
-#         FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
-#
-#     d = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day)
-#     # 若json文件中的rate_time与当前不为同一天，从https://wocha.cn/获取汇率
-#     if rate_time.date() != datetime.datetime.today().date():
-#     # if 1 == 1:
-#         # 获取港元汇率
-#         rate_HKD = getDateRate_hkd(d.strftime("%Y-%m-%d"))
-#         if rate_HKD != -1:
-#             rate_dict.update(rate_HKD=rate_HKD)
-#         # 获取美元汇率
-#         rate_USD = getDateRate_usd(d.strftime("%Y-%m-%d"))
-#         if rate_USD != -1:
-#             rate_dict.update(rate_USD=rate_USD)
-#         rate_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-#         FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
-#
-#     return rate_HKD, rate_USD
+def get_rate_wocha():
+    rate_HKD = 1.0
+    rate_USD = 1.0
+    path = pathlib.Path("./templates/dashboard/rate.json")
+    if path.is_file(): # 若json文件存在，从json文件中读取rate_HKD、rate_USD
+        # 读取rate.json
+        rate_dict = FileOperate(filepath='./templates/dashboard/', filename='rate.json').operation_file()
+        rate_HKD = float(rate_dict['rate_HKD'])
+        rate_USD = float(rate_dict['rate_USD'])
+        rate_time = datetime.datetime.strptime(rate_dict['modified_time'], "%Y-%m-%d %H:%M:%S")
+    else: # 若json文件不存在，创建json文件
+        rate_dict = {}
+        rate_dict.update(rate_HKD=1.0)
+        rate_dict.update(rate_USD=1.0)
+        rate_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
+        rate_dict.update(modified_time=rate_time.strftime("%Y-%m-%d %H:%M:%S"))
+        FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
+
+    d = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day)
+    # 若json文件中的rate_time与当前不为同一天，从https://wocha.cn/获取汇率
+    if rate_time.date() != datetime.datetime.today().date():
+    # if 1 == 1:
+        # 获取港元汇率
+        rate_HKD = getDateRate_hkd(d.strftime("%Y-%m-%d"))
+        if rate_HKD != -1:
+            rate_dict.update(rate_HKD=rate_HKD)
+        # 获取美元汇率
+        rate_USD = getDateRate_usd(d.strftime("%Y-%m-%d"))
+        if rate_USD != -1:
+            rate_dict.update(rate_USD=rate_USD)
+        rate_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
+
+    return rate_HKD, rate_USD
 
 
 # 从https://qq.ip138.com/网站抓取汇率数据
-# def get_rate_ip138():
-#     rate_HKD = 1.0
-#     rate_USD = 1.0
-#     path = pathlib.Path("./templates/dashboard/rate.json")
-#     if path.is_file():  # 若json文件存在，从json文件中读取rate_HKD、rate_USD
-#         # 读取rate.json
-#         rate_dict = FileOperate(filepath='./templates/dashboard/', filename='rate.json').operation_file()
-#         rate_HKD = float(rate_dict['rate_HKD'])
-#         rate_USD = float(rate_dict['rate_USD'])
-#         rate_time = datetime.datetime.strptime(rate_dict['modified_time'], "%Y-%m-%d %H:%M:%S")
-#     else:  # 若json文件不存在，创建json文件
-#         rate_dict = {}
-#         rate_dict.update(rate_HKD=1.0)
-#         rate_dict.update(rate_USD=1.0)
-#         rate_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
-#         rate_dict.update(modified_time=rate_time.strftime("%Y-%m-%d %H:%M:%S"))
-#         FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
-#     # 若json文件中的rate_time与当前不为同一天，从https://qq.ip138.com/获取汇率
-#     # if rate_time.date() != datetime.datetime.today().date():
-#     if 1 == 1:
-#         # 获取港元汇率
-#         url_HKD = 'https://qq.ip138.com/hl.asp?from=HKD&to=CNY&q=100'
-#         html_HKD = getHTMLText(url_HKD)
-#         rate_HKD = getRate(html_HKD)
-#         # 网页爬虫抓取结果是否为‘暂无’？
-#         # if rate_HKD != -1:
-#         if rate_HKD > 0:
-#             rate_dict.update(rate_HKD=rate_HKD)
-#         # 以下两行用于汇率获取失败后的临时补救
-#         # else:
-#         #     rate_dict.update(rate_HKD=1)
-#         # 获取美元汇率
-#         url_USD = 'https://qq.ip138.com/hl.asp?from=USD&to=CNY&q=100'
-#         html_USD = getHTMLText(url_USD)
-#         rate_USD = getRate(html_USD)
-#         # 网页爬虫抓取结果是否为‘暂无’？
-#         # if rate_USD != -1:
-#         if rate_USD > 0:
-#             rate_dict.update(rate_USD=rate_USD)
-#         rate_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-#         FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
-#
-#     # 调式   按日期抓取港币和美元历史汇率
-#     begin = datetime.date(2024, 12, 17)
-#     end = datetime.date(2024, 12, 19)
-#     d = begin
-#     delta = datetime.timedelta(days=1)
-#     while d <= end:
-#         print(d.strftime("%Y-%m-%d"))
-#         hkd_rate = getDateRate_hkd(d.strftime("%Y-%m-%d"))
-#         usd_rate = getDateRate_usd(d.strftime("%Y-%m-%d"))
-#         print(hkd_rate, usd_rate)
-#         # print("Start : %s" % time.ctime())
-#         # time.sleep(random.random()*0.2)
-#         # print("End : %s" % time.ctime())
-#         d += delta
-#
-#     d = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day)
-#     hkd_rate = getDateRate_hkd(d.strftime("%Y-%m-%d"))
-#     usd_rate = getDateRate_usd(d.strftime("%Y-%m-%d"))
-#     print(hkd_rate, usd_rate)
-#
-#     return rate_HKD, rate_USD
+def get_rate_ip138():
+    rate_HKD = 1.0
+    rate_USD = 1.0
+    path = pathlib.Path("./templates/dashboard/rate.json")
+    if path.is_file():  # 若json文件存在，从json文件中读取rate_HKD、rate_USD
+        # 读取rate.json
+        rate_dict = FileOperate(filepath='./templates/dashboard/', filename='rate.json').operation_file()
+        rate_HKD = float(rate_dict['rate_HKD'])
+        rate_USD = float(rate_dict['rate_USD'])
+        rate_time = datetime.datetime.strptime(rate_dict['modified_time'], "%Y-%m-%d %H:%M:%S")
+    else:  # 若json文件不存在，创建json文件
+        rate_dict = {}
+        rate_dict.update(rate_HKD=1.0)
+        rate_dict.update(rate_USD=1.0)
+        rate_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
+        rate_dict.update(modified_time=rate_time.strftime("%Y-%m-%d %H:%M:%S"))
+        FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
+    # 若json文件中的rate_time与当前不为同一天，从https://qq.ip138.com/获取汇率
+    # if rate_time.date() != datetime.datetime.today().date():
+    if 1 == 1:
+        # 获取港元汇率
+        url_HKD = 'https://qq.ip138.com/hl.asp?from=HKD&to=CNY&q=100'
+        html_HKD = getHTMLText(url_HKD)
+        rate_HKD = getRate(html_HKD)
+        # 网页爬虫抓取结果是否为‘暂无’？
+        # if rate_HKD != -1:
+        if rate_HKD > 0:
+            rate_dict.update(rate_HKD=rate_HKD)
+        # 以下两行用于汇率获取失败后的临时补救
+        # else:
+        #     rate_dict.update(rate_HKD=1)
+        # 获取美元汇率
+        url_USD = 'https://qq.ip138.com/hl.asp?from=USD&to=CNY&q=100'
+        html_USD = getHTMLText(url_USD)
+        rate_USD = getRate(html_USD)
+        # 网页爬虫抓取结果是否为‘暂无’？
+        # if rate_USD != -1:
+        if rate_USD > 0:
+            rate_dict.update(rate_USD=rate_USD)
+        rate_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        FileOperate(dictData=rate_dict, filepath='./templates/dashboard/', filename='rate.json').operation_file()
+
+    # 调式   按日期抓取港币和美元历史汇率
+    begin = datetime.date(2024, 12, 17)
+    end = datetime.date(2024, 12, 19)
+    d = begin
+    delta = datetime.timedelta(days=1)
+    while d <= end:
+        print(d.strftime("%Y-%m-%d"))
+        hkd_rate = getDateRate_hkd(d.strftime("%Y-%m-%d"))
+        usd_rate = getDateRate_usd(d.strftime("%Y-%m-%d"))
+        print(hkd_rate, usd_rate)
+        # print("Start : %s" % time.ctime())
+        # time.sleep(random.random()*0.2)
+        # print("End : %s" % time.ctime())
+        d += delta
+
+    d = datetime.date(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day)
+    hkd_rate = getDateRate_hkd(d.strftime("%Y-%m-%d"))
+    usd_rate = getDateRate_usd(d.strftime("%Y-%m-%d"))
+    print(hkd_rate, usd_rate)
+
+    return rate_HKD, rate_USD
+'''
 
 
 # 从https://stock.xueqiu.com/网站抓取股票历史分红数据
@@ -1441,70 +1422,70 @@ def timeStamp13_2_date(timeStamp):
         return 'None'
 
 
-
+'''
 # 从tushare获取股票行情
-# def get_quote_tushare():
-#     # 设置 Tushare Pro token
-#     ts.set_token('02b13d21dd01b2682f10173d8003b92e1a8ff778695b8cf929169250')
-#
-#     # 初始化 Tushare Pro API
-#     pro = ts.pro_api()
-#
-#     # 拉取数据
-#     data = pro.hk_daily(**{
-#         "ts_code": "00700.HK",  # 股票代码
-#         "start_date": 20250115,  # 开始日期
-#         "end_date": 20250120,  # 结束日期
-#     }, fields=[
-#         "ts_code",  # 交易日期
-#         "open",  # 开盘价
-#         "high",  # 最高价
-#         "low",  # 最低价
-#         "close",  # 收盘价
-#         "pct_chg",  # 涨跌幅
-#         "vol",  # 成交量
-#         "trade_date"  # 交易日期
-#     ])
-#
-#     # 显示数据
-#     print(data)
-#     print(data.iloc[0].iloc[4])
-#     print(data.iloc[0,4])
-#
-#
-#     df = pro.daily(ts_code='600519.SH', start_date='20230103', end_date='20230105')
-#     print("pro.daily(ts_code='600519.SH', start_date='20230103', end_date='20230105')")
-#     print(df.tail())
-#     print(df['close'])
-#
-#     df = pro.hk_daily(ts_code='00700.HK', start_date='20190904', end_date='20190905')
-#     print("pro.hk_daily(ts_code='00700.HK', start_date='20190904', end_date='20190905')")
-#     print(df)
-#     print(df['close'])
-#
-#     # sina数据
-#     df = ts.realtime_quote(ts_code='511880.SH,200596.SZ,000001.SZ,000300.SH')
-#     print("ts.realtime_quote(ts_code='600000.SH,600036.SH,000001.SZ,000300.SH')")
-#     print(df.iloc[0,6])
-#
-#     # 东财数据
-#     df = ts.realtime_quote(ts_code='511880.SH', src='dc')
-#     print("ts.realtime_quote(ts_code='600000.SH', src='dc')")
-#     print(df.iloc[0].iloc[6])
-#
-#
-#     df = ts.get_realtime_quotes('200596')[['name', 'price', 'pre_close', 'date', 'time']]
-#     #df1 = pd.DataFrame(df)
-#     print("ts.get_realtime_quotes('600000')[['name', 'price', 'pre_close', 'date', 'time']]")
-#     print(df['name'].iloc[0])
-#     print(df['date'].iloc[0])
-#     print(df['price'].iloc[0])
-#     #print(df)
-#
-#     #stock_basic = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
-#     #print(stock_basic.head())
-#     return
+def get_quote_tushare():
+    # 设置 Tushare Pro token
+    ts.set_token('02b13d21dd01b2682f10173d8003b92e1a8ff778695b8cf929169250')
 
+    # 初始化 Tushare Pro API
+    pro = ts.pro_api()
+
+    # 拉取数据
+    data = pro.hk_daily(**{
+        "ts_code": "00700.HK",  # 股票代码
+        "start_date": 20250115,  # 开始日期
+        "end_date": 20250120,  # 结束日期
+    }, fields=[
+        "ts_code",  # 交易日期
+        "open",  # 开盘价
+        "high",  # 最高价
+        "low",  # 最低价
+        "close",  # 收盘价
+        "pct_chg",  # 涨跌幅
+        "vol",  # 成交量
+        "trade_date"  # 交易日期
+    ])
+
+    # 显示数据
+    print(data)
+    print(data.iloc[0].iloc[4])
+    print(data.iloc[0,4])
+
+
+    df = pro.daily(ts_code='600519.SH', start_date='20230103', end_date='20230105')
+    print("pro.daily(ts_code='600519.SH', start_date='20230103', end_date='20230105')")
+    print(df.tail())
+    print(df['close'])
+
+    df = pro.hk_daily(ts_code='00700.HK', start_date='20190904', end_date='20190905')
+    print("pro.hk_daily(ts_code='00700.HK', start_date='20190904', end_date='20190905')")
+    print(df)
+    print(df['close'])
+
+    # sina数据
+    df = ts.realtime_quote(ts_code='511880.SH,200596.SZ,000001.SZ,000300.SH')
+    print("ts.realtime_quote(ts_code='600000.SH,600036.SH,000001.SZ,000300.SH')")
+    print(df.iloc[0,6])
+
+    # 东财数据
+    df = ts.realtime_quote(ts_code='511880.SH', src='dc')
+    print("ts.realtime_quote(ts_code='600000.SH', src='dc')")
+    print(df.iloc[0].iloc[6])
+
+
+    df = ts.get_realtime_quotes('200596')[['name', 'price', 'pre_close', 'date', 'time']]
+    #df1 = pd.DataFrame(df)
+    print("ts.get_realtime_quotes('600000')[['name', 'price', 'pre_close', 'date', 'time']]")
+    print(df['name'].iloc[0])
+    print(df['date'].iloc[0])
+    print(df['price'].iloc[0])
+    #print(df)
+
+    #stock_basic = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
+    #print(stock_basic.head())
+    return
+'''
 
 
 def get_akshare():

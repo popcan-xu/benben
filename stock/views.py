@@ -18,6 +18,7 @@ from decimal import Decimal
 
 from django.db.models.functions import ExtractYear
 from django.core.cache import cache
+from concurrent.futures import ThreadPoolExecutor
 
 import pathlib
 
@@ -1223,6 +1224,63 @@ def input_subscription(request):
 
 # 仓位统计
 def stats_position(request):
+    # 获取汇率（使用缓存）
+    rate_cache_key = 'exchange_rates'
+    rates = cache.get(rate_cache_key)
+    if not rates:
+        rates = {
+            # 'HKD': get_single_rate('HKD'),
+            # 'USD': get_single_rate('USD')
+            'HKD': get_rate()[0],
+            'USD': get_rate()[1]
+        }
+        cache.set(rate_cache_key, rates, 3600)  # 缓存1小时
+
+    rate_dict = {
+        currency.CNY_ID: 1,
+        currency.HKD_ID: rates['HKD'],
+        currency.USD_ID: rates['USD']
+    }
+
+    # 顺序处理三种货币
+    results = {}
+    currencies = [
+        currency.CNY_ID,
+        currency.HKD_ID,
+        currency.USD_ID
+    ]
+
+    for currency_id in currencies:
+        try:
+            # 直接调用仓位处理函数
+            results[currency_id] = get_position_content(currency_id, rate_dict)
+        except Exception as e:
+            # 记录错误并创建空数据集
+            logger.error(f"Error processing currency {currency_id}: {str(e)}")
+            logger.exception("Details:")  # 记录完整堆栈信息
+
+            # 返回空数据集避免页面崩溃
+            results[currency_id] = {
+                'position_content': [],
+                'abbreviation_array': ["数据加载失败"],
+                'account_num': 0,
+                'stock_num': 0,
+                'error': True
+            }
+
+    # 准备上下文
+    context = {
+        'currencies': {
+            '人民币': results.get(currency.CNY_ID),
+            '港元': results.get(currency.HKD_ID),
+            '美元': results.get(currency.USD_ID)
+        }
+    }
+
+    return render(request, templates_path + 'stats/stats_position.html', context)
+
+'''
+def stats_position1(request):
     currency_CNY = 1
     currency_HKD = 2
     currency_USD = 3
@@ -1233,6 +1291,7 @@ def stats_position(request):
     cols_HKD = range(1, account_num_HKD + 3)
     cols_USD = range(1, account_num_USD + 3)
     return render(request, templates_path + 'stats/stats_position.html', locals())
+'''
 
 
 # 市值统计
