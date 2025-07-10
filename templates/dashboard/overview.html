@@ -388,7 +388,7 @@
                                             <th>价格（元）</th>
                                             <th>涨跌幅</th>
                                             <th>持仓数量（股）</th>
-                                            <th>金额</th>
+                                            <th>持仓市值（元）</th>
                                             <th>百分比</th>
                                         </tr>
                                     </thead>
@@ -413,6 +413,10 @@
                         </div>
 
                     </div>
+                </div>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                    <span>注：股票价格单位为报价单位，持仓市值单位为人民币元。</span>
                 </div>
             </div>
         </div>

@@ -144,7 +144,7 @@
     <!-- Content Card Row -->
     <div class="row">
         <!-- 账户概要 -->
-        <div class="col-xl-6 col-md-6 mb-4">
+        <div class="col-xl-12 col-md-6 mb-4">
             <div class="card h-100 shadow mb-4">
                 <!-- Card Header - Dropdown -->
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
@@ -213,6 +213,26 @@
             </div>
         </div>
 
+    </div>
+
+    <div class="row">
+        <!-- 年度分红 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card h-100 shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">年度分红</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div id="bar_yearly_dividend" style="width:100%; height:400px;"></div><!--数据展现的容器1-->
+                </div>
+                <div class="card-footer bg-white text-muted small">
+                    数据更新于：<span id="updateTime_bar_yearly_dividend"></span>
+                </div>
+            </div>
+        </div>
+
         <!-- 分红柱图 -->
         <div class="col-xl-6 col-md-6 mb-4">
             <div class="card h-100 shadow mb-4">
@@ -235,11 +255,12 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="container mt-4">
-                        <div id="bar_dividend" style="width:100%; height:300px;"></div>
+                        <div id="bar_dividend" style="width:100%; height:400px;"></div>
                     </div>
                 </div>
-                <div class="card-footer bg-white text-muted small">
-                    数据更新于：<span id="updateTime_bar_dividend"></span>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    <span>数据更新于：<span id="updateTime_bar_dividend"></span></span>
+                    <span>注：AH同时上市的同一企业，分红金额合并处理。</span>
                 </div>
             </div>
         </div>
@@ -317,26 +338,6 @@
                 </div>
                 <div class="card-footer bg-white text-muted small">
                     数据更新于：{{ updating_time|date:'Y-m-d' }}
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="row">
-        <!-- 年度收益率 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card h-100 shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">年度分红</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div id="bar_yearly_dividend" style="width:100%; height:400px;"></div><!--数据展现的容器1-->
-                </div>
-                <div class="card-footer bg-white text-muted small">
-                    数据更新于：<span id="updateTime_bar_yearly_dividend"></span>
                 </div>
             </div>
         </div>
@@ -488,8 +489,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 //barWidth: '30px',
                 itemStyle: {
                             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                { offset: 0, color: isTotalMode ? '#2ecc71' : '#3498db' },
-                                { offset: 1, color: isTotalMode ? '#1d976c' : '#2980b9' }
+                                //{ offset: 0, color: isTotalMode ? '#2ecc71' : '#3498db' },
+                                //{ offset: 1, color: isTotalMode ? '#1d976c' : '#2980b9' }
+                                { offset: 0, color: isTotalMode ? '#3498db' : '#3498db' },
+                                { offset: 1, color: isTotalMode ? '#2980b9' : '#2980b9' }
                             ]),
                             //borderRadius: [8, 8, 0, 0]
                         },
@@ -647,7 +650,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: '分红金额',
                 type: 'bar',
                 data: dividend_yearly_total_array,
-                color: ['#1890ff'],
+                //color: ['#1890ff'],
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#3498db' },
+                    { offset: 1, color: '#2980b9' }
+                ]),
+
                 // xAxisIndex: 0,  // 对应 xAxis[0]
                 yAxisIndex: 0,  // 使用第一个 Y 轴（左侧）
                 tooltip: {

@@ -296,10 +296,11 @@ def overview(request):
         FileOperate(dictData=overview, filepath='./templates/dashboard/',
                     filename='overview.json').operation_file()
 
+    updating_time = datetime.datetime.now()
     return render(request, templates_path + 'overview.html', locals())
 
 
-# 投资记账
+# 资产概览
 def view_funds(request):
     funds_list = funds.objects.all()
     rate_HKD, rate_USD = get_rate()
@@ -307,6 +308,7 @@ def view_funds(request):
     return render(request, templates_path + 'view_funds.html', locals())
 
 
+# 资产详情
 def view_funds_details(request, funds_id):
     annual_data_group = []
     name_list = []
@@ -497,7 +499,7 @@ def view_funds_details(request, funds_id):
     return render(request, templates_path + 'view_funds_details.html', locals())
 
 
-# 持仓市值
+# 市值概览
 def view_market_value(request):
     rate_HKD, rate_USD = get_rate()
     # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
@@ -573,6 +575,7 @@ def view_market_value(request):
     return render(request, templates_path + 'view_market_value.html', locals())
 
 
+# 市值详情
 def view_market_value_details(request, currency_id):
     currency_name = currency.objects.get(id=currency_id).name
     # currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
@@ -839,93 +842,6 @@ def view_dividend_details(request, currency_id):
 
 
 # 股票详情
-def view_stock_details1(request, stock_id):
-    rate_HKD, rate_USD = get_rate()
-    rate_dict = {1: 1, 2: rate_HKD, 3: rate_USD}
-    stock_obj = stock.objects.get(id=stock_id)
-    stock_name = stock_obj.stock_name
-    stock_code = stock_obj.stock_code
-    stock_market = stock_obj.market.market_name
-    stock_currency = stock_obj.market.currency.name
-    currency_obj = currency.objects.get(id=stock_obj.market.currency_id)
-    currency_id = currency_obj.id
-    currency_name = currency_obj.name
-    currency_unit = currency_obj.unit
-    position_quantity = position.objects.filter(stock_id=stock_id).aggregate(total=Sum('position_quantity'))[
-                            'total'] or 0
-    quantity_CNY = position.objects.filter(
-        Q(stock_id=stock_id) & (
-                Q(account__broker__broker_script='境内券商') &
-                ~Q(stock__market__market_name='深市B股') &
-                ~Q(stock__market__market_name='沪市B股')
-        )
-    ).aggregate(total=Sum('position_quantity'))['total'] or 0
-    quantity_HKD = position.objects.filter(
-        Q(stock_id=stock_id) & (
-                (Q(account__broker__broker_script='境内券商') & Q(stock__market__market_name='深市B股')) |
-                (Q(account__broker__broker_script='境外券商') & Q(stock__market__currency=2))
-        )
-    ).aggregate(total=Sum('position_quantity'))['total'] or 0
-    quantity_USD = position.objects.filter(
-        Q(stock_id=stock_id) & (
-                (Q(account__broker__broker_script='境内券商') & Q(stock__market__market_name='沪市B股')) |
-                (Q(account__broker__broker_script='境外券商') & Q(stock__market__currency=3))
-        )
-    ).aggregate(total=Sum('position_quantity'))['total'] or 0
-    quantity_total = quantity_CNY + quantity_HKD + quantity_USD
-    price, increase, color = get_quote_snowball(stock_code)
-    market_value = position_quantity * price * rate_dict[currency_id]
-    value_CNY = quantity_CNY * price * rate_dict[currency_id]
-    value_HKD = quantity_HKD * price * rate_dict[currency_id]
-    value_USD = quantity_USD * price * rate_dict[currency_id]
-    value_total = value_CNY + value_HKD + value_USD
-
-    dividend_data = get_dividend_summary_by_currency(stock_id)
-    print(dividend_data)
-    dividend_CNY = float(dividend_data[1])
-    dividend_HKD = float(dividend_data[2]) * rate_HKD
-    dividend_USD = float(dividend_data[3]) * rate_USD
-    dividend_total = calculate_total_dividend(dividend_data, rate_dict)
-
-    result = calculate_stock_trade_summary(stock_id)
-    print(result)
-
-    def get_amount(cid, trade_type):
-        return float(result.get(cid, {}).get(trade_type, Decimal('0.0')))
-
-    # 计算各种金额
-    cost_CNY = 0
-    cost_HKD = 0
-    cost_USD = 0
-    buy_amount_CNY = get_amount(1, 'buy')
-    sell_amount_CNY = get_amount(1, 'sell')
-    buy_amount_HKD = get_amount(2, 'buy')
-    sell_amount_HKD = get_amount(2, 'sell')
-    buy_amount_USD = get_amount(3, 'buy')
-    sell_amount_USD = get_amount(3, 'sell')
-    cost_CNY = buy_amount_CNY - sell_amount_CNY
-    cost_HKD = buy_amount_HKD - sell_amount_HKD
-    cost_USD = buy_amount_USD - sell_amount_USD
-
-    buy_amount_total = buy_amount_CNY + buy_amount_HKD + buy_amount_USD
-    sell_amount_total = sell_amount_CNY + sell_amount_HKD + sell_amount_USD
-    cost_total = cost_CNY + cost_HKD + cost_USD
-
-    profit = market_value - cost_total
-    profit_with_dividends = profit + dividend_total
-    profit_rate_with_dividends = profit_with_dividends / cost_total if cost_total > 0 else 0
-
-    profit_CNY = value_CNY + dividend_CNY - cost_CNY
-    profit_HKD = value_HKD + dividend_HKD - cost_HKD
-    profit_USD = value_USD + dividend_USD - cost_USD
-    profit_total = profit_CNY + profit_HKD + profit_USD
-
-    trade_list = trade.objects.filter(stock_id=stock_id).order_by('-trade_date', '-modified_time')
-    dividend_list = dividend.objects.filter(stock_id=stock_id).order_by('-dividend_date', '-modified_time')
-
-    return render(request, templates_path + 'view_stock_details.html', locals())
-
-
 def view_stock_details(request, stock_id):
     # 1. 缓存汇率数据
     rate_key = f"exchange_rates_{stock_id}"
@@ -1041,7 +957,8 @@ def view_stock_details(request, stock_id):
 
     # profit = market_value - cost_total
     profit = market_value - cost_total + dividend_total
-    profit_rate = profit / cost_total if cost_total > 0 else 0
+    # profit_rate = profit / cost_total if cost_total > 0 else 0
+    profit_rate = profit / buy_amount_total if buy_amount_total > 0 else 0
 
     '''
     value_CNY = quantity_CNY * price * rate_dict[currency_id]
@@ -1059,8 +976,96 @@ def view_stock_details(request, stock_id):
     trade_list = stock_obj.trade_set.all()
     dividend_list = stock_obj.dividend_set.all()
 
+    updating_time = datetime.datetime.now()
     return render(request, templates_path + 'view_stock_details.html', locals())
 
+'''
+def view_stock_details1(request, stock_id):
+    rate_HKD, rate_USD = get_rate()
+    rate_dict = {1: 1, 2: rate_HKD, 3: rate_USD}
+    stock_obj = stock.objects.get(id=stock_id)
+    stock_name = stock_obj.stock_name
+    stock_code = stock_obj.stock_code
+    stock_market = stock_obj.market.market_name
+    stock_currency = stock_obj.market.currency.name
+    currency_obj = currency.objects.get(id=stock_obj.market.currency_id)
+    currency_id = currency_obj.id
+    currency_name = currency_obj.name
+    currency_unit = currency_obj.unit
+    position_quantity = position.objects.filter(stock_id=stock_id).aggregate(total=Sum('position_quantity'))[
+                            'total'] or 0
+    quantity_CNY = position.objects.filter(
+        Q(stock_id=stock_id) & (
+                Q(account__broker__broker_script='境内券商') &
+                ~Q(stock__market__market_name='深市B股') &
+                ~Q(stock__market__market_name='沪市B股')
+        )
+    ).aggregate(total=Sum('position_quantity'))['total'] or 0
+    quantity_HKD = position.objects.filter(
+        Q(stock_id=stock_id) & (
+                (Q(account__broker__broker_script='境内券商') & Q(stock__market__market_name='深市B股')) |
+                (Q(account__broker__broker_script='境外券商') & Q(stock__market__currency=2))
+        )
+    ).aggregate(total=Sum('position_quantity'))['total'] or 0
+    quantity_USD = position.objects.filter(
+        Q(stock_id=stock_id) & (
+                (Q(account__broker__broker_script='境内券商') & Q(stock__market__market_name='沪市B股')) |
+                (Q(account__broker__broker_script='境外券商') & Q(stock__market__currency=3))
+        )
+    ).aggregate(total=Sum('position_quantity'))['total'] or 0
+    quantity_total = quantity_CNY + quantity_HKD + quantity_USD
+    price, increase, color = get_quote_snowball(stock_code)
+    market_value = position_quantity * price * rate_dict[currency_id]
+    value_CNY = quantity_CNY * price * rate_dict[currency_id]
+    value_HKD = quantity_HKD * price * rate_dict[currency_id]
+    value_USD = quantity_USD * price * rate_dict[currency_id]
+    value_total = value_CNY + value_HKD + value_USD
+
+    dividend_data = get_dividend_summary_by_currency(stock_id)
+    print(dividend_data)
+    dividend_CNY = float(dividend_data[1])
+    dividend_HKD = float(dividend_data[2]) * rate_HKD
+    dividend_USD = float(dividend_data[3]) * rate_USD
+    dividend_total = calculate_total_dividend(dividend_data, rate_dict)
+
+    result = calculate_stock_trade_summary(stock_id)
+    print(result)
+
+    def get_amount(cid, trade_type):
+        return float(result.get(cid, {}).get(trade_type, Decimal('0.0')))
+
+    # 计算各种金额
+    cost_CNY = 0
+    cost_HKD = 0
+    cost_USD = 0
+    buy_amount_CNY = get_amount(1, 'buy')
+    sell_amount_CNY = get_amount(1, 'sell')
+    buy_amount_HKD = get_amount(2, 'buy')
+    sell_amount_HKD = get_amount(2, 'sell')
+    buy_amount_USD = get_amount(3, 'buy')
+    sell_amount_USD = get_amount(3, 'sell')
+    cost_CNY = buy_amount_CNY - sell_amount_CNY
+    cost_HKD = buy_amount_HKD - sell_amount_HKD
+    cost_USD = buy_amount_USD - sell_amount_USD
+
+    buy_amount_total = buy_amount_CNY + buy_amount_HKD + buy_amount_USD
+    sell_amount_total = sell_amount_CNY + sell_amount_HKD + sell_amount_USD
+    cost_total = cost_CNY + cost_HKD + cost_USD
+
+    profit = market_value - cost_total
+    profit_with_dividends = profit + dividend_total
+    profit_rate_with_dividends = profit_with_dividends / cost_total if cost_total > 0 else 0
+
+    profit_CNY = value_CNY + dividend_CNY - cost_CNY
+    profit_HKD = value_HKD + dividend_HKD - cost_HKD
+    profit_USD = value_USD + dividend_USD - cost_USD
+    profit_total = profit_CNY + profit_HKD + profit_USD
+
+    trade_list = trade.objects.filter(stock_id=stock_id).order_by('-trade_date', '-modified_time')
+    dividend_list = dividend.objects.filter(stock_id=stock_id).order_by('-dividend_date', '-modified_time')
+
+    return render(request, templates_path + 'view_stock_details.html', locals())
+'''
 
 # 交易录入
 def input_trade(request):
@@ -1224,9 +1229,9 @@ def stats_position(request):
     position_content_CNY, abbreviation_array_CNY, account_num_CNY, stock_num_CNY = get_position_content(currency_CNY)
     position_content_HKD, abbreviation_array_HKD, account_num_HKD, stock_num_HKD = get_position_content(currency_HKD)
     position_content_USD, abbreviation_array_USD, account_num_USD, stock_num_USD = get_position_content(currency_USD)
-    cols_CNY = range(1, account_num_CNY + 2)
-    cols_HKD = range(1, account_num_HKD + 2)
-    cols_USD = range(1, account_num_USD + 2)
+    cols_CNY = range(1, account_num_CNY + 3)
+    cols_HKD = range(1, account_num_HKD + 3)
+    cols_USD = range(1, account_num_USD + 3)
     return render(request, templates_path + 'stats/stats_position.html', locals())
 
 
@@ -1420,7 +1425,7 @@ def stats_profit(request):
         holding_profit_sum += profit
         holding_value_sum += value
         holding_profit_array.append((stock_name, stock_code, profit, value))
-    holding_profit_array.sort(key=take_col4, reverse=True)  # 对account_content列表按第3列（金额）降序排序
+    holding_profit_array.sort(key=lambda x: x[3], reverse=True)  # 对account_content列表按第3列（金额）降序排序
     for rs in cleared_stock_list:
         stock_id = rs.id
         stock_code = rs.stock_code
@@ -2872,6 +2877,7 @@ def batch_import(request):
     return render(request, templates_path + 'other/batch_import.html', locals())  # 这里用'/'，‘//’或者‘/’代替'\'，防止'\b'被转义
 
 
+
 # 更新历史持仓市值数据（historical_position、historical_rate、historical_market_value表）
 
 # 全局变量，用于存储任务状态
@@ -3995,7 +4001,7 @@ def test(request):
 
     return render(request, templates_path + 'test.html', locals())
 
-
+'''
 def migrate_market_currencies():
     """
     迁移market表中货币字段的数据
@@ -4428,116 +4434,14 @@ def migrate_historical_market_value_currencies():
         print(f"警告：仍有 {missing} 条记录未成功迁移")
     else:
         print("迁移成功完成！所有记录均已完成迁移")
-
+'''
 
 # 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值
 @register.filter
 def get_index(mylist, i):
     return mylist[i]
 
-
-# 反向遍历trade表更新historical_position表
-def reverse_generate_positions_111(start_date, end_date):
-    try:
-        # Step 0: 删除现有历史数据
-        # current_date = datetime.date.today()
-        # # 确定有效结束日期（排除周末）
-        # while current_date.weekday() >= 5:
-        #     current_date -= datetime.timedelta(days=1)
-        # end_date = current_date
-
-        # 确定有效结束日期（排除周末）
-        while end_date.weekday() >= 5:
-            end_date -= datetime.timedelta(days=1)
-
-        # 使用事务保证原子性
-        with transaction.atomic():
-            # 删除目标日期范围内的所有历史记录
-            historical_position.objects.filter(
-                date__gte=start_date,
-                date__lte=end_date
-            ).delete()
-
-        # Step 1: 汇总当前持仓数据
-        positions = position.objects.values('stock', 'position_currency').annotate(total=Sum('position_quantity'))
-        current_positions = {
-            (pos['stock'], pos['position_currency']): pos['total']
-            for pos in positions
-            if pos['total'] != 0
-        }
-
-        # Step 2: 确定初始日期并调整到最近的周五（如果是周末）
-        initial_date = end_date  # 使用已计算的end_date
-
-        # Step 3: 写入初始持仓到historical_position表（如果非周末）
-        if initial_date.weekday() < 5:
-            with transaction.atomic():
-                entries = [
-                    historical_position(
-                        date=initial_date,
-                        stock_id=stock_id,
-                        currency=currency,
-                        quantity=qty
-                    )
-                    for (stock_id, currency), qty in current_positions.items()
-                    if qty != 0
-                ]
-                historical_position.objects.bulk_create(entries)
-
-        # Step 4: 反向生成历史持仓
-        processing_date = initial_date - datetime.timedelta(days=1)
-        while processing_date >= start_date:
-            if processing_date.weekday() >= 5:
-                processing_date -= datetime.timedelta(days=1)
-                continue
-
-            # 写入当天持仓（与后一天相同）
-            with transaction.atomic():
-                entries = [
-                    historical_position(
-                        date=processing_date,
-                        stock_id=stock_id,
-                        currency=currency,
-                        quantity=qty
-                    )
-                    for (stock_id, currency), qty in current_positions.items()
-                    if qty != 0
-                ]
-                historical_position.objects.bulk_create(entries)
-
-            # 处理交易记录
-            trades = trade.objects.filter(trade_date=processing_date)
-            delta_dict = defaultdict(int)
-            for t in trades:
-                key = (t.stock_id, t.currency_id)
-                delta = t.trade_quantity if t.trade_type == trade.BUY else -t.trade_quantity
-                delta_dict[key] += delta
-
-            # 计算前一日持仓
-            prev_positions = {}
-            # 处理现有持仓
-            for (stock, currency), qty in current_positions.items():
-                delta = delta_dict.get((stock, currency), 0)
-                prev_qty = qty - delta
-                if prev_qty != 0:
-                    prev_positions[(stock, currency)] = prev_qty
-            # 处理新增持仓
-            for (stock, currency) in delta_dict:
-                if (stock, currency) not in current_positions:
-                    delta = delta_dict[(stock, currency)]
-                    prev_qty = 0 - delta
-                    if prev_qty != 0:
-                        prev_positions[(stock, currency)] = prev_qty
-
-            current_positions = prev_positions
-            processing_date -= datetime.timedelta(days=1)
-        print("历史持仓写入成功！")
-    except ValueError as e:
-        print(f"输入错误: {e}")
-    except RuntimeError as e:
-        print(f"处理失败: {e}")
-
-
+'''
 def generate_historical_positions_bak0622(start_date, end_date):
     """
     生成历史持仓记录（支持从已有持仓初始化）
@@ -5461,3 +5365,4 @@ def calculate_market_value_bak0623(start_date, end_date):
         print("历史持仓市值写入成功！")
     except Exception as e:
         print(f"历史持仓市值写入失败: {e}")
+'''

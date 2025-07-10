@@ -77,7 +77,7 @@ def search_price_array(price_array, stock_code):
 
 
 # 获取图表数据队列函数
-def get_chart_array(content, max_rows, name_col, value_col):
+def get_chart_array1(content, max_rows, name_col, value_col):
     name_array = []
     value_array = []
     content_num = len(content)
@@ -97,6 +97,26 @@ def get_chart_array(content, max_rows, name_col, value_col):
         name_array.append('其他')
         value_array.append(int(other))
     return (name_array, value_array)
+
+
+def get_chart_array(content, max_rows, name_col, value_col):
+    if not content:
+        return [], []
+
+    if len(content) <= max_rows or max_rows == -1:
+        names = [item[name_col] for item in content]
+        values = [int(item[value_col]) for item in content]
+    else:
+        # 前N-1个股票
+        names = [item[name_col] for item in content[:max_rows - 1]]
+        values = [int(item[value_col]) for item in content[:max_rows - 1]]
+
+        # 合并剩余股票为"其他"
+        other_value = sum(item[value_col] for item in content[max_rows - 1:])
+        names.append('其他')
+        values.append(int(other_value))
+
+    return names, values
 
 
 # 抓取单一股票实时行情
@@ -1373,7 +1393,7 @@ def get_year_end_date(funds_id, year):
     return year_end_date
 
 
-
+'''
 # 返回二维列表的第1列，用于二维列表按第1列排序
 def take_col1(list):
     return float(list[0])
@@ -1406,7 +1426,7 @@ def take_col8(list):
 # 返回二维列表的第10列，用于二维列表按第10列排序
 def take_col7(list):
     return float(list[6])
-
+'''
 
 # 时间戳（10位）转日期格式
 def timeStamp10_2_date(timeStamp):

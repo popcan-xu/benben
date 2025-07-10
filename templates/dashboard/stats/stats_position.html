@@ -24,7 +24,7 @@
                     <p></p>
                     <div style="height:25px">
                         <div style="display:inline;float:left;">
-                            <i class="glyphicon glyphicon-stats"></i>&nbsp;证券账户：{{ account_num_CNY }}个，持有股票：{{ stock_num_CNY }}支
+                            <i class="glyphicon glyphicon-stats"></i>&nbsp;证券账户：{{ account_num_CNY }}个，持有股票：{{ stock_num_CNY }}只
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -36,6 +36,7 @@
                                     <th>{{ abbreviation }}</th>
                                     {% endfor %}
                                     <th>小计</th>
+                                    <th>市值（元）</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -44,7 +45,7 @@
                                     <td>{{ content.0 }}</td>
                                     {% for i in cols_CNY %}
                                     <!-- #调用views.py中注册的get_index函数定位模板中的列表，通过"list|get_index:i|get_index:j"来访问list[i][j]的值 -->
-                                    <td style="text-align: right">{{ content|get_index:i }}</td>
+                                    <td style="text-align: right">{{ content|get_index:i|floatformat:0 }}</td>
                                     {% endfor %}
                                 </tr>
                                 {% endfor %}
@@ -68,6 +69,7 @@
                                     <th>{{ abbreviation }}</th>
                                     {% endfor %}
                                     <th>小计</th>
+                                    <th>市值（元）</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -76,7 +78,7 @@
                                     <td>{{ content.0 }}</td>
                                     {% for i in cols_HKD %}
                                     <!-- #调用views.py中注册的get_index函数定位模板中的列表，通过"list|get_index:i|get_index:j"来访问list[i][j]的值 -->
-                                    <td style="text-align: right">{{ content|get_index:i }}</td>
+                                    <td style="text-align: right">{{ content|get_index:i|floatformat:0 }}</td>
                                     {% endfor %}
                                 </tr>
                                 {% endfor %}
@@ -100,6 +102,7 @@
                                     <th>{{ abbreviation }}</th>
                                     {% endfor %}
                                     <th>小计</th>
+                                    <th>市值（元）</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -108,7 +111,7 @@
                                     <td>{{ content.0 }}</td>
                                     {% for i in cols_USD %}
                                     <!-- #调用views.py中注册的get_index函数定位模板中的列表，通过"list|get_index:i|get_index:j"来访问list[i][j]的值 -->
-                                    <td style="text-align: right">{{ content|get_index:i }}</td>
+                                    <td style="text-align: right">{{ content|get_index:i|floatformat:0 }}</td>
                                     {% endfor %}
                                 </tr>
                                 {% endfor %}

@@ -149,19 +149,19 @@
                     -->
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计买入金额（元）</div>
+                            <div class="h6 mb-0 text-gray-500">投入金额（元）</div>
                             <div class="h4 mb-0 text-gray-800 font">{{ buy_amount_total|floatformat:0 }}</div>
                         </div>
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计卖出金额（元）</div>
+                            <div class="h6 mb-0 text-gray-500">卖出金额（元）</div>
                             <div class="h4 mb-0  text-gray-800">{{ sell_amount_total|floatformat:0 }}</div>
                         </div>
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计成本（元）</div>
+                            <div class="h6 mb-0 text-gray-500">账面成本（元）</div>
                             <div class="h4 mb-0  text-gray-800">{{ cost_total|floatformat:0 }}</div>
                         </div>
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计分红（元）</div>
+                            <div class="h6 mb-0 text-gray-500">分红（元）</div>
                             <div class="h4 mb-0  text-gray-800">{{ dividend_total|floatformat:0 }}</div>
                         </div>
                         <!--
@@ -211,13 +211,14 @@
                             <div class="h4 mb-0  text-gray-800">{{ profit|floatformat:0 }}</div>
                         </div>
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">盈亏比率（%）</div>
+                            <div class="h6 mb-0 text-gray-500">投入回报率（%）</div>
                             <div class="h4 mb-0  text-gray-800">{{ profit_rate|percent }}</div>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-white text-muted small">
-                    数据更新于：{{ updating_time|date:'Y-m-d' }}
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                    <span>注：股票价格单位为报价单位，其他金额单位为人民币元。</span>
                 </div>
             </div>
         </div>
@@ -233,44 +234,48 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="dataTable_trade" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
-                            <thead class="bg-gradient-secondary text-gray-100">
-                                <tr>
-                                    <th>日期</th>
-                                    <th>股票/代码</th>
-                                    <th>类型</th>
-                                    <th>价格</th>
-                                    <th>数量</th>
-                                    <th>金额</th>
-                                    <th>货币</th>
-                                    <th>账户</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                                {% for trade in trade_list %}
+                    <div style="height:500px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                        <div class="table-responsive">
+    {#                        <table id="dataTable_trade" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">#}
+                            <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                                <thead class="bg-gradient-secondary text-gray-100">
                                     <tr>
-                                        <td>{{ trade.trade_date|date:'Y-m-d' }}</td>
-                                        <td>{{ trade.stock.stock_name }}({{ trade.stock.stock_code }})</td>
-                                        <td>{{ trade.get_trade_type_display }}</td>
-                                        <td>{{ trade.trade_price }}</td>
-                                        <td>{{ trade.trade_quantity }}</td>
-                                        <!-- 模板变量的乘法需要使用widthratio，将结果存储在变量 ratio 中，并对 ratio增加千位分隔符-->
-                                        <td>{% widthratio trade.trade_price 1 trade.trade_quantity as ratio %}{{ ratio|floatformat:0|add:"" }}</td>
-        {#                                <td>{{ trade.get_settlement_currency_display }}</td>#}
-                                        <td>{{ trade.currency.name }}</td>
-                                        <td>{{ trade.account.account_abbreviation }}</td>
-                                        <!--<td style="vertical-align: middle;">{{ trade.created_time }}</td>-->
+                                        <th>日期</th>
+                                        <th>股票/代码</th>
+                                        <th>类型</th>
+                                        <th>价格</th>
+                                        <th>数量</th>
+                                        <th>金额</th>
+                                        <th>货币</th>
+                                        <th>账户</th>
                                     </tr>
-                                {% empty %}
-                                    <tr>
-                                        <td colspan="4">无相关记录！</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {% for trade in trade_list %}
+                                        <tr>
+                                            <td>{{ trade.trade_date|date:'Y-m-d' }}</td>
+                                            <td>{{ trade.stock.stock_name }}({{ trade.stock.stock_code }})</td>
+                                            <td>{{ trade.get_trade_type_display }}</td>
+                                            <td>{{ trade.trade_price }}</td>
+                                            <td>{{ trade.trade_quantity }}</td>
+                                            <!-- 模板变量的乘法需要使用widthratio，将结果存储在变量 ratio 中，并对 ratio增加千位分隔符-->
+                                            <td>{% widthratio trade.trade_price 1 trade.trade_quantity as ratio %}{{ ratio|floatformat:0|add:"" }}</td>
+                                            <td>{{ trade.currency.name }}</td>
+                                            <td>{{ trade.account.account_abbreviation }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="8">无相关记录！</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+                </div>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                    <span>注：交易价格及金额单位为报价单位。</span>
                 </div>
             </div>
         </div>
@@ -284,37 +289,44 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="dataTable_dividend" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
-                            <thead class="bg-gradient-secondary text-gray-100">
-                                <tr>
-                                    <th>日期</th>
-                                    <th>股票/代码</th>
-                                    <th>金额</th>
-                                    <th>货币</th>
-                                    <th>账户</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                                {% for dividend in dividend_list %}
+                    <div style="height:500px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                        <div class="table-responsive">
+    {#                        <table id="dataTable_dividend" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">#}
+                            <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                                <thead class="bg-gradient-secondary text-gray-100">
                                     <tr>
-                                        <td>{{ dividend.dividend_date|date:'Y-m-d' }}</td>
-                                        <td>{{ dividend.stock.stock_name }}（{{ dividend.stock.stock_code }}）</td>
-                                        <td>{{ dividend.dividend_amount|floatformat:0 }}</td>
-                                        <!-- 用get_属性_display来显示包含choice参数的字段值 // -->
-        {#                                <td>{{ dividend.get_dividend_currency_display }}</td>#}
-                                        <td>{{ dividend.currency.name }}</td>
-                                        <td>{{ dividend.account.account_abbreviation }}</td>
+                                        <th>日期</th>
+                                        <th>股票/代码</th>
+                                        <th>金额</th>
+                                        <th>货币</th>
+                                        <th>账户</th>
                                     </tr>
-                                {% empty %}
-                                    <tr>
-                                        <td colspan="4">无相关记录！</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    <!--#trade_list即为视图函数list_trade中render传入参数//-->
+                                    {% for dividend in dividend_list %}
+                                        <tr>
+                                            <td>{{ dividend.dividend_date|date:'Y-m-d' }}</td>
+                                            <td>{{ dividend.stock.stock_name }}（{{ dividend.stock.stock_code }}）</td>
+                                            <td>{{ dividend.dividend_amount|floatformat:0 }}</td>
+                                            <!-- 用get_属性_display来显示包含choice参数的字段值 // -->
+            {#                                <td>{{ dividend.get_dividend_currency_display }}</td>#}
+                                            <td>{{ dividend.currency.name }}</td>
+                                            <td>{{ dividend.account.account_abbreviation }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="5">无相关记录！</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+                </div>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                    <span>注：港股通分红金额单位为人民币元，其他分红金额单位为报价单位。</span>
                 </div>
             </div>
         </div>
@@ -326,6 +338,7 @@
 <script>
 'use strict';
 
+/*
 $(document).ready(function() {
     $('#dataTable_trade').DataTable( {
         //先按第一列逆序排序，如果有相同，再按第二列顺序排序
@@ -338,6 +351,7 @@ $(document).ready(function() {
         "order": [[ 0, "desc" ]]
     } );
 } );
+*/
 
 </script>
 
