@@ -977,7 +977,65 @@ def view_stock_details(request, stock_id):
     trade_list = stock_obj.trade_set.all()
     dividend_list = stock_obj.dividend_set.all()
 
+    # 10. 获取年度分红金额列表
+    # 初始化一个字典存储每年分红总额（人民币）
+    annual_dividends = defaultdict(Decimal)
+
+    # 遍历分红记录
+    for dividend_obj in dividend_list:
+        # 获取分红年份
+        year = dividend_obj.dividend_date.year
+
+        # 获取货币ID（如果currency为空则跳过）
+        currency_id = dividend_obj.currency_id
+        if currency_id is None:
+            continue  # 跳过无货币的记录
+
+        # 从汇率字典获取汇率（如果不存在则跳过）
+        exchange_rate = rate_dict.get(currency_id)
+        if exchange_rate is None:
+            continue  # 跳过无汇率的记录
+
+        # 将分红金额转换为人民币
+        amount_rmb = dividend_obj.dividend_amount * Decimal(str(exchange_rate))
+
+        # 累加到对应年份
+        annual_dividends[year] += amount_rmb
+
+    # 转换为按年份排序的列表
+    sorted_annual_dividends = [
+        {"year": year, "total_dividend_rmb": total}
+        for year, total in sorted(annual_dividends.items())
+    ]
+
+    # 按年份排序并生成结构化数据
+    sorted_annual_dividends = sorted([
+        {"year": year, "total_dividend_rmb": total}
+        for year, total in annual_dividends.items()
+    ], key=lambda x: x['year'])
+
+    # 生成两个独立列表（仅包括有分红的年度）
+    years = [item['year'] for item in sorted_annual_dividends]
+    dividends_rmb = [float(item['total_dividend_rmb']) for item in sorted_annual_dividends]
+
+    # 从原始数据中获取最小和最大年份
+    min_year = min(item['year'] for item in sorted_annual_dividends) if sorted_annual_dividends else datetime.datetime.today().year
+    max_year = max(item['year'] for item in sorted_annual_dividends) if sorted_annual_dividends else datetime.datetime.today().year
+
+    # 创建年份范围列表（连续年份）
+    years_range = list(range(min_year, max_year + 1))
+
+    # 创建字典映射年份到分红额
+    dividend_dict = {item['year']: item['total_dividend_rmb'] for item in sorted_annual_dividends}
+
+    # 生成完整年份列表（已排序）和对应分红额列表（缺失年份为0）
+    years_complete = []
+    years_complete = years_range
+    dividends_complete = []
+    dividends_complete = [float(dividend_dict.get(year, Decimal(0))) for year in years_range]
+
     updating_time = datetime.datetime.now()
+
     return render(request, templates_path + 'view_stock_details.html', locals())
 
 '''
@@ -1244,6 +1302,7 @@ def stats_position(request):
 
     # 顺序处理三种货币
     results = {}
+    positions = []
     currencies = [
         currency.CNY_ID,
         currency.HKD_ID,
@@ -1251,6 +1310,7 @@ def stats_position(request):
     ]
 
     for currency_id in currencies:
+        currency_obj = currency.objects.get(id=currency_id)
         try:
             # 直接调用仓位处理函数
             results[currency_id] = get_position_content(currency_id, rate_dict)
@@ -1267,17 +1327,23 @@ def stats_position(request):
                 'stock_num': 0,
                 'error': True
             }
-
+        positions.append(
+            {'code': currency_obj.code, 'name': currency_obj.name, 'data': results[currency_id]}
+        )
     # 准备上下文
+    # context = {
+    #     'currencies': [
+    #         {'code': 'CNY', 'name': '人民币', 'data': results.get(currency.CNY_ID)},
+    #         {'code': 'HKD', 'name': '港元', 'data': results.get(currency.HKD_ID)},
+    #         {'code': 'USD', 'name': '美元', 'data': results.get(currency.USD_ID)}
+    #     ]
+    # }
     context = {
-        'currencies': {
-            '人民币': results.get(currency.CNY_ID),
-            '港元': results.get(currency.HKD_ID),
-            '美元': results.get(currency.USD_ID)
-        }
+        'positions': positions
     }
 
     return render(request, templates_path + 'stats/stats_position.html', context)
+
 
 '''
 def stats_position1(request):
@@ -4494,11 +4560,6 @@ def migrate_historical_market_value_currencies():
     else:
         print("迁移成功完成！所有记录均已完成迁移")
 '''
-
-# 用于在模板中用变量定位列表索引的值，支持列表组，访问方法：用{{ list|index:i|index:j }}访问list[i][j]的值
-@register.filter
-def get_index(mylist, i):
-    return mylist[i]
 
 '''
 def generate_historical_positions_bak0622(start_date, end_date):

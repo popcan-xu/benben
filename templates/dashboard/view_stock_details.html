@@ -21,7 +21,7 @@
     <!-- Content Card Row -->
     <div class="row">
         <!-- 概要 -->
-        <div class="col-xl-12 col-md-6 mb-4">
+        <div class="col-xl-6 col-md-6 mb-4">
             <div class="card h-100 shadow mb-4">
                 <!-- Card Header - Dropdown -->
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
@@ -30,6 +30,7 @@
                 <!-- Card Body -->
                 <div class="card-body p-2 p-md-3 p-xl-4">
                     <div class="row no-gutters align-items-center">
+                        <!--
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">名称（代码）</div>
                             <div class="h4 mb-0 text-gray-800 font">{{ stock_name }}（{{ stock_code }}）</div>
@@ -37,6 +38,15 @@
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">货币（市场）</div>
                             <div class="h4 mb-0 text-gray-800 font">{{ currency_name }}（{{ stock_market }}）</div>
+                        </div>
+                        -->
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">名称</div>
+                            <div class="h4 mb-0 text-gray-800 font">{{ stock_name }}</div>
+                        </div>
+                        <div class="col mr-2">
+                            <div class="h6 mb-0 text-gray-500">代码</div>
+                            <div class="h4 mb-0 text-gray-800 font">{{ stock_code }}</div>
                         </div>
                         <div class="col mr-2">
                             <div class="h6 mb-0 text-gray-500">价格（{{ currency_unit }}）</div>
@@ -223,7 +233,26 @@
             </div>
         </div>
 
+        <!-- 年度分红 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card h-100 shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">年度分红</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div id="bar_yearly_dividend" style="width:100%; height:100%;"></div><!--数据展现的容器1-->
+                </div>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                    <span>注：分红金额单位已折算为人民币元。</span>
+                </div>
+            </div>
+        </div>
+
     </div>
+
     <div class="row">
         <!-- 交易明细 -->
         <div class="col-xl-6 col-md-6 mb-4">
@@ -337,6 +366,120 @@
 
 <script>
 'use strict';
+
+// 年度分红柱图
+document.addEventListener('DOMContentLoaded', function() {
+    const chart = echarts.init(document.getElementById('bar_yearly_dividend'));
+    // const year_array = {{ years_complete|safe }};
+    // const dividend_yearly_total_array = {{ dividends_complete|safe }};
+    const year_array = {{ years|safe }};
+    const dividend_yearly_total_array = {{ dividends_rmb|safe }};
+
+    // 更新图表
+    function updateChart() {
+        const option = {
+        title: {
+            text: '',
+            subtext: '',
+            x: 'center'
+        },
+        legend: {
+            //data:bar_data['name_array']
+        },
+        grid: {
+            top: '10%',
+            left: '3%',
+            right: '3%',
+            bottom: '0%',
+            containLabel: true
+        },
+        tooltip: {
+            //trigger: 'axis',      // 默认触发方式（可被系列级配置覆盖）
+            //backgroundColor: '#fff'
+        },
+        xAxis: [
+            // 第一个 X 轴（柱状图使用，boundaryGap: false）
+            {
+                //name: '年份',
+                data: year_array,
+                boundaryGap: true,
+                axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                    show: true,
+                    interval: 'auto',
+                    rotate: 45,
+                    margin: 15,
+                    // formatter: null,
+                    textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                        color: '#333'
+                    }
+                },
+                show: true
+            }
+        ],
+        //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
+        yAxis: [
+            // 左侧 Y 轴（柱状图使用）
+            {
+                type: 'value',
+                //name: ' 收益率',  // 自定义单位名称
+                position: 'left',   // 左侧显示
+                axisLabel: {
+                    formatter: function(value) {
+                        // 转换为整数并添加千位分隔符
+                        return typeof value === 'number'
+                            ? Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                            : value;
+                    }
+                }
+            }
+        ],
+        series: [
+            {
+                name: '分红金额',
+                type: 'bar',
+                data: dividend_yearly_total_array,
+                //color: ['#1890ff'],
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#3498db' },
+                    { offset: 1, color: '#2980b9' }
+                ]),
+
+                // xAxisIndex: 0,  // 对应 xAxis[0]
+                yAxisIndex: 0,  // 使用第一个 Y 轴（左侧）
+                tooltip: {
+                    trigger: "item",
+                    // formatter: "{a} <br/>{b} : {c}",
+                    formatter: function(params) {
+                        // 将值转为数值类型
+                        const numberValue = Number(params.value);
+
+                        // 格式化为带千位分隔符的整数
+                        let formattedValue;
+                        if (isNaN(numberValue)) {
+                            formattedValue = params.value;  // 非数值直接显示原内容
+                        } else {
+                            // 转为整数并添加千位分隔符
+                            formattedValue = numberValue.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                        }
+
+                        return `${params.seriesName} <br/>${params.name}: ${formattedValue}`;
+                    },
+                    //backgroundColor: '#ffffff',   // 白色背景
+                    borderColor: 'transparent',
+                    borderWidth: 0
+                }
+            },
+        ]
+    };
+        chart.setOption(option, true);
+        updateTimestamp();
+    }
+
+    // 初始加载
+    updateChart();
+    window.addEventListener('resize', () => chart.resize());
+});
+
 
 /*
 $(document).ready(function() {

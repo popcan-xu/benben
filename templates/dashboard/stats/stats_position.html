@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 {% extends 'dashboard/base_dashboard.html' %}
+{% load myfilters%}
 
 {% block page_content %}
 <div class="container-fluid">
@@ -9,22 +10,22 @@
         </div>
         <div class="card-body">
             <ul id="statisticsTab" class="nav nav-tabs">
-                {% for code, data in currencies.items %}
+                {% for item in positions %}
                 <li class="nav-item">
                     <a class="nav-link {% if forloop.first %}active{% endif %}"
-                       href="#{{ code }}" data-toggle="tab">{{ code }}</a>
+                       href="#{{ item.code }}" data-toggle="tab">{{ item.name }}</a>
                 </li>
                 {% endfor %}
             </ul>
 
             <div id="statisticsTabContent" class="tab-content">
-                {% for code, data in currencies.items %}
-                <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="{{ code }}">
+                {% for item in positions %}
+                <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="{{ item.code }}">
                     <p></p>
                     <div style="height:25px">
                         <div style="display:inline;float:left;">
                             <i class="glyphicon glyphicon-stats"></i>
-                            &nbsp;证券账户：{{ data.account_num }}个，持有股票：{{ data.stock_num }}只
+                            &nbsp;证券账户：{{ item.data.account_num }}个，持有股票：{{ item.data.stock_num }}只
                         </div>
                     </div>
 
@@ -33,7 +34,7 @@
                             <thead class="thead bg-gradient-secondary text-gray-100">
                                 <tr>
                                     <th>股票/代码</th>
-                                    {% for abbr in data.abbreviation_array %}
+                                    {% for abbr in item.data.abbreviation_array %}
                                     <th>{{ abbr }}</th>
                                     {% endfor %}
                                     <th>小计</th>
@@ -41,9 +42,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for content in data.position_content %}
+                                {% for content in item.data.position_content %}
                                 <tr>
-                                    <td>{{ content.0 }}</td>
+                                    <td>{{ content|first }}</td>
                                     {% for val in content|slice:"1:-1" %}
                                     <td style="text-align: right">{{ val|floatformat:0 }}</td>
                                     {% endfor %}
