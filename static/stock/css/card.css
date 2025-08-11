@@ -1,0 +1,165 @@
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --gray-dark: #6b7280;
+            --card-border: rgba(209, 213, 219, 0.4);
+        }
+
+        body {
+            background-color: #f8fafc;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .summary-card {
+            border-radius: 0.85rem;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+            background-color: #f8fafc;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+        }
+
+
+        .metric-group {
+            border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+            padding: 1.25rem;
+        }
+
+        .metric-group:last-child {
+            border-bottom: none;
+        }
+
+        .metric-group-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--gray-dark);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            /*color: #4b5563;*/
+            color: #9ca3af;
+            margin-bottom: 0.3rem;
+        }
+
+        .metric-date {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-weight: 700;
+            font-size: 1.35rem;
+            /*color: #1f2937;*/
+            /*color: #4b5563;*/
+            /*color: #6b7280;*/
+            color: var(--gray-dark);
+            line-height: 1.3;
+        }
+
+        .metric-trend {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.95rem;
+            margin-left: 0.25rem;
+        }
+
+        .metric-unit {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #9ca3af;
+            margin-left: 0.25rem;
+        }
+
+        .mini-chart-container {
+            height: 40px;
+            margin-top: 0.35rem;
+        }
+
+        .metric-compound {
+            position: relative;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+        }
+
+        .metric-group-compound {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .metric-compound-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .net-value {
+            position: relative;
+            overflow: hidden;
+        }
+
+
+        .card-header {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            min-height: 60px;
+        }
+        .header-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #3498db;
+            position: relative;
+            padding-left: 0.5rem;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .card-footer {
+            background-color: white; /* 背景白色 */
+            color: #6c757d; /* 与text-muted相同的颜色，Bootstrap中默认为#6c757d */
+            font-size: 0.75em; /* 小字体，相当于small类 */
+            padding: 0.75rem 1.25rem; /* 添加合适的内边距，与原有卡片页脚一致 */
+            border-top: 1px solid rgba(0,0,0,.125); /* 添加上边框，与原卡片页脚一致 */
+            display: flex; /* 弹性布局 */
+            justify-content: space-between; /* 两端对齐 */
+            align-items: center; /* 垂直居中对齐 */
+        }
+
+
+        @media (max-width: 992px) {
+            .metric-label {
+                font-size: 0.8rem;
+            }
+
+            .metric-value {
+                font-size: 1.25rem;
+            }
+
+            .metric-group {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .metric-value {
+                font-size: 1.15rem;
+            }
+        }

@@ -1,124 +1,124 @@
-@media (max-width: 768px) {
-    #viewSwitch .btn {
-        padding: 0.25rem 0.5rem; /* 减小按钮内边距 */
-        font-size: 0.875rem; /* 减小字体大小 */
+    /* 资产变化日历 */
+    @media (max-width: 768px) {
+        #viewSwitch .btn {
+            padding: 0.25rem 0.5rem; /* 减小按钮内边距 */
+            font-size: 0.875rem; /* 减小字体大小 */
+        }
+        #prevBtn,
+        #nextBtn {
+            background-color: transparent; /* 透明背景 */
+            border: none; /* 移除边框 */
+            padding: 5px; /* 调整内边距 */
+        }
+
+        #prevBtn:hover,
+        #nextBtn:hover {
+            background-color: transparent; /* 保持透明背景 */
+            box-shadow: none; /* 移除悬停时的阴影 */
+        }
+
+        .text-center {
+            font-size: 0.875rem; /* 减小年月显示的字体大小 */
+        }
+
+        .row.align-items-center {
+            gap: 5px; /* 减小元素之间的间距 */
+        }
     }
-    #prevBtn,
-    #nextBtn {
-        background-color: transparent; /* 透明背景 */
-        border: none; /* 移除边框 */
-        padding: 5px; /* 调整内边距 */
+
+    /* 日期网格布局 */
+    .date-grid {
+        display: grid; /* 使用网格布局 */
+        grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
+        gap: 5px; /* 列间距 */
+        margin-top: 10px; /* 上边距 */
+        /*height: 445px;*/ /* 设置固定高度 */
     }
 
-    #prevBtn:hover,
-    #nextBtn:hover {
-        background-color: transparent; /* 保持透明背景 */
-        box-shadow: none; /* 移除悬停时的阴影 */
+    /* 多月视图栅格布局 */
+    .month-grid {
+        grid-template-columns: repeat(4, 1fr); /* 每行 4 列 */
     }
 
-    .text-center {
-        font-size: 0.875rem; /* 减小年月显示的字体大小 */
+    /* 日期单元格和月份单元格的共享样式 */
+    .day-cell, .month-cell {
+        padding: 10px; /* 内边距 */
+        text-align: center; /* 文本居中 */
+        border: 1px solid #dee2e6; /* 边框 */
+        display: flex; /* 使用 flex 布局 */
+        flex-direction: column; /* 垂直排列 */
+        align-items: center; /* 水平居中 */
+        justify-content: center; /* 垂直居中 */
+        border-radius: 4px; /* 圆角 */
+        font-size: 14px; /* 字体大小 */
+        min-height: 80px; /* 最小高度 */
+        position: relative; /* 相对定位 */
+        transition: transform 0.2s; /* 添加平滑过渡效果 */
+        cursor: pointer; /* 鼠标指针样式 */
     }
 
-    .row.align-items-center {
-        gap: 5px; /* 减小元素之间的间距 */
+    /* 资产变化值的样式 */
+    .asset-value {
+        margin-top: 5px; /* 上边距 */
+        font-weight: bold; /* 加粗 */
+        font-size: 12px; /* 字体大小 */
     }
-}
 
+    /* 星期头的样式 */
+    .week-days {
+        display: grid; /* 网格布局 */
+        grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
+        gap: 5px; /* 列间距 */
+        margin-bottom: 10px; /* 下边距 */
+    }
 
+    /* 星期天的样式 */
+    .week-day {
+        background-color: #f8f9fa; /* 背景颜色 */
+        padding: 10px; /* 内边距 */
+        text-align: center; /* 文本居中 */
+        border: 1px solid #dee2e6; /* 边框 */
+        border-radius: 4px; /* 圆角 */
+    }
 
-/* 日期网格布局 */
-.date-grid {
-    display: grid; /* 使用网格布局 */
-    grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
-    gap: 5px; /* 列间距 */
-    margin-top: 10px; /* 上边距 */
-    /*height: 445px;*/ /* 设置固定高度 */
-}
+    /* 摘要信息的样式 */
+    .summary {
+        margin-top: 20px; /* 上边距 */
+        text-align: center; /* 文本居中 */
+        font-weight: bold; /* 加粗 */
+        font-size: 16px; /* 字体大小 */
+        color: #333; /* 文字颜色 */
+    }
 
-/* 多月视图栅格布局 */
-.month-grid {
-    grid-template-columns: repeat(4, 1fr); /* 每行 4 列 */
-}
+    /* 当前日期的样式 */
+    .current-day {
+        background-color: #73a3de !important; /* 背景颜色 */
+        color: #333 !important; /* 文字颜色 */
+        font-weight: bold; /* 当前日期字体加粗 */
+    }
 
-/* 日期单元格和月份单元格的共享样式 */
-.day-cell, .month-cell {
-    padding: 10px; /* 内边距 */
-    text-align: center; /* 文本居中 */
-    border: 1px solid #dee2e6; /* 边框 */
-    display: flex; /* 使用 flex 布局 */
-    flex-direction: column; /* 垂直排列 */
-    align-items: center; /* 水平居中 */
-    justify-content: center; /* 垂直居中 */
-    border-radius: 4px; /* 圆角 */
-    font-size: 14px; /* 字体大小 */
-    min-height: 80px; /* 最小高度 */
-    position: relative; /* 相对定位 */
-    transition: transform 0.2s; /* 添加平滑过渡效果 */
-    cursor: pointer; /* 鼠标指针样式 */
-}
+    /* 正资产变化的样式 */
+    .positive {
+        background-color: #ffe5e5 !important; /* 背景颜色 */
+        color: #b30000 !important; /* 文字颜色 */
+    }
 
-/* 资产变化值的样式 */
-.asset-value {
-    margin-top: 5px; /* 上边距 */
-    font-weight: bold; /* 加粗 */
-    font-size: 12px; /* 字体大小 */
-}
+    /* 负资产变化的样式 */
+    .negative {
+        background-color: #e5ffe5 !important; /* 背景颜色 */
+        color: #008000 !important; /* 文字颜色 */
+    }
 
-/* 星期头的样式 */
-.week-days {
-    display: grid; /* 网格布局 */
-    grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
-    gap: 5px; /* 列间距 */
-    margin-bottom: 10px; /* 下边距 */
-}
+    /* 按钮禁用样式 */
+    .btn:disabled {
+        cursor: not-allowed; /* 鼠标禁用样式 */
+        opacity: 0.65; /* 透明度 */
+    }
 
-/* 星期天的样式 */
-.week-day {
-    background-color: #f8f9fa; /* 背景颜色 */
-    padding: 10px; /* 内边距 */
-    text-align: center; /* 文本居中 */
-    border: 1px solid #dee2e6; /* 边框 */
-    border-radius: 4px; /* 圆角 */
-}
+    /* 鼠标悬停效果 */
+    .day-cell:hover, .month-cell:hover {
+        transform: scale(1.05); /* 放大效果 */
+        z-index: 2; /* 提升层级 */
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15); /* 添加阴影 */
+    }
 
-/* 摘要信息的样式 */
-.summary {
-    margin-top: 20px; /* 上边距 */
-    text-align: center; /* 文本居中 */
-    font-weight: bold; /* 加粗 */
-    font-size: 16px; /* 字体大小 */
-    color: #333; /* 文字颜色 */
-}
-
-/* 当前日期的样式 */
-.current-day {
-    background-color: #73a3de !important; /* 背景颜色 */
-    color: #333 !important; /* 文字颜色 */
-    font-weight: bold; /* 当前日期字体加粗 */
-}
-
-/* 正资产变化的样式 */
-.positive {
-    background-color: #ffe5e5 !important; /* 背景颜色 */
-    color: #b30000 !important; /* 文字颜色 */
-}
-
-/* 负资产变化的样式 */
-.negative {
-    background-color: #e5ffe5 !important; /* 背景颜色 */
-    color: #008000 !important; /* 文字颜色 */
-}
-
-/* 按钮禁用样式 */
-.btn:disabled {
-    cursor: not-allowed; /* 鼠标禁用样式 */
-    opacity: 0.65; /* 透明度 */
-}
-
-/* 鼠标悬停效果 */
-.day-cell:hover, .month-cell:hover {
-    transform: scale(1.05); /* 放大效果 */
-    z-index: 2; /* 提升层级 */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15); /* 添加阴影 */
-}

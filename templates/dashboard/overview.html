@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 {% extends 'dashboard/base_dashboard.html' %}
+{% load static %} <!-- 添加static标签加载 -->
 {% load myfilters%}
+
+{% block extra_css %}
+    <!-- 引用外部CSS文件 -->
+    <link href="{% static 'stock/css/card.css' %}" rel="stylesheet">
+{% endblock %}
+
 
 <!-- Begin Page Content -->
 {% block page_content %}
@@ -46,12 +53,18 @@
                     <h3>&nbsp;</h3>
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">总资产（元）</div>
-                            <div class="h3 mb-0 text-gray-800">{{ overview.funds_value_sum|floatformat:0 }}</div>
+                            <div class="metric-label">总资产</div>
+                            <div class="metric-value">
+                                <span>{{ overview.funds_value_sum|floatformat:0 }}</span>
+                                <span class="metric-unit">元</span>
+                            </div>
                         </div>
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">净值（元）</div>
-                            <div class="h3 mb-0 text-gray-800">{{ overview.funds_net_value_weighting|floatformat:4 }}</div>
+                            <div class="metric-label">净值</div>
+                            <div class="metric-value">
+                                <span>{{ overview.funds_net_value_weighting|floatformat:4 }}</span>
+                                <span class="metric-unit">元</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -78,14 +91,18 @@
                     <h3>&nbsp;</h3>
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">总市值（元）</div>
-                            <div class="h3 mb-0 text-gray-800">{{ overview.market_value_sum|floatformat:0 }}</div>
+                            <div class="metric-label">总市值</div>
+                            <div class="metric-value">
+                                <span>{{ overview.market_value_sum|floatformat:0 }}</span>
+                                <span class="metric-unit">元</span>
+                            </div>
                         </div>
                         <div class="col mr-2">
-{#                            <div class="h6 mb-0 text-gray-500">持股数量</div>#}
-{#                            <div class="h3 mb-0 text-gray-800">{{ overview.holding_stock_number }}</div>#}
-                            <div class="h6 mb-0 text-gray-500">仓位（%）</div>
-                            <div class="h3 mb-0 text-gray-800">{{ overview.position_percent_weighting|percent }}</div>
+                            <div class="metric-label">仓位</div>
+                            <div class="metric-value">
+                                <span>{{ overview.position_percent_weighting|percent }}</span>
+                                <span class="metric-unit">%</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -112,13 +129,18 @@
                     <h3>&nbsp;</h3>
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">分红收益（元）</div>
-                            <div class="h3 mb-0 text-gray-800">{{ overview.dividend_sum|floatformat:0 }}</div>
+                            <div class="metric-label">累计分红</div>
+                            <div class="metric-value">
+                                <span>{{ overview.dividend_sum|floatformat:0 }}</span>
+                                <span class="metric-unit">元</span>
+                            </div>
                         </div>
                         <div class="col mr-2">
-{#                            <div class="h6 mb-0 text-gray-500">当年分红（{{ overview.current_dividend_percent|floatformat:2 }}%）</div>#}
-                            <div class="h6 mb-0 text-gray-500">当年分红（元）</div>
-                            <div class="h3 mb-0 text-gray-800">{{ overview.current_dividend_sum|floatformat:0 }}</div>
+                            <div class="metric-label">当年分红</div>
+                            <div class="metric-value">
+                                <span>{{ overview.current_dividend_sum|floatformat:0 }}</span>
+                                <span class="metric-unit">元</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -140,14 +162,18 @@
                     <h3>&nbsp;</h3>
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">打新收益（元）</div>
-{#                            <div class="h3 mb-0 text-gray-800">{{ overview.subscription_sum|floatformat:0 }}({{ overview.subscription_stock_num|floatformat:0 }}/{{ overview.subscription_band_num|floatformat:0 }})</div>#}
-                            <div class="h3 mb-0 text-gray-800">{{ overview.subscription_sum|floatformat:0 }}</div>
+                            <div class="metric-label">累计打新</div>
+                            <div class="metric-value">
+                                <span>{{ overview.subscription_sum|floatformat:0 }}</span>
+                                <span class="metric-unit">元</span>
+                            </div>
                         </div>
                         <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">当年打新（元）</div>
-{#                            <div class="h3 mb-0 text-gray-800">{{ overview.current_subscription_sum|floatformat:0 }}({{ overview.current_subscription_stock_num|floatformat:0 }}/{{ overview.current_subscription_band_num|floatformat:0 }})</div>#}
-                            <div class="h3 mb-0 text-gray-800">{{ overview.current_subscription_sum|floatformat:0 }}</div>
+                            <div class="metric-label">当年打新</div>
+                            <div class="metric-value">
+                                <span>{{ overview.current_subscription_sum|floatformat:0 }}</span>
+                                <span class="metric-unit">元</span>
+                            </div>
                         </div>
                     </div>
                 </div>

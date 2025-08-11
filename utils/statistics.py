@@ -250,7 +250,7 @@ def get_position_content(currency_id, rate_dict):
     # 获取所有账户及缩写
     accounts = account.objects.filter(
         position__currency_id=currency_id
-    ).distinct().values('id', 'account_abbreviation')
+    ).distinct().values('id', 'account_abbreviation').order_by('broker_id', 'id')
 
     account_map = {acc['id']: acc['account_abbreviation'] for acc in accounts}
     account_ids = list(account_map.keys())

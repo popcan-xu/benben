@@ -469,31 +469,59 @@ def view_funds_details(request, funds_id):
     assetChanges = {}
     for rs in funds_details_list:
         date = rs.date.strftime("%Y-%m-%d")
-        amount = float(rs.funds_current_profit) + float(rs.funds_in_out)
+        # amount = float(rs.funds_current_profit) - float(rs.funds_in_out)
+        amount = float(rs.funds_current_profit)
         assetChanges[date] = amount
 
-    # 生成净值曲线数据
-    data_net_value = []
+    # 生成净值、资产、收益曲线数据
+    fund_data = []
     for rs in funds_details_list:
         date = str(rs.date)
-        value = float(rs.funds_net_value)
-        data_net_value.append({
-            "date": date,
-            "value": value
-        })
-
-    # 生成资产曲线数据
-    data_value = []
-    for rs in funds_details_list:
-        date = str(rs.date)
+        net_value = float(rs.funds_net_value)
         value = float(rs.funds_value / 10000)
-        data_value.append({
+        principal = float(rs.funds_principal / 10000)
+        profit = float(rs.funds_profit / 10000)
+        fund_data.append({
             "date": date,
-            "value": value
+            "net_value": net_value,
+            "value": value,
+            "principal": principal,
+            "profit": profit
         })
 
-    # 获得近期资产列表
+    # 近期资产、收益、年度收益列表
     funds_details_list_TOP = funds_details.objects.filter(funds=funds_id).order_by("-date")[:12]
+    yearly_profit_list = funds_details.objects.filter(funds=funds_id).values('date__year').annotate(
+        yearly_profit=Sum('funds_current_profit')
+    ).order_by('-date__year')
+    profit_total = sum(entry['yearly_profit'] for entry in yearly_profit_list)
+
+    yearly_profit_data = []
+    for rs in yearly_profit_list:
+        year = str(rs['date__year'])
+        amount = float(rs['yearly_profit'] / 10000)
+        yearly_profit_data.append({
+            "year": year,
+            "amount": amount
+        })
+
+    # 近期、年度出入金列表
+    recent_in_out_list = funds_details.objects.filter(funds=funds_id).exclude(funds_in_out=0).order_by('-date')[:12]
+    yearly_in_out_list = funds_details.objects.filter(funds=funds_id).values('date__year').annotate(
+        yearly_in_out=Sum('funds_in_out')
+    ).order_by('-date__year')
+    in_out_total = sum(entry['yearly_in_out'] for entry in yearly_in_out_list)
+
+    # 生成年度出入金图表数据
+    yearly_in_out_data = []
+    for rs in yearly_in_out_list:
+        year = str(rs['date__year'])
+        amount = float(rs['yearly_in_out'] / 10000)
+        yearly_in_out_data.append({
+            "year": year,
+            "amount": amount
+        })
+
 
     updating_time = datetime.datetime.now()
 
@@ -680,9 +708,9 @@ def view_market_value_details(request, currency_id):
         ),
         # 获取组内最新修改时间
         latest_modified=Max('modified_time')
-    ).order_by('-trade_date', '-latest_modified')[:10]
+    ).order_by('-trade_date', '-latest_modified')[:12]
 
-    updating_time = current_date
+    updating_time = datetime.datetime.now()
     return render(request, templates_path + 'view_market_value_details.html', locals())
 
 
@@ -837,7 +865,7 @@ def view_dividend_details(request, currency_id):
         name_total_list.append(item['stock_name'])
         dividend_total_list.append(round(item['total_dividend']))
 
-    updating_time = current_date
+    updating_time = datetime.datetime.now()
 
     return render(request, templates_path + 'view_dividend_details.html', locals())
 

@@ -1,5 +1,12 @@
 <!DOCTYPE html>
 {% extends 'dashboard/base_dashboard.html' %}
+{% load static %} <!-- 添加static标签加载 -->
+
+{% block extra_css %}
+    <!-- 引用外部CSS文件 -->
+    <link href="{% static 'stock/css/card.css' %}" rel="stylesheet">
+{% endblock %}
+
 
 {% block page_content %}
 
@@ -43,12 +50,18 @@
                         <h3>&nbsp;</h3>
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
-                                <div class="h6 mb-0 text-gray-500">总分红（元）</div>
-                                <div class="h3 mb-0 text-gray-800">{{ item.total_amount|floatformat:0 }}</div>
+                                <div class="metric-label">总分红</div>
+                                <div class="metric-value">
+                                    <span>{{ item.total_amount|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
                             </div>
                             <div class="col mr-2">
-                                <div class="h6 mb-0 text-gray-500">当年分红（元）</div>
-                                <div class="h3 mb-0 text-gray-800">{{ item.year_amount|floatformat:0 }}</div>
+                                <div class="metric-label">当年分红</div>
+                                <div class="metric-value">
+                                    <span>{{ item.year_amount|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
                             </div>
                         </div>
                     </div>

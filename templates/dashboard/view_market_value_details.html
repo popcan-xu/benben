@@ -1,135 +1,17 @@
 <!DOCTYPE html>
 {% extends 'dashboard/base_dashboard.html' %}
+{% load static %} <!-- 添加static标签加载 -->
 {% load myfilters%}
 {% load humanize %}
 
+{% block extra_css %}
+    <!-- 引用外部CSS文件 -->
+    <link href="{% static 'stock/css/calendar.css' %}" rel="stylesheet">
+    <link href="{% static 'stock/css/card.css' %}" rel="stylesheet">
+{% endblock %}
+
+
 {% block page_content %}
-<style>
-    // 资产变化日历
-    @media (max-width: 768px) {
-        #viewSwitch .btn {
-            padding: 0.25rem 0.5rem; /* 减小按钮内边距 */
-            font-size: 0.875rem; /* 减小字体大小 */
-        }
-        #prevBtn,
-        #nextBtn {
-            background-color: transparent; /* 透明背景 */
-            border: none; /* 移除边框 */
-            padding: 5px; /* 调整内边距 */
-        }
-
-        #prevBtn:hover,
-        #nextBtn:hover {
-            background-color: transparent; /* 保持透明背景 */
-            box-shadow: none; /* 移除悬停时的阴影 */
-        }
-
-        .text-center {
-            font-size: 0.875rem; /* 减小年月显示的字体大小 */
-        }
-
-        .row.align-items-center {
-            gap: 5px; /* 减小元素之间的间距 */
-        }
-    }
-
-    /* 日期网格布局 */
-    .date-grid {
-        display: grid; /* 使用网格布局 */
-        grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
-        gap: 5px; /* 列间距 */
-        margin-top: 10px; /* 上边距 */
-        /*height: 445px;*/ /* 设置固定高度 */
-    }
-
-    /* 多月视图栅格布局 */
-    .month-grid {
-        grid-template-columns: repeat(4, 1fr); /* 每行 4 列 */
-    }
-
-    /* 日期单元格和月份单元格的共享样式 */
-    .day-cell, .month-cell {
-        padding: 10px; /* 内边距 */
-        text-align: center; /* 文本居中 */
-        border: 1px solid #dee2e6; /* 边框 */
-        display: flex; /* 使用 flex 布局 */
-        flex-direction: column; /* 垂直排列 */
-        align-items: center; /* 水平居中 */
-        justify-content: center; /* 垂直居中 */
-        border-radius: 4px; /* 圆角 */
-        font-size: 14px; /* 字体大小 */
-        min-height: 80px; /* 最小高度 */
-        position: relative; /* 相对定位 */
-        transition: transform 0.2s; /* 添加平滑过渡效果 */
-        cursor: pointer; /* 鼠标指针样式 */
-    }
-
-    /* 资产变化值的样式 */
-    .asset-value {
-        margin-top: 5px; /* 上边距 */
-        font-weight: bold; /* 加粗 */
-        font-size: 12px; /* 字体大小 */
-    }
-
-    /* 星期头的样式 */
-    .week-days {
-        display: grid; /* 网格布局 */
-        grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
-        gap: 5px; /* 列间距 */
-        margin-bottom: 10px; /* 下边距 */
-    }
-
-    /* 星期天的样式 */
-    .week-day {
-        background-color: #f8f9fa; /* 背景颜色 */
-        padding: 10px; /* 内边距 */
-        text-align: center; /* 文本居中 */
-        border: 1px solid #dee2e6; /* 边框 */
-        border-radius: 4px; /* 圆角 */
-    }
-
-    /* 摘要信息的样式 */
-    .summary {
-        margin-top: 20px; /* 上边距 */
-        text-align: center; /* 文本居中 */
-        font-weight: bold; /* 加粗 */
-        font-size: 16px; /* 字体大小 */
-        color: #333; /* 文字颜色 */
-    }
-
-    /* 当前日期的样式 */
-    .current-day {
-        background-color: #73a3de !important; /* 背景颜色 */
-        color: #333 !important; /* 文字颜色 */
-        font-weight: bold; /* 当前日期字体加粗 */
-    }
-
-    /* 正资产变化的样式 */
-    .positive {
-        background-color: #ffe5e5 !important; /* 背景颜色 */
-        color: #b30000 !important; /* 文字颜色 */
-    }
-
-    /* 负资产变化的样式 */
-    .negative {
-        background-color: #e5ffe5 !important; /* 背景颜色 */
-        color: #008000 !important; /* 文字颜色 */
-    }
-
-    /* 按钮禁用样式 */
-    .btn:disabled {
-        cursor: not-allowed; /* 鼠标禁用样式 */
-        opacity: 0.65; /* 透明度 */
-    }
-
-    /* 鼠标悬停效果 */
-    .day-cell:hover, .month-cell:hover {
-        transform: scale(1.05); /* 放大效果 */
-        z-index: 2; /* 提升层级 */
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15); /* 添加阴影 */
-    }
-</style>
-
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
@@ -143,72 +25,109 @@
 
     <!-- Content Card Row -->
     <div class="row">
-        <!-- 账户概要 -->
+        <!-- 概要 -->
         <div class="col-xl-6 col-md-6 mb-4">
             <div class="card h-100 shadow mb-4">
                 <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <div class="card-header">
                     <h6 class="m-0 font-weight-bold text-primary">概要</h6>
                 </div>
                 <!-- Card Body -->
-                <div class="card-body p-2 p-md-3 p-xl-4">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">持仓市值（元）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ market_value_obj.value|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">变化值（元）</div>
-                            <div class="h4 mb-0 text-gray-800 font"><span style="color: {{ market_value_obj.change_amount|text_color }}">{{ market_value_obj.change_amount|floatformat:0 }}</span></div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">变化率（%）</div>
-                            <div class="h4 mb-0  text-gray-800"><span style="color: {{ market_value_obj.change_rate|text_color }}">{{ market_value_obj.change_rate|percent }}</span></div>
-                        </div>
-                    </div>
-                    <h6>&nbsp;</h6>
-                    <h6>&nbsp;</h6>
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">上月市值（元）</div>
-                            <div class="h4 mb-0 text-gray-800 font"><span style="">{{ last_month_value|floatformat:0 }}</span></div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">月内变化值（元）</div>
-                            <div class="h4 mb-0  text-gray-800"><span style="color: {{ month_change_amount|text_color }}">{{ month_change_amount|floatformat:0 }}</span></div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">月内变化率（%）</div>
-                            <div class="h4 mb-0  text-gray-800"><span style="color: {{ month_change_rate|text_color }}">{{ month_change_rate|percent }}</span></div>
+{#                <div class="card-body p-2 p-md-3 p-xl-4">#}
+                <div class="card-body">
+                    <!-- Card Body - 总资产概览 -->
+                    <div class="metric-group">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="metric-label">持仓市值</div>
+                                <div class="metric-value">
+                                    <span>{{ market_value_obj.value|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-label">变化值</div>
+                                <div class="metric-value">
+                                    <span>{{ market_value_obj.change_amount|value_display:"number" }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-label">变化率</div>
+                                <div class="metric-value">
+                                    <span>{{ market_value_obj.change_rate|value_display:"percent" }}</span>
+                                    <span class="metric-unit">%</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <h6>&nbsp;</h6>
-                    <h6>&nbsp;</h6>
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">上年市值（元）</div>
-                            <div class="h4 mb-0 text-gray-800 font"><span style="">{{ last_year_value|floatformat:0 }}</span></div>
+
+                    <!-- Card Body - 收益周期对比 -->
+                    <div class="metric-group">
+    {#                    <div class="metric-group-title">本期收益</div>#}
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="metric-label">上月市值</div>
+                                <div class="metric-value">
+                                    <span>{{ last_month_value|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-label">月内变化值</div>
+                                <div class="metric-value">
+                                    <span>{{ month_change_amount|value_display:"number" }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-label">月内变化率</div>
+                                <div class="metric-value">
+                                    <span>{{ month_change_rate|value_display:"percent" }}</span>
+                                    <span class="metric-unit">%</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">年内变化值（元）</div>
-                            <div class="h4 mb-0  text-gray-800"><span style="color: {{ year_change_amount|text_color }}">{{ year_change_amount|floatformat:0 }}</span></div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">年内变化率（%）</div>
-                            <div class="h4 mb-0  text-gray-800"><span style="color: {{ year_change_rate|text_color }}">{{ year_change_rate|percent }}</span></div>
+                    </div>
+
+                    <!-- Card Body - 收益周期对比 -->
+                    <div class="metric-group">
+    {#                    <div class="metric-group-title">本期收益</div>#}
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="metric-label">上年市值</div>
+                                <div class="metric-value">
+                                    <span>{{ last_year_value|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-label">年内变化值</div>
+                                <div class="metric-value">
+                                    <span>{{ year_change_amount|value_display:"number" }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-label">年内变化率</div>
+                                <div class="metric-value">
+                                    <span>{{ year_change_rate|value_display:"percent" }}</span>
+                                    <span class="metric-unit">%</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-white text-muted small">
-                    数据更新于：{{ updating_time|date:'Y-m-d' }}
+                <div class="card-footer">
+                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
                 </div>
             </div>
         </div>
 
-        <!-- 持仓市值曲线 -->
+        <!-- 市值曲线 -->
         <div class="col-xl-6 col-md-6 mb-4">
             <div class="card h-100 shadow mb-4">
-                <div class="card-header d-flex align-items-center justify-content-between">
+                <div class="card-header d-flex align-items-center justify-content-between" style="height: 55px;">
                     <h6 class="m-0 font-weight-bold text-primary">市值曲线</h6>
                     <div class="btn-group" id="market_value_viewSwitch">
                         <button
@@ -242,8 +161,9 @@
                         <div id="Chart_market_value" style="width:100%; height:300px;"></div>
                     </div>
                 </div>
-                <div class="card-footer bg-white text-muted small">
-                    数据更新于：<span id="updateTime"></span>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                    <span>注：市值单位为万元。</span>
                 </div>
             </div>
         </div>
@@ -251,15 +171,15 @@
     </div>
 
     <div class="row">
-        <!-- 市值变化日历 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card h-100 shadow mb-4">
+        <!-- 市值日历 -->
+        <div class="col-xl-6 col-md-6 mb-4 d-flex">
+            <div class="card h-100 shadow mb-4 w-100 d-flex flex-column">
                 <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">市值变化日历</h6>
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 55px;">
+                    <h6 class="m-0 font-weight-bold text-primary">市值日历</h6>
                 </div>
                 <!-- Card Body -->
-                <div class="card-body">
+                <div class="card-body flex-grow-1">
                     <!-- 标题和按钮区域 -->
                     <div class="row align-items-center mb-4">
                         <div class="col-auto pr-0">
@@ -308,21 +228,35 @@
                     <div class="summary" id="periodSummary"></div>
                 </div>
                 <div class="card-footer bg-white text-muted small">
-                    数据更新于：{{ updating_time|date:'Y-m-d' }}
+                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
                 </div>
             </div>
         </div>
 
-        <!-- 近期市值 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card h-100 shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">近期市值</h6>
+        <!-- 近期市值和交易列表 -->
+        <div class="col-xl-6 col-lg-6 d-flex">
+            <div class="card shadow mb-4 w-100 d-flex flex-column">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 55px;">
+                    <h6 class="m-0 font-weight-bold text-primary" id="recentListTitle">近期市值</h6>
+                    <div class="btn-group" id="recentListSwitch">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary active"
+                            data-type="marketValue"
+                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                        >市值</button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-type="trade"
+                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                        >交易</button>
+                    </div>
                 </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div style="height:100%; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                <div class="card-body flex-grow-1">
+                    <!-- 近期市值表格 -->
+                    <div id="marketValueTable" class="h-100" style="display:block; overflow-y:auto;">
+{#                    <div id="marketValueTable" style="height:100%; width:100%; display:block; overflow-y:auto;" class="scrollDiv">#}
                         <div class="table-responsive">
                             <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
                                 <thead class="bg-gradient-secondary text-gray-100">
@@ -350,43 +284,21 @@
                             </table>
                         </div>
                     </div>
-                </div>
-                <div class="card-footer bg-white text-muted small">
-                    数据更新于：{{ updating_time|date:'Y-m-d' }}
-                </div>
-            </div>
-        </div>
 
-    </div>
-
-    <div class="row">
-        <!-- 近期交易 -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">近期交易</h6>
-                </div>
-                <div class="card-body">
-                    <div style="height:500px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                    <!-- 近期交易表格 -->
+                    <div id="tradeTable" class="h-100" style="display:none; overflow-y:auto;">
+{#                    <div id="tradeTable" style="height:100%; width:100%; display:none; overflow-y:auto;" class="scrollDiv">#}
                         <div class="table-responsive">
                             <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
                                 <thead class="bg-gradient-secondary text-gray-100">
                                     <tr>
                                         <th>日期</th>
                                         <th>股票/代码</th>
-                                        <!--
-                                        <th>类型</th>
-                                        <th>价格</th>
-                                        <th>数量</th>
-                                        <th>金额</th>
-                                        <th>结算货币</th>
-                                        <th>证券账户</th>
-                                        -->
                                         <th>净交易类型</th>
                                         <th>净交易量</th>
-                                        <th>净交易金额</th>
                                         <th>净交易价格</th>
-                                        <th>最新更新时间</th>
+                                        <th>净交易金额</th>
+{#                                        <th>最新更新时间</th>#}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -394,13 +306,6 @@
                                         <tr>
                                             <td>{{ trade.trade_date|date:'Y-m-d' }}</td>
                                             <td><a href="/benben/view_stock_details/{{ trade.stock_id|safe }}" style="color: inherit; text-decoration: none;">{{ trade.stock__stock_name }}({{ trade.stock__stock_code }})</a></td>
-{#                                            <td>{{ trade.get_trade_type_display }}</td>#}
-{#                                            <td>{{ trade.trade_price }}</td>#}
-{#                                            <td>{{ trade.trade_quantity }}</td>#}
-{#                                            <!-- 模板变量的乘法需要使用widthratio // -->#}
-{#                                            <td>{% widthratio trade.trade_price 1 trade.trade_quantity as ratio %}{{ ratio|floatformat:0|add:"" }}</td>#}
-{#                                            <td>{{ trade.get_settlement_currency_display }}</td>#}
-{#                                            <td>{{ trade.account.account_abbreviation }}</td>#}
                                             <td>
                                                 {% if trade.net_quantity > 0 %}
                                                     <span class="buy-badge">净买入</span>
@@ -413,11 +318,11 @@
                                             <td class="{% if trade.net_quantity > 0 %}text-success{% else %}text-danger{% endif %}">
                                                 {{ trade.net_quantity|default:"0" }}
                                             </td>
+                                            <td>{{ trade.net_amount|div:trade.net_quantity|absolute|floatformat:3 }}</td>
                                             <td class="{% if trade.net_amount > 0 %}text-success{% else %}text-danger{% endif %}">
                                                 {{ trade.net_amount|floatformat:2 }}
                                             </td>
-                                            <td>{{ trade.net_amount|div:trade.net_quantity|absolute|floatformat:3 }}</td>
-                                            <td>{{ trade.latest_modified|date:"Y-m-d H:i" }}</td>
+{#                                            <td>{{ trade.latest_modified|date:"Y-m-d H:i" }}</td>#}
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -426,7 +331,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-white text-muted small">
-                    数据更新于：{{ updating_time|date:'Y-m-d' }}
+                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
                 </div>
             </div>
         </div>
@@ -438,24 +343,52 @@
 <script>
 'use strict';
 
-// echarts图表......
-// 净值曲线
+// 近期市值和交易列表
+document.addEventListener('DOMContentLoaded', function() {
+    // 获取相关元素
+    const titleElement = document.getElementById('recentListTitle');
+    const marketValueTable = document.getElementById('marketValueTable');
+    const tradeTable = document.getElementById('tradeTable');
+
+    // 初始化状态
+    let currentView = 'marketValue';
+
+    // 设置激活按钮样式
+    function setActiveButton() {
+        document.querySelectorAll('#recentListSwitch button').forEach(button => {
+            button.classList.toggle('active', button.dataset.type === currentView);
+        });
+
+        // 更新卡片标题
+        titleElement.textContent = currentView === 'marketValue'
+            ? '近期市值'
+            : '近期交易';
+    }
+
+    // 添加切换按钮事件
+    document.querySelectorAll('#recentListSwitch button').forEach(button => {
+        button.addEventListener('click', function() {
+            const viewType = this.dataset.type;
+            currentView = viewType;
+
+            // 切换表格显示
+            marketValueTable.style.display = viewType === 'marketValue' ? 'block' : 'none';
+            tradeTable.style.display = viewType === 'trade' ? 'block' : 'none';
+
+            // 更新按钮状态
+            setActiveButton();
+        });
+    });
+
+    // 初始化按钮状态
+    setActiveButton();
+});
+
+// 市值曲线
 document.addEventListener('DOMContentLoaded', function() {
     const chart = echarts.init(document.getElementById('Chart_market_value'));
     const allData = {{ data_market_value|safe }};
     let currentRange = 'currentYear';
-
-    // 更新时间显示
-    function updateTimestamp() {
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const day = date.getDate().toString().padStart(2, '0');
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-        const seconds = date.getSeconds().toString().padStart(2, '0');
-        document.getElementById('updateTime').textContent = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    }
 
     // 时间范围计算
     function getDateRange(range) {
@@ -648,7 +581,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', () => chart.resize());
 });
 
-// 资产日历......
+// 市值日历
 document.addEventListener('DOMContentLoaded', function() {
     const assetChanges = {{ assetChanges|safe }};
 
