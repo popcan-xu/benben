@@ -13,9 +13,13 @@ def percent(value):
 
 def text_color(value):
     if float(value) < 0 :
-        return 'red'
+        # return 'red'
+        return '#10b981'
+    elif float(value) > 0 :
+        return '#ef4444'
     else:
         return ''
+        # return '#6b7280'
 
 
 def get_type(value):
@@ -63,10 +67,12 @@ def value_display(value, format_type):
 
     # 根据值设置颜色和图标
     if num > 0:
-        color = '#10b981'
+        # color = '#10b981'
+        color = '#ef4444'
         icon = '<i class="fas fa-arrow-up"></i> '
     elif num < 0:
-        color = '#ef4444'
+        # color = '#ef4444'
+        color = '#10b981'
         icon = '<i class="fas fa-arrow-down"></i> '
         num = abs(num)  # 取绝对值
     else:
@@ -83,6 +89,14 @@ def value_display(value, format_type):
     html = f'<span style="color: {color}">{icon}{formatted_value}</span>'
     return mark_safe(html)
 
+def to_float(value):
+    try:
+        # 移除百分号和空格，然后转换为浮点数
+        if value.endswith('%'):
+            return float(value[:-1].strip())
+        return float(value)
+    except (ValueError, TypeError):
+        return 0.0  # 转换失败返回0.0，也可根据需求调整
 
 register.filter(percent)
 
@@ -101,3 +115,5 @@ register.filter(key)
 register.filter(get_index)
 
 register.filter(value_display)
+
+register.filter(to_float)

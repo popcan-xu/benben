@@ -325,13 +325,13 @@ def get_quote_array_snowball(stock_code_array):
     for i in data:
         stock_code = i['symbol']
         price = i['current']
-        increase = i['percent'] if i['percent']!=None else 0
+        increase = i['percent']/100 if i['percent']!=None else 0
         if increase > 0:
-            color = 'red'
+            color = '#ef4444' # 红色
         elif increase < 0:
-            color = 'green'
+            color = '#10b981' # 绿色
         else:
-            color = 'grey'
+            color = '#6b7280' # 深灰色
         quote_array.append((remove_prefix(stock_code), price, increase, color))
     return quote_array
 
@@ -367,7 +367,7 @@ def get_quote_gtimg(stock_code):
     return price, increase, color
 
 # 从akshare或http://qt.gtimg.cn/获取汇率数据
-def get_rate():
+def get_rate1():
     path = pathlib.Path("./templates/dashboard/rate.json")
     if path.is_file() == True: # 若json文件存在
         # 1. 读取JSON文件
@@ -484,6 +484,130 @@ def get_rate():
             rate_HKD = 1
             rate_USD = 1
     return rate_HKD, rate_USD
+
+def get_rate():
+    path = pathlib.Path("./templates/dashboard/rate.json")
+    if path.is_file() == True: # 若json文件存在
+        # 1. 读取JSON文件
+        with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        time1 = datetime.datetime.strptime(data['modified_time'], "%Y-%m-%d %H:%M:%S")
+        time2 = datetime.datetime.now()
+        # if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 3600):
+        if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 60):
+            # df = ak.fx_quote_baidu(symbol="人民币")
+            # try:
+            #     temp_HKD = float(df.query('代码=="CNYHKD"')['最新价'].iloc[0])
+            # except Exception as e:
+            #     temp_HKD = 0
+            #     print(f"查询报错: {e}")
+            # if temp_HKD != 0:
+            #     rate_HKD = 1 / temp_HKD
+            #     data["rate_HKD"] = rate_HKD
+            # else:
+            #     rate_HKD = data["rate_HKD"]
+            # try:
+            #     temp_USD = float(df.query('代码=="CNYUSD"')['最新价'].iloc[0])
+            # except Exception as e:
+            #     temp_USD = 0
+            #     print(f"查询报错: {e}")
+            # if temp_USD != 0:
+            #     rate_USD = 1 / temp_USD
+            #     data["rate_USD"] = rate_USD
+            # else:
+            #     rate_USD = data["rate_USD"]
+            try:
+                # http://qt.gtimg.cn/接口
+                url = "http://qt.gtimg.cn/q=whHKDCNY"
+                html = getHTMLText(url)
+                rate_HKD = extract_rate(html)
+                data["rate_HKD"] = rate_HKD
+                url = "http://qt.gtimg.cn/q=whUSDCNY"
+                html = getHTMLText(url)
+                rate_USD = extract_rate(html)
+                data["rate_USD"] = rate_USD
+
+
+                # ak.currency_boc_sina接口
+                # current_date = pd.to_datetime(datetime.date.today())
+                # current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
+                # df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
+                # df['日期'] = pd.to_datetime(df['日期'])
+                # rate_HKD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+                # data["rate_HKD"] = rate_HKD
+                # df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
+                # df['日期'] = pd.to_datetime(df['日期'])
+                # rate_USD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+                # data["rate_USD"] = rate_USD
+
+                # ak.fx_spot_quote接口
+                # df = ak.fx_spot_quote()
+                # rate_HKD = float(df[df['货币对'] == 'HKD/CNY']['买报价'].iloc[0])
+                # rate_USD = float(df[df['货币对'] == 'USD/CNY']['买报价'].iloc[0])
+                # data["rate_HKD"] = rate_HKD
+                # data["rate_USD"] = rate_USD
+
+            except Exception as e:
+                print(f"查询报错: {e}")
+                rate_HKD = data["rate_HKD"]
+                rate_USD = data["rate_USD"]
+
+            # 2. 修改汇率数据
+            data["modified_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # 3. 写回JSON文件（保留原有格式）
+            with open('./templates/dashboard/rate.json', 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)  # 保持中文可读性
+        else:
+            rate_HKD = data["rate_HKD"]
+            rate_USD = data["rate_USD"]
+    else:
+        # df = ak.fx_quote_baidu(symbol="人民币")
+        # temp_HKD = float(df.query('代码=="CNYHKD"')['最新价'].iloc[0])
+        # temp_USD = float(df.query('代码=="CNYUSD"')['最新价'].iloc[0])
+        # rate_HKD = 1 / temp_HKD if temp_HKD != 0 else 1
+        # rate_USD = 1 / temp_USD if temp_HKD != 0 else 1
+        try:
+            # http://qt.gtimg.cn/接口
+            url = "http://qt.gtimg.cn/q=whHKDCNY"
+            html = getHTMLText(url)
+            rate_HKD = extract_rate(html)
+            url = "http://qt.gtimg.cn/q=whUSDCNY"
+            html = getHTMLText(url)
+            rate_USD = extract_rate(html)
+
+            # ak.currency_boc_sina接口
+            # current_date = pd.to_datetime(datetime.date.today())
+            # current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
+            # df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
+            # df['日期'] = pd.to_datetime(df['日期'])
+            # rate_HKD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+            # df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
+            # df['日期'] = pd.to_datetime(df['日期'])
+            # rate_USD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
+
+            # ak.fx_spot_quote接口
+            # df = ak.fx_spot_quote()
+            # rate_HKD = float(df[df['货币对'] == 'HKD/CNY']['买报价'].iloc[0])
+            # rate_USD = float(df[df['货币对'] == 'USD/CNY']['买报价'].iloc[0])
+
+            rate = {}
+            rate.update(rate_HKD=rate_HKD)
+            rate.update(rate_USD=rate_USD)
+            rate.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            # 写入json文件
+            FileOperate(dictData=rate, filepath='./templates/dashboard/',
+                        filename='rate.json').operation_file()
+        except Exception as e:
+            print(f"查询报错: {e}")
+            rate_HKD = 1
+            rate_USD = 1
+
+    rate_CNY = 1
+    rate = {}
+    rate['CNY'] = rate_CNY
+    rate['HKD'] = rate_HKD
+    rate['USD'] = rate_USD
+    return rate
 
 
 def extract_rate(input_str: str) -> float or None:
@@ -631,7 +755,7 @@ def get_stock_dividend_history(stock_code):
     # 使用雪球账号登录后的cookie，只需替换xq_a_token
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
-        "Cookie": "xq_a_token=5d548d8ac1918f30d26af0751f438e71b45a54d4"
+        "Cookie": "xq_a_token=15155558e5b9d666b3a40dece0b825cf67d20b25"
     }
     # headers = {
     #     "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",

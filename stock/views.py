@@ -49,7 +49,10 @@ def overview(request):
         values.append(rs.name)
     currency_dict = dict(zip(keys, values))
 
-    rate_HKD, rate_USD = get_rate()
+    #rate_HKD, rate_USD = get_rate()
+    rate = get_rate()
+    rate_HKD = rate['HKD']
+    rate_USD = rate['USD']
 
     path = pathlib.Path("./templates/dashboard/overview.json")
     if path.is_file() and request.method != 'POST':  # 若json文件存在and未点击刷新按钮，从json文件中读取overview页面需要的数据以提高性能
@@ -304,7 +307,12 @@ def overview(request):
 # 资产概览
 def view_funds(request):
     funds_list = funds.objects.all()
-    rate_HKD, rate_USD = get_rate()
+    # rate_HKD, rate_USD = get_rate()
+    rate = get_rate()
+    rate_HKD = rate['HKD']
+    rate_USD = rate['USD']
+
+    updating_time = datetime.datetime.now()
 
     return render(request, templates_path + 'view_funds.html', locals())
 
@@ -530,7 +538,13 @@ def view_funds_details(request, funds_id):
 
 # 市值概览
 def view_market_value(request):
-    rate_HKD, rate_USD = get_rate()
+    # rate_HKD, rate_USD = get_rate()
+    rate = get_rate()
+    rate_HKD = rate['HKD']
+    rate_USD = rate['USD']
+    # 创建一个字典，格式为 {货币ID: {'code': 代码, 'name': 名称}}
+    currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in currency.objects.all()}
+
     # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
     stock_dict = position.objects.values("stock").annotate(
         count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
@@ -547,25 +561,30 @@ def view_market_value(request):
     content_USD, amount_sum_USD, name_array_USD, value_array_USD = get_value_stock_content(3, price_array, rate_HKD,
                                                                                            rate_USD)
 
-    currency_dict = {}
-    keys = []
-    values = []
-    for rs in currency.objects.all():
-        keys.append(rs.id)
-        values.append(rs.name)
-    currency_dict = dict(zip(keys, values))
+    # currency_dict = {}
+    # keys = []
+    # values = []
+    # for rs in currency.objects.all():
+    #     keys.append(rs.id)
+    #     values.append(rs.name)
+    # currency_dict = dict(zip(keys, values))
+
 
     value_dict = {}
+    value_dict_toCNY = {}
     result = historical_market_value.objects.aggregate(
         max_date=Max('date')  # 最大值（最新日期）
     )
     current_date = result['max_date']
 
     for key in currency_dict:
+        # code = currency.objects.get(id=key).code
         if historical_market_value.objects.filter(currency_id=key, date=current_date).exists():
             value_dict[key] = historical_market_value.objects.get(currency_id=key, date=current_date).value
+            value_dict_toCNY[key] = float(value_dict[key]) * rate[currency_dict[key]['code']]
         else:
             value_dict[key] = 0
+            value_dict_toCNY[key] = 0
 
     # 仓位计算
     position_percent_dict = {}
@@ -600,7 +619,8 @@ def view_market_value(request):
     cash_like_assets_CNY = current_price * quantity
     position_percent_dict[1] = 1 - cash_like_assets_CNY / amount_sum_CNY
 
-    updating_time = current_date
+    # updating_time = current_date
+    updating_time = datetime.datetime.now()
     return render(request, templates_path + 'view_market_value.html', locals())
 
 
@@ -721,19 +741,36 @@ def view_trade_details(request, currency_id):
 
 # 分红概览
 def view_dividend(request):
+    # rate_HKD, rate_USD = get_rate()
+    rate = get_rate()
+    print(rate)
     dividend_summary = []
+    dividend_chart_data = []
     for rs in currency.objects.all():
         currency_id = rs.id
         currency_code = rs.code
         currency_name = rs.name
         total_amount = get_dividend_summary(currency_id)
         year_amount = get_dividend_current_year(currency_id)
+        total_amount_toCNY = float(total_amount) * rate[currency_code]
+        year_amount_toCNY = float(year_amount) * rate[currency_code]
+        result = dividend.objects.filter(currency=currency_id).aggregate(
+            max_date=Max('dividend_date')  # 最大值（最新日期）
+        )
+        max_date = result['max_date']
+
         dividend_summary.append({
             'currency_id': currency_id,
             'currency_code': currency_code,
             'currency_name': currency_name,
             'total_amount': total_amount,
-            'year_amount': year_amount
+            'year_amount': year_amount,
+            'max_date': max_date
+        })
+        dividend_chart_data.append({
+            'currency_name': currency_name,
+            'total_amount': total_amount_toCNY,
+            'year_amount': year_amount_toCNY
         })
     return render(request, templates_path + 'view_dividend.html', locals())
 
@@ -876,7 +913,11 @@ def view_stock_details(request, stock_id):
     rate_key = f"exchange_rates_{stock_id}"
     rate_dict = cache.get(rate_key)
     if not rate_dict:
-        rate_HKD, rate_USD = get_rate()
+        # rate_HKD, rate_USD = get_rate()
+        rate = get_rate()
+        rate_HKD = rate['HKD']
+        rate_USD = rate['USD']
+
         rate_dict = {1: 1, 2: rate_HKD, 3: rate_USD}
         cache.set(rate_key, rate_dict, 3600)  # 缓存1小时
 
@@ -1317,8 +1358,10 @@ def stats_position(request):
         rates = {
             # 'HKD': get_single_rate('HKD'),
             # 'USD': get_single_rate('USD')
-            'HKD': get_rate()[0],
-            'USD': get_rate()[1]
+            # 'HKD': get_rate()[0],
+            # 'USD': get_rate()[1]
+            'HKD': get_rate()['HKD'],
+            'USD': get_rate()['USD']
         }
         cache.set(rate_cache_key, rates, 3600)  # 缓存1小时
 
@@ -1406,7 +1449,11 @@ def stats_value(request):
     currency_name = currency_items[currency - 1][1]
     condition_id = '11'
     price_array = []
-    rate_HKD, rate_USD = get_rate()
+    # rate_HKD, rate_USD = get_rate()
+    rate = get_rate()
+    rate_HKD = rate['HKD']
+    rate_USD = rate['USD']
+
 
     if request.method == 'POST':
         caliber = int(request.POST.get('caliber'))
@@ -1449,7 +1496,11 @@ def stats_account(request):
     account_list1 = account.objects.all().filter(broker__broker_script='境内券商')
     account_list2 = account.objects.all().filter(broker__broker_script='境外券商')
     account_abbreviation = '银河6811'
-    rate_HKD, rate_USD = get_rate()
+    # rate_HKD, rate_USD = get_rate()
+    rate = get_rate()
+    rate_HKD = rate['HKD']
+    rate_USD = rate['USD']
+
     if request.method == 'POST':
         account_abbreviation = request.POST.get('account')
         account_id = account.objects.get(account_abbreviation=account_abbreviation).id
@@ -1551,7 +1602,11 @@ def stats_subscription(request):
 
 # 盈亏统计
 def stats_profit(request):
-    rate_HKD, rate_USD = get_rate()
+    # rate_HKD, rate_USD = get_rate()
+    rate = get_rate()
+    rate_HKD = rate['HKD']
+    rate_USD = rate['USD']
+
     holding_profit_array = []
     cleared_profit_array = []
     holding_profit_sum = 0
@@ -3970,7 +4025,7 @@ def test(request):
     # # print(data)
 
     data = []
-    market_value_list = historical_market_value.objects.filter(currency='人民币').order_by("date")
+    market_value_list = historical_market_value.objects.filter(currency=1).order_by("date")
     for rs in market_value_list:
         date = str(rs.date)
         value = float(rs.value)

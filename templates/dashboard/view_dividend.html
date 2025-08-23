@@ -41,7 +41,7 @@
                                 </div>
                             </div>
                             <div class="col-auto">
-                                <div class="h6 mb-0 text-gray-500">
+                                <div class="metric-label">
                                     <a href="/benben/view_dividend_details/{{ item.currency_id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>
                                 </div>
                             </div>
@@ -71,51 +71,306 @@
     </div>
 
     <div class="row">
-        <div class="col-xl-12 col-lg-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <div class="d-sm-flex align-items-center justify-content-between mb-0">
-                        <h1 class="h5 mb-0 text-gray-800">分红</h1>
-                    </div>
+        <!-- 累计、当年分红柱图 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                    <h6 class="m-0 font-weight-bold text-primary">分红金额</h6>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="dataTable" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
-                            <thead class="bg-gradient-secondary text-gray-100">
-                                <tr>
-                                    <th>货币类型</th>
-                                    <th>累计分红</th>
-                                    <th>当年分红</th>
-                                    <th>详情</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                                {% for item in dividend_summary %}
-                                    <tr>
-                                        <td>{{ item.currency_name }}</td>
-                                        <td>{{ item.total_amount|floatformat:0 }}</td>
-                                        <td>{{ item.year_amount|floatformat:0 }}</td>
-                                        <td>
-{#                                            <a href="/benben/view_dividend_details/{{ item.currency_id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>#}
-                                            <a href="/benben/view_dividend_details/{{ item.currency_id|safe }}" class="btn btn-default btn-sm">
-                                                详情
-                                            </a>
-                                        </td>
-                                    </tr>
-                                {% empty %}
-                                    <tr>
-                                        <td colspan="9">无相关记录！</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div class="chart-container" id="chart-container-Profit">
+                        <div id="total_dividend_chart" style="width:100%; height:400px;"></div>
                     </div>
+                </div>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                    <span>注：单位为万元。</span>
                 </div>
             </div>
         </div>
+
+        <!-- 累计、当年分红饼图 -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                    <h6 class="m-0 font-weight-bold text-primary">分红金额</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" id="chart-container-Profit">
+                        <div id="total_dividend_chart" style="width:100%; height:400px;"></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                    <span>注：单位为万元。</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
+    <div class="row">
+        <!-- 分红列表 -->
+        <div class="col-xl-12 col-lg-12 d-flex">
+            <div class="card shadow mb-4 w-100 d-flex flex-column">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                    <h6 class="m-0 font-weight-bold text-primary">分红列表</h6>
+                </div>
+                <div class="card-body" style="position: relative; flex-grow: 1; min-height: 0;">
+                    <div class="scroll-area">
+                        <!-- 分红列表 -->
+                        <div id="dividendTable" class="h-100" style="display:block; overflow-y:auto;">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                    <thead class="bg-gradient-secondary text-gray-100" style="height: 60px;">
+                                        <tr>
+                                            <th>名称</th>
+                                            <th>累计分红</th>
+                                            <th>当年分红</th>
+                                            <th>单位</th>
+                                            <th>更新日期</th>
+                                            <th>详情</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!--#trade_list即为视图函数list_trade中render传入参数//-->
+                                        {% for item in dividend_summary %}
+                                            <tr>
+                                                <td>{{ item.currency_name }}账户</td>
+                                                <td>{{ item.total_amount|floatformat:0 }}</td>
+                                                <td>{{ item.year_amount|floatformat:0 }}</td>
+                                                <td>{{ item.currency_code }}</td>
+                                                <td>{{ item.max_date|date:'Y-m-d' }}</td>
+                                                <td>
+        {#                                            <a href="/benben/view_dividend_details/{{ item.currency_id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>#}
+                                                    <a href="/benben/view_dividend_details/{{ item.currency_id|safe }}" class="btn btn-default btn-sm">
+                                                        详情
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="9">无相关记录！</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                    <span></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
+
+<script>
+    // 累计、当年分红柱图
+    document.addEventListener('DOMContentLoaded', function() {
+        const chart_data = {{ dividend_chart_data|safe }};
+
+        // 按年份升序排列
+        // yearlyData.sort((a, b) => a.year - b.year);
+
+        // 准备图表数据
+        const currency_name = chart_data.map(item => item.currency_name);
+        const total_amount = chart_data.map(item => item.total_amount);
+        const year_amount = chart_data.map(item => item.year_amount);
+        /*
+        const colors = chart_data.map(item =>
+            item.total_amount < 0 ? '#2c9f5c' : '#c84f4f'
+        );
+        */
+        // 初始化图表
+        const chart = echarts.init(document.getElementById('total_dividend_chart'));
+
+        // 更新图表
+        function updateChart() {
+            const option = {
+                title: {
+                    text: '',
+                    left: 'center',
+                    textStyle: {
+                        fontSize: 18,
+                        fontWeight: 'bold'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#ddd',
+                    borderWidth: 1,
+                    padding: [10, 15],
+                    textStyle: {
+                        color: '#333'
+                    },
+                    formatter: function(params) {
+
+                        return `<div style="font-weight:bold;margin-bottom:8px;">${params[0].name}</div>
+                                <div style="display:flex;align-items:center;">
+                                    <span style="display:inline-block;width:12px;height:12px;background:${params[0].color};margin-right:8px;"></span>
+                                    ${params[0].seriesName}：<span style="font-weight:bold;color:${params[0].color}">￥${(params[0].value/10000).toFixed(2).toLocaleString()}万元</span>
+                                </div>
+                                <div style="display:flex;align-items:center;">
+                                    <span style="display:inline-block;width:12px;height:12px;background:${params[1].color};margin-right:8px;"></span>
+                                    ${params[1].seriesName}：<span style="font-weight:bold;color:${params[1].color}">￥${(params[1].value/10000).toFixed(2).toLocaleString()}万元</span>
+                                </div>
+                                `;
+                    }
+                },
+                legend: {
+                },
+                grid: {
+                    left: '3%',
+                    right: '3%',
+                    bottom: '3%',
+                    top: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    //name: '年份',
+                    //data: years.map(year => year + '年'),
+                    data: currency_name.map(currency_name => currency_name + '账户'),
+                    //boundaryGap: true,
+                    axisLabel: {
+                        margin: 20,
+                        interval: 0,
+                        rotate: 0,
+                        fontSize: 12
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#ccc'
+                        }
+                    },
+                    axisTick: {
+                        alignWithLabel: false
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '金额（万元）',
+                    nameTextStyle: {
+                        padding: [0, 0, 0, 40]
+                    },
+                    axisLabel: {
+                        formatter: function(value) {
+                            return (value/10000).toLocaleString(); // 千位分隔
+                        },
+                        fontSize: 12
+                    },
+                    splitLine: {
+                        show: true,
+                        lineStyle: {
+                            type: 'dashed',
+                            color: '#eee'
+                        }
+                    },
+                    axisLine: {
+                        show: false,
+                        lineStyle: {
+                            color: '#ccc'
+                        }
+                    }
+                },
+                series: [
+                    {
+                        name: '累计分红',
+                        type: 'bar',
+                        data: total_amount,
+                        itemStyle: {
+                            /*
+                            color: function(params) {
+                                return colors[params.dataIndex];
+                            },
+                            */
+                            borderRadius: [2, 2, 2, 2]
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowColor: function(params) {
+                                    return params.color + '66';
+                                },
+                                borderRadius: [2, 2, 2, 2]
+                            }
+                        },
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: function(params) {
+                                return (params.value/10000).toFixed(2);
+                            },
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            color: '#333'
+                        }
+                    },
+                    {
+                        name: '当年分红',
+                        type: 'bar',
+                        data: year_amount,
+                        itemStyle: {
+                            /*
+                            color: function(params) {
+                                return colors[params.dataIndex];
+                            },
+                            */
+                            borderRadius: [2, 2, 2, 2]
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowColor: function(params) {
+                                    return params.color + '66';
+                                },
+                                borderRadius: [2, 2, 2, 2]
+                            }
+                        },
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: function(params) {
+                                return (params.value/10000).toFixed(2);
+                            },
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            color: '#333'
+                        }
+                    }
+                ],
+                dataZoom: [{
+                    type: 'inside',
+                    start: 0,
+                    end: 100,
+                    zoomLock: true
+                }]
+            };
+
+            chart.setOption(option, true);
+        }
+
+        // 初始加载
+        updateChart();
+        // setupViewToggle();
+
+        // 响应式调整
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+    });
+
+
+</script>
+
 
 {% endblock %}

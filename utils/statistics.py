@@ -470,7 +470,8 @@ def get_value_stock_content(currency_value, price_increase_array, HKD_rate, USD_
 
         # 格式化显示文本
         stock_nc = f"{item['stock__stock_name']}（{stock_code}）"
-        increase_pct = f"{increase / 100:.2%}"
+        # increase_pct = f"{increase / 100:.4%}"
+        increase_pct = float(increase)
 
         valid_stocks.append((
             stock_nc, price, increase_pct, color,

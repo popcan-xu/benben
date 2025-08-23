@@ -31,11 +31,11 @@
                         <div class="row no-gutters align-items-center">
                             <div class="col mr-2">
                                 <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                    <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">{{ currency_dict|get_index:key|safe }}账户</a>
+                                    <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">{{ currency_dict|get_index:key|get_index:'name'|safe }}账户</a>
                                 </div>
                             </div>
                             <div class="col-auto">
-                                <div class="h6 mb-0 text-gray-500">
+                                <div class="metric-label">
                                     <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>
                                 </div>
                             </div>
@@ -68,58 +68,109 @@
         {% endfor %}
     </div>
 
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">持仓市值</h6>
-            <div class="dropdown no-arrow">
-                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
-                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                    aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Dropdown Header:</div>
-                    <a class="dropdown-item" href="#">Action</a>
-                    <a class="dropdown-item" href="#">Another action</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="#">Something else here</a>
+    <div class="row">
+        <!-- 市值分布 -->
+        <div class="col-xl-4 col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                    <h6 class="m-0 font-weight-bold text-primary">市值分布</h6>
+                </div>
+                <div class="chart-container" id="marketValueDistributionChart" style="width:100%; height:350px; display:block;"></div>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                    <span></span>
                 </div>
             </div>
         </div>
-        <div class="card-body">
-            <ul id="statisticsTab" class="nav nav-tabs">
-                <li class="nav-item">
-                    <a class="nav-link active" href="#CNY" data-toggle="tab">人民币</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#HKD" data-toggle="tab">港元</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#USD" data-toggle="tab">美元</a>
-                </li>
-            </ul>
-            <div id="statisticsTabContent" class="tab-content">
-                <div class="tab-pane fade show active" id="CNY">
-                    <p></p>
-                    <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">
-                        <ul class="nav">
-                            <li class="breadcrumb-item"><a href="#table_CNY" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
-                            <li class="breadcrumb-item"><a href="#bar_CNY" data-toggle="tab" style="text-decoration:none;" id="bar_link_CNY">柱状图</a></li>
-                            <li class="breadcrumb-item"><a href="#pie_CNY" data-toggle="tab" style="text-decoration:none;" id="pie_link_CNY">饼状图</a></li>
-                        </ul>
-                    </nav>
-                    <div class="tab-content">
-                        <div class="tab-pane fade show active" id="table_CNY">
-                            <p></p>
+
+        <!-- 市值列表 -->
+        <div class="col-xl-8 col-lg-8 d-flex">
+            <div class="card shadow mb-4 w-100 d-flex flex-column">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                    <h6 class="m-0 font-weight-bold text-primary">市值列表</h6>
+                </div>
+                <div class="card-body" style="position: relative; flex-grow: 1; min-height: 0;">
+                    <div class="scroll-area">
+                        <!-- 市值列表 -->
+                        <div id="marketvalueTable" class="h-100" style="display:block; overflow-y:auto;">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                    <thead class="bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>名称</th>
+                                            <th>持仓市值</th>
+                                            <th>单位</th>
+                                            <th>仓位</th>
+                                            <th>更新日期</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for key in currency_dict %}
+                                            <tr>
+                                                <td>{{ currency_dict|get_index:key|get_index:'name'|safe }}账户</td>
+                                                <td>{{ value_dict|get_index:key|floatformat:0 }}</td>
+                                                <td>{{ currency_dict|get_index:key|get_index:'code'|safe }}</td>
+                                                <td>{{ position_percent_dict|get_index:key|percent }}<span style="color:{{ i.3 }}">%</span></td>
+                                                <td>{{ current_date|date:'Y-m-d' }}</td>
+                                                <td><a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">详情</a></td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                    <span></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+        <!-- 持仓列表 -->
+        <div class="col-xl-12 col-lg-12 d-flex">
+            <div class="card shadow mb-4 w-100 d-flex flex-column">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                    <h6 class="m-0 font-weight-bold text-primary" id="dataListTitle">持仓列表</h6>
+                    <div class="btn-group" id="dataListSwitch">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary active"
+                            data-range="cny"
+                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                        >人民币</button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-range="hkd"
+                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                        >港元</button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-range="usd"
+                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                        >美元</button>
+                    </div>
+                </div>
+                <div class="card-body" style="position: relative; flex-grow: 1; min-height: 0;">
+                    <div class="scroll-area">
+                        <!-- 人民币 -->
+                        <div id="cnyTable" class="h-100" style="display:block; overflow-y:auto;">
                             <div class="table-responsive">
                                 <table class="table table-bordered table-condensed table-striped table-hover list_tab">
                                     <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
                                             <th>股票/代码</th>
-                                            <th>价格（{{ currency_dict|get_index:1|safe }}）</th>
+                                            <th>价格</th>
                                             <th>涨跌幅</th>
                                             <th>持仓数量（股）</th>
-                                            <th>金额（{{ currency_dict|get_index:1|safe }}）</th>
+                                            <th>金额（{{ currency_dict|get_index:1|get_index:'code'|safe }}）</th>
                                             <th>百分比</th>
                                         </tr>
                                     </thead>
@@ -128,7 +179,7 @@
                                             <tr>
                                                 <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>
                                                 <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
-                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+                                                <td style="text-align: right">{{ i.2|value_display:"percent" }}<span style="color:{{ i.3 }}">%</span></td>
                                                 <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
                                                 <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
                                                 <td style="text-align: right">{{ i.6 }}</td>
@@ -143,35 +194,18 @@
                                 </table>
                             </div>
                         </div>
-                        <div class="tab-pane fade" id="bar_CNY">
-                            <div id="bar_area_CNY" style="width:800px; height:500px;"></div><!--数据展现的容器1-->
-                        </div>
-                        <div class="tab-pane fade" id="pie_CNY">
-                            <div id="pie_area_CNY" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="HKD">
-                    <p></p>
-                    <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">
-                        <ul class="nav">
-                            <li class="breadcrumb-item"><a href="#table_HKD" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
-                            <li class="breadcrumb-item"><a href="#bar_HKD" data-toggle="tab" style="text-decoration:none;" id="bar_link_HKD">柱状图</a></li>
-                            <li class="breadcrumb-item"><a href="#pie_HKD" data-toggle="tab" style="text-decoration:none;" id="pie_link_HKD">饼状图</a></li>
-                        </ul>
-                    </nav>
-                    <div class="tab-content">
-                        <div class="tab-pane fade show active" id="table_HKD">
-                            <p></p>
+
+                        <!-- 港元 -->
+                        <div id="hkdTable" class="h-100" style="display:none; overflow-y:auto;">
                             <div class="table-responsive">
                                 <table class="table table-bordered table-condensed table-striped table-hover list_tab">
                                     <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
                                             <th>股票/代码</th>
-                                            <th>价格（{{ currency_dict|get_index:2|safe }}）</th>
+                                            <th>价格</th>
                                             <th>涨跌幅</th>
                                             <th>持仓数量（股）</th>
-                                            <th>金额（{{ currency_dict|get_index:2|safe }}）</th>
+                                            <th>金额（{{ currency_dict|get_index:2|get_index:'code'|safe }}）</th>
                                             <th>百分比</th>
                                         </tr>
                                     </thead>
@@ -180,7 +214,8 @@
                                             <tr>
                                                 <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>
                                                 <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
-                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+{#                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>#}
+                                                <td style="text-align: right">{{ i.2|value_display:"percent" }}<span style="color:{{ i.3 }}">%</span></td>
                                                 <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
                                                 <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
                                                 <td style="text-align: right">{{ i.6 }}</td>
@@ -198,35 +233,19 @@
                                 </table>
                             </div>
                         </div>
-                        <div class="tab-pane fade" id="bar_HKD">
-                            <div id="bar_area_HKD" style="width:800px; height:500px;"></div><!--数据展现的容器1-->
-                        </div>
-                        <div class="tab-pane fade" id="pie_HKD">
-                            <div id="pie_area_HKD" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="USD">
-                    <p></p>
-                    <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">
-                        <ul class="nav">
-                            <li class="breadcrumb-item"><a href="#table_USD" data-toggle="tab" style="text-decoration:none;">数据表</a></li>
-                            <li class="breadcrumb-item"><a href="#bar_USD" data-toggle="tab" style="text-decoration:none;" id="bar_link_USD">柱状图</a></li>
-                            <li class="breadcrumb-item"><a href="#pie_USD" data-toggle="tab" style="text-decoration:none;" id="pie_link_USD">饼状图</a></li>
-                        </ul>
-                    </nav>
-                    <div class="tab-content">
-                        <div class="tab-pane fade show active" id="table_USD">
-                            <p></p>
+
+
+                        <!-- 美元 -->
+                        <div id="usdTable" class="h-100" style="display:none; overflow-y:auto;">
                             <div class="table-responsive">
                                 <table class="table table-bordered table-condensed table-striped table-hover list_tab">
                                     <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
                                             <th>股票/代码</th>
-                                            <th>价格（{{ currency_dict|get_index:3|safe }}）</th>
+                                            <th>价格</th>
                                             <th>涨跌幅</th>
                                             <th>持仓数量（股）</th>
-                                            <th>金额（{{ currency_dict|get_index:3|safe }}）</th>
+                                            <th>金额（{{ currency_dict|get_index:3|get_index:'code'|safe }}）</th>
                                             <th>百分比</th>
                                         </tr>
                                     </thead>
@@ -235,7 +254,8 @@
                                             <tr>
                                                 <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>
                                                 <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
-                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
+{#                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>#}
+                                                <td style="text-align: right">{{ i.2|value_display:"percent" }}<span style="color:{{ i.3 }}">%</span></td>
                                                 <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
                                                 <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
                                                 <td style="text-align: right">{{ i.6 }}</td>
@@ -253,224 +273,543 @@
                                 </table>
                             </div>
                         </div>
-                        <div class="tab-pane fade" id="bar_USD">
-                            <div id="bar_area_USD" style="width:800px; height:500px;"></div><!--数据展现的容器1-->
-                        </div>
-                        <div class="tab-pane fade" id="pie_USD">
-                            <div id="pie_area_USD" style="width:800px; height:600px;"></div><!--数据展现的容器2-->
-                        </div>
                     </div>
+                </div>
+                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                    <span></span>
                 </div>
             </div>
         </div>
+
     </div>
+
+
+{#    <div class="card shadow mb-4">#}
+{#        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">#}
+{#            <h6 class="m-0 font-weight-bold text-primary">持仓市值</h6>#}
+{#            <div class="dropdown no-arrow">#}
+{#                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"#}
+{#                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">#}
+{#                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>#}
+{#                </a>#}
+{#                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"#}
+{#                    aria-labelledby="dropdownMenuLink">#}
+{#                    <div class="dropdown-header">Dropdown Header:</div>#}
+{#                    <a class="dropdown-item" href="#">Action</a>#}
+{#                    <a class="dropdown-item" href="#">Another action</a>#}
+{#                    <div class="dropdown-divider"></div>#}
+{#                    <a class="dropdown-item" href="#">Something else here</a>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        <div class="card-body">#}
+{#            <ul id="statisticsTab" class="nav nav-tabs">#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link active" href="#CNY" data-toggle="tab">人民币</a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="#HKD" data-toggle="tab">港元</a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="#USD" data-toggle="tab">美元</a>#}
+{#                </li>#}
+{#            </ul>#}
+{#            <div id="statisticsTabContent" class="tab-content">#}
+{#                <div class="tab-pane fade show active" id="CNY">#}
+{#                    <p></p>#}
+{#                    <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">#}
+{#                        <ul class="nav">#}
+{#                            <li class="breadcrumb-item"><a href="#table_CNY" data-toggle="tab" style="text-decoration:none;">数据表</a></li>#}
+{#                            <li class="breadcrumb-item"><a href="#bar_CNY" data-toggle="tab" style="text-decoration:none;" id="bar_link_CNY">柱状图</a></li>#}
+{#                            <li class="breadcrumb-item"><a href="#pie_CNY" data-toggle="tab" style="text-decoration:none;" id="pie_link_CNY">饼状图</a></li>#}
+{#                        </ul>#}
+{#                    </nav>#}
+{#                    <div class="tab-content">#}
+{#                        <div class="tab-pane fade show active" id="table_CNY">#}
+{#                            <p></p>#}
+{#                            <div class="table-responsive">#}
+{#                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">#}
+{#                                    <thead class="bg-gradient-secondary text-gray-100">#}
+{#                                        <tr>#}
+{#                                            <th>股票/代码</th>#}
+{#                                            <th>价格（{{ currency_dict|get_index:1|safe }}）</th>#}
+{#                                            <th>涨跌幅</th>#}
+{#                                            <th>持仓数量（股）</th>#}
+{#                                            <th>金额（{{ currency_dict|get_index:1|safe }}）</th>#}
+{#                                            <th>百分比</th>#}
+{#                                        </tr>#}
+{#                                    </thead>#}
+{#                                    <tbody>#}
+{#                                        {% for i in content_CNY %}#}
+{#                                            <tr>#}
+{#                                                <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>#}
+{#                                                <td style="text-align: right">{{ i.1|floatformat:3 }}</td>#}
+{#                                                <td style="text-align: right">{{ i.2|value_display:"percent" }}<span style="color:{{ i.3 }}">%</span></td>#}
+{#                                                <td style="text-align: right">{{ i.4|floatformat:0 }}</td>#}
+{#                                                <td style="text-align: right">{{ i.5|floatformat:0 }}</td>#}
+{#                                                <td style="text-align: right">{{ i.6 }}</td>#}
+{#                                            </tr>#}
+{#                                        {% endfor %}#}
+{#                                        <tr>#}
+{#                                            <td colspan="4"><b>合计</b>（股票数量：{{ content_CNY|length }}）</td>#}
+{#                                            <td style="text-align: right"><b>{{ amount_sum_CNY|floatformat:0 }}</b></td>#}
+{#                                            <td style="text-align: right"><b>100.00%</b></td>#}
+{#                                        </tr>#}
+{#                                    </tbody>#}
+{#                                </table>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="tab-pane fade" id="bar_CNY">#}
+{#                            <div id="bar_area_CNY" style="width:800px; height:500px;"></div><!--数据展现的容器1-->#}
+{#                        </div>#}
+{#                        <div class="tab-pane fade" id="pie_CNY">#}
+{#                            <div id="pie_area_CNY" style="width:800px; height:600px;"></div><!--数据展现的容器2-->#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="tab-pane fade" id="HKD">#}
+{#                    <p></p>#}
+{#                    <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">#}
+{#                        <ul class="nav">#}
+{#                            <li class="breadcrumb-item"><a href="#table_HKD" data-toggle="tab" style="text-decoration:none;">数据表</a></li>#}
+{#                            <li class="breadcrumb-item"><a href="#bar_HKD" data-toggle="tab" style="text-decoration:none;" id="bar_link_HKD">柱状图</a></li>#}
+{#                            <li class="breadcrumb-item"><a href="#pie_HKD" data-toggle="tab" style="text-decoration:none;" id="pie_link_HKD">饼状图</a></li>#}
+{#                        </ul>#}
+{#                    </nav>#}
+{#                    <div class="tab-content">#}
+{#                        <div class="tab-pane fade show active" id="table_HKD">#}
+{#                            <p></p>#}
+{#                            <div class="table-responsive">#}
+{#                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">#}
+{#                                    <thead class="bg-gradient-secondary text-gray-100">#}
+{#                                        <tr>#}
+{#                                            <th>股票/代码</th>#}
+{#                                            <th>价格（{{ currency_dict|get_index:2|safe }}）</th>#}
+{#                                            <th>涨跌幅</th>#}
+{#                                            <th>持仓数量（股）</th>#}
+{#                                            <th>金额（{{ currency_dict|get_index:2|safe }}）</th>#}
+{#                                            <th>百分比</th>#}
+{#                                        </tr>#}
+{#                                    </thead>#}
+{#                                    <tbody>#}
+{#                                        {% for i in content_HKD %}#}
+{#                                            <tr>#}
+{#                                                <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>#}
+{#                                                <td style="text-align: right">{{ i.1|floatformat:3 }}</td>#}
+{#                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>#}
+{#                                                <td style="text-align: right">{{ i.2|value_display:"percent" }}<span style="color:{{ i.3 }}">%</span></td>#}
+{#                                                <td style="text-align: right">{{ i.4|floatformat:0 }}</td>#}
+{#                                                <td style="text-align: right">{{ i.5|floatformat:0 }}</td>#}
+{#                                                <td style="text-align: right">{{ i.6 }}</td>#}
+{#                                            </tr>#}
+{#                                        {% endfor %}#}
+{#                                        <tr>#}
+{#                                            <td><b>合计</b>（股票数量：{{ content_HKD|length }}）</td>#}
+{#                                            <td></td>#}
+{#                                            <td></td>#}
+{#                                            <td></td>#}
+{#                                            <td style="text-align: right"><b>{{ amount_sum_HKD|floatformat:0 }}</b></td>#}
+{#                                            <td style="text-align: right"><b>100.00%</b></td>#}
+{#                                        </tr>#}
+{#                                    </tbody>#}
+{#                                </table>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="tab-pane fade" id="bar_HKD">#}
+{#                            <div id="bar_area_HKD" style="width:800px; height:500px;"></div><!--数据展现的容器1-->#}
+{#                        </div>#}
+{#                        <div class="tab-pane fade" id="pie_HKD">#}
+{#                            <div id="pie_area_HKD" style="width:800px; height:600px;"></div><!--数据展现的容器2-->#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="tab-pane fade" id="USD">#}
+{#                    <p></p>#}
+{#                    <nav class="navbar navbar-expand-sm bg-gray-200 rounded h-50">#}
+{#                        <ul class="nav">#}
+{#                            <li class="breadcrumb-item"><a href="#table_USD" data-toggle="tab" style="text-decoration:none;">数据表</a></li>#}
+{#                            <li class="breadcrumb-item"><a href="#bar_USD" data-toggle="tab" style="text-decoration:none;" id="bar_link_USD">柱状图</a></li>#}
+{#                            <li class="breadcrumb-item"><a href="#pie_USD" data-toggle="tab" style="text-decoration:none;" id="pie_link_USD">饼状图</a></li>#}
+{#                        </ul>#}
+{#                    </nav>#}
+{#                    <div class="tab-content">#}
+{#                        <div class="tab-pane fade show active" id="table_USD">#}
+{#                            <p></p>#}
+{#                            <div class="table-responsive">#}
+{#                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">#}
+{#                                    <thead class="bg-gradient-secondary text-gray-100">#}
+{#                                        <tr>#}
+{#                                            <th>股票/代码</th>#}
+{#                                            <th>价格（{{ currency_dict|get_index:3|safe }}）</th>#}
+{#                                            <th>涨跌幅</th>#}
+{#                                            <th>持仓数量（股）</th>#}
+{#                                            <th>金额（{{ currency_dict|get_index:3|safe }}）</th>#}
+{#                                            <th>百分比</th>#}
+{#                                        </tr>#}
+{#                                    </thead>#}
+{#                                    <tbody>#}
+{#                                        {% for i in content_USD %}#}
+{#                                            <tr>#}
+{#                                                <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>#}
+{#                                                <td style="text-align: right">{{ i.1|floatformat:3 }}</td>#}
+{#                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>#}
+{#                                                <td style="text-align: right">{{ i.2|value_display:"percent" }}<span style="color:{{ i.3 }}">%</span></td>#}
+{#                                                <td style="text-align: right">{{ i.4|floatformat:0 }}</td>#}
+{#                                                <td style="text-align: right">{{ i.5|floatformat:0 }}</td>#}
+{#                                                <td style="text-align: right">{{ i.6 }}</td>#}
+{#                                            </tr>#}
+{#                                        {% endfor %}#}
+{#                                        <tr>#}
+{#                                            <td><b>合计</b>（股票数量：{{ content_USD|length }}）</td>#}
+{#                                            <td></td>#}
+{#                                            <td></td>#}
+{#                                            <td></td>#}
+{#                                            <td style="text-align: right"><b>{{ amount_sum_USD|floatformat:0 }}</b></td>#}
+{#                                            <td style="text-align: right"><b>100.00%</b></td>#}
+{#                                        </tr>#}
+{#                                    </tbody>#}
+{#                                </table>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="tab-pane fade" id="bar_USD">#}
+{#                            <div id="bar_area_USD" style="width:800px; height:500px;"></div><!--数据展现的容器1-->#}
+{#                        </div>#}
+{#                        <div class="tab-pane fade" id="pie_USD">#}
+{#                            <div id="pie_area_USD" style="width:800px; height:600px;"></div><!--数据展现的容器2-->#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+
 </div>
 
 <script>
-	bar_container_CNY = document.getElementById('bar_area_CNY');
-    pie_container_CNY = document.getElementById('pie_area_CNY');
-	bar_CNY = echarts.init(bar_container_CNY, 'white', {renderer: 'canvas'});
-	pie_CNY = echarts.init(pie_container_CNY, 'white', {renderer: 'canvas'});
-	bar_name_CNY = JSON.parse('{{ name_array_CNY|safe }}');
-	bar_value_CNY = {{ value_array_CNY|safe }};
-	pie_data_CNY = get_pie_data(bar_name_CNY, bar_value_CNY);
-	document.getElementById('bar_link_CNY').onclick = function () { draw_bar(bar_CNY, bar_container_CNY, bar_name_CNY, bar_value_CNY); };
-	document.getElementById('pie_link_CNY').onclick = function () { draw_pie(pie_CNY, pie_container_CNY, pie_data_CNY); };
 
-	bar_container_HKD = document.getElementById('bar_area_HKD');
-    pie_container_HKD = document.getElementById('pie_area_HKD');
-	bar_HKD = echarts.init(bar_container_HKD, 'white', {renderer: 'canvas'});
-	pie_HKD = echarts.init(pie_container_HKD, 'white', {renderer: 'canvas'});
-	bar_name_HKD = JSON.parse('{{ name_array_HKD|safe }}');
-	bar_value_HKD = {{ value_array_HKD|safe }};
-	pie_data_HKD = get_pie_data(bar_name_HKD, bar_value_HKD);
-	document.getElementById('bar_link_HKD').onclick = function () { draw_bar(bar_HKD, bar_container_HKD, bar_name_HKD, bar_value_HKD); };
-	document.getElementById('pie_link_HKD').onclick = function () { draw_pie(pie_HKD, pie_container_HKD, pie_data_HKD); };
+	{#bar_container_CNY = document.getElementById('bar_area_CNY');#}
+    {#pie_container_CNY = document.getElementById('pie_area_CNY');#}
+	{#bar_CNY = echarts.init(bar_container_CNY, 'white', {renderer: 'canvas'});#}
+	{#pie_CNY = echarts.init(pie_container_CNY, 'white', {renderer: 'canvas'});#}
+	{#bar_name_CNY = JSON.parse('{{ name_array_CNY|safe }}');#}
+	{#bar_value_CNY = {{ value_array_CNY|safe }};#}
+	{#pie_data_CNY = get_pie_data(bar_name_CNY, bar_value_CNY);#}
+	{#document.getElementById('bar_link_CNY').onclick = function () { draw_bar(bar_CNY, bar_container_CNY, bar_name_CNY, bar_value_CNY); };#}
+	{#document.getElementById('pie_link_CNY').onclick = function () { draw_pie(pie_CNY, pie_container_CNY, pie_data_CNY); };#}
+    {##}
+	{#bar_container_HKD = document.getElementById('bar_area_HKD');#}
+    {#pie_container_HKD = document.getElementById('pie_area_HKD');#}
+	{#bar_HKD = echarts.init(bar_container_HKD, 'white', {renderer: 'canvas'});#}
+	{#pie_HKD = echarts.init(pie_container_HKD, 'white', {renderer: 'canvas'});#}
+	{#bar_name_HKD = JSON.parse('{{ name_array_HKD|safe }}');#}
+	{#bar_value_HKD = {{ value_array_HKD|safe }};#}
+	{#pie_data_HKD = get_pie_data(bar_name_HKD, bar_value_HKD);#}
+	{#document.getElementById('bar_link_HKD').onclick = function () { draw_bar(bar_HKD, bar_container_HKD, bar_name_HKD, bar_value_HKD); };#}
+	{#document.getElementById('pie_link_HKD').onclick = function () { draw_pie(pie_HKD, pie_container_HKD, pie_data_HKD); };#}
+    {##}
+	{#bar_container_USD = document.getElementById('bar_area_USD');#}
+    {#pie_container_USD = document.getElementById('pie_area_USD');#}
+	{#bar_USD = echarts.init(bar_container_USD, 'white', {renderer: 'canvas'});#}
+	{#pie_USD = echarts.init(pie_container_USD, 'white', {renderer: 'canvas'});#}
+	{#bar_name_USD = JSON.parse('{{ name_array_USD|safe }}');#}
+	{#bar_value_USD = {{ value_array_USD|safe }};#}
+	{#pie_data_USD = get_pie_data(bar_name_USD, bar_value_USD);#}
+	{#document.getElementById('bar_link_USD').onclick = function () { draw_bar(bar_USD, bar_container_USD, bar_name_USD, bar_value_USD); };#}
+	{#document.getElementById('pie_link_USD').onclick = function () { draw_pie(pie_USD, pie_container_USD, pie_data_USD); };#}
+    {##}
+	{#function draw_bar(chart_bar, container, bar_name, bar_value) {#}
+    {#    resize_chart(chart_bar, container);#}
+	{#	var option = {#}
+	{#		title: {#}
+	{#			text: ''#}
+	{#		},#}
+	{#		tooltip: {#}
+	{#			trigger: "item",#}
+	{#			formatter: "{a} <br/>{b} : {c}"#}
+	{#		},#}
+	{#		legend: {#}
+	{#			data:['市值']#}
+	{#		},#}
+	{#		xAxis: {#}
+	{#			data: bar_name,#}
+	{#			axisLabel: { // 坐标轴文本标签，详见axis.axisLabel#}
+	{#				show: true,#}
+	{#				interval: 'auto',#}
+	{#				rotate: -35,#}
+	{#				margin: 8,#}
+	{#				// formatter: null,#}
+	{#				textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE#}
+	{#					color: '#333'#}
+	{#				}#}
+	{#			}#}
+	{#		},#}
+	{#		//xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),#}
+	{#		yAxis: {},#}
+	{#		series: [{#}
+	{#			name: '市值',#}
+	{#			type: 'bar',#}
+	{#			data: bar_value#}
+	{#		}]#}
+	{#	};#}
+    {#    chart_bar.setOption(option);#}
+    {#    window.onresize = function () { resize_chart(chart_bar, container); };#}
+	{#}#}
+    {##}
+	{#function draw_pie(chart_pie, container, pie_data) {#}
+    {#    resize_chart(chart_pie, container);#}
+    {#    var option = {#}
+    {#                //backgroundColor: "#2c343c",#}
+    {#                // 标题的一些配置参数#}
+    {#                title: {#}
+    {#                    text: "",#}
+    {#                    left: "center",#}
+    {#                    top: 10,#}
+    {#                    /*#}
+    {#                    textStyle: {#}
+    {#                        color: "pink"#}
+    {#                    }#}
+    {#                    */#}
+    {#                },#}
+    {#                //鼠标点击出现的文字#}
+    {#                tooltip: {#}
+    {#                    trigger: "item",#}
+    {#                    formatter: "{a} <br/>{b} : {c} ({d}%)"#}
+    {#                },#}
+    {#                //视觉映射器#}
+    {#                /*#}
+    {#                visualMap: {#}
+    {#                    show: false,#}
+    {#                    min: 20,#}
+    {#                    max: 600,#}
+    {#                    inRange: {#}
+    {#                        colorLightness: [0, 1]#}
+    {#                    }#}
+    {#                },#}
+    {#                */#}
+    {#                legend: {#}
+    {#                    right: "10%",#}
+    {#                    top: "5%",#}
+    {#                    orient: "vertical",    // 图例列表水平布局#}
+    {#                    show: false#}
+    {#                    /*#}
+    {#                    show: true,              // 显示图例#}
+    {#                    left: "75%",             // 图例组件离容器左侧的距离#}
+    {#                    top: 10,                 // 图例组件离容器上侧的距离#}
+    {#                    right: "15%",            // 图例组件离容器右侧的距离#}
+    {#                    bottom: 30,              // 图例组件离容器下侧的距离#}
+    {#                    width: "50%",            // 图例组件的宽度#}
+    {#                    height: 10,              // 图例组件的高度#}
+    {#                    itemGap: 15,             // 图例每项之间的间隔#}
+    {#                    itemWidth: 10,           // 图例标记的图形宽度#}
+    {#                    itemHeight: 15,          // 图例标记的图形高度#}
+    {#                    textStyle: {             // 图例文本样式#}
+    {#                      color: "rgba(239, 15, 15, 1)",#}
+    {#                      fontStyle: "italic",#}
+    {#                      fontWeight: "bold",#}
+    {#                      fontFamily: "serif",#}
+    {#                      fontSize: 15#}
+    {#                    },#}
+    {#                    icon: "circle"     // 图例项的 icon#}
+    {#                    */#}
+    {#                },#}
+    {#                //表格数据#}
+    {#                series: [{#}
+    {#                    name: "市值",#}
+    {#                    type: "pie",#}
+    {#                    //radius: "55%", //饼图弧度大小#}
+    {#                    radius: ["30%", "75%"],#}
+    {#                    center: ["40%", "50%"], //饼图位置#}
+    {#                    data: pie_data,#}
+    {#                        /*#}
+    {#                        [#}
+    {#                            { value: 335, name: "直接访问" },#}
+    {#                            { value: 310, name: "邮件营销" },#}
+    {#                            { value: 274, name: "联盟广告" },#}
+    {#                            { value: 235, name: "视频广告" },#}
+    {#                            { value: 400, name: "搜索引擎" }#}
+    {#                        ].sort(function(a, b) {#}
+    {#                            return a.value - b.value;#}
+    {#                        }),#}
+    {#                        */#}
+    {#                    //roseType: "radius",#}
+    {#                    //roseType: "area",#}
+    {#                    // 标注字的的颜色#}
+    {#                    /*#}
+    {#                    label: {#}
+    {#                        normal: {#}
+    {#                            textStyle: {#}
+    {#                                color: "rgba(255, 255, 255, 0.3)"#}
+    {#                            }#}
+    {#                        }#}
+    {#                    },#}
+    {#                    */#}
+    {#                    // 指示线的颜色#}
+    {#                    /*#}
+    {#                    labelLine: {#}
+    {#                        normal: {#}
+    {#                            lineStyle: {#}
+    {#                                color: "rgba(255, 255, 255, 0.3)"#}
+    {#                            },#}
+    {#                            smooth: 0.2,#}
+    {#                            length: 10,#}
+    {#                            length2: 20#}
+    {#                        }#}
+    {#                    },#}
+    {#                    itemStyle: {#}
+    {#                        normal: {#}
+    {#                            color: "#c23531",#}
+    {#                            shadowBlur: 200,#}
+    {#                            shadowColor: "rgba(0, 0, 0, 0.5)"#}
+    {#                        }#}
+    {#                    },#}
+    {#                    */#}
+    {#                    animationType: "scale",#}
+    {#                    animationEasing: "elasticOut",#}
+    {#                    animationDelay: function(idx) {#}
+    {#                        return Math.random() * 200;#}
+    {#                    }#}
+    {#                }]#}
+    {#            };#}
+	{#	chart_pie.setOption(option);#}
+    {#    window.onresize = function () { resize_chart(chart_pie, container); };#}
+	{#}#}
+    {##}
+	{#function get_pie_data(name_array, value_array) {#}
+	{#	var pie_data = [];#}
+	{#	for(i = 0; i < name_array.length; i++){#}
+	{#		pie_data.push(#}
+	{#			{#}
+	{#			   value: value_array[i],#}
+	{#			   name: name_array[i]#}
+	{#			}#}
+	{#		);#}
+	{#	}#}
+	{#	return pie_data;#}
+	{#}#}
+    {##}
+    {#function resize_chart(chart, container){#}
+    {#    container.style.width = (window.innerWidth - 250) + 'px';#}
+    {#    chart.resize();#}
+    {#}#}
+    {##}
 
-	bar_container_USD = document.getElementById('bar_area_USD');
-    pie_container_USD = document.getElementById('pie_area_USD');
-	bar_USD = echarts.init(bar_container_USD, 'white', {renderer: 'canvas'});
-	pie_USD = echarts.init(pie_container_USD, 'white', {renderer: 'canvas'});
-	bar_name_USD = JSON.parse('{{ name_array_USD|safe }}');
-	bar_value_USD = {{ value_array_USD|safe }};
-	pie_data_USD = get_pie_data(bar_name_USD, bar_value_USD);
-	document.getElementById('bar_link_USD').onclick = function () { draw_bar(bar_USD, bar_container_USD, bar_name_USD, bar_value_USD); };
-	document.getElementById('pie_link_USD').onclick = function () { draw_pie(pie_USD, pie_container_USD, pie_data_USD); };
+    // 资产、收益、出入金列表
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取DOM元素
+        const titleElement = document.getElementById('dataListTitle');
+        const cnyTable = document.getElementById('cnyTable');
+        const hkdTable = document.getElementById('hkdTable');
+        const usdTable = document.getElementById('usdTable');
 
-	function draw_bar(chart_bar, container, bar_name, bar_value) {
-        resize_chart(chart_bar, container);
-		var option = {
-			title: {
-				text: ''
-			},
-			tooltip: {
-				trigger: "item",
-				formatter: "{a} <br/>{b} : {c}"
-			},
-			legend: {
-				data:['市值']
-			},
-			xAxis: {
-				data: bar_name,
-				axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
-					show: true,
-					interval: 'auto',
-					rotate: -35,
-					margin: 8,
-					// formatter: null,
-					textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
-						color: '#333'
-					}
-				}
-			},
-			//xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-			yAxis: {},
-			series: [{
-				name: '市值',
-				type: 'bar',
-				data: bar_value
-			}]
-		};
-        chart_bar.setOption(option);
-        window.onresize = function () { resize_chart(chart_bar, container); };
-	}
+        // 设置激活按钮样式
+        function setActiveButton(activeRange) {
+            const buttons = document.querySelectorAll('#dataListSwitch button');
+            buttons.forEach(button => {
+                button.classList.remove('active');
+                if (button.dataset.range === activeRange) {
+                    button.classList.add('active');
+                }
+            });
 
-	function draw_pie(chart_pie, container, pie_data) {
-        resize_chart(chart_pie, container);
-        var option = {
-                    //backgroundColor: "#2c343c",
-                    // 标题的一些配置参数
-                    title: {
-                        text: "",
-                        left: "center",
-                        top: 10,
-                        /*
-                        textStyle: {
-                            color: "pink"
-                        }
-                        */
-                    },
-                    //鼠标点击出现的文字
-                    tooltip: {
-                        trigger: "item",
-                        formatter: "{a} <br/>{b} : {c} ({d}%)"
-                    },
-                    //视觉映射器
-                    /*
-                    visualMap: {
-                        show: false,
-                        min: 20,
-                        max: 600,
-                        inRange: {
-                            colorLightness: [0, 1]
-                        }
-                    },
-                    */
-                    legend: {
-                        right: "10%",
-                        top: "5%",
-                        orient: "vertical",    // 图例列表水平布局
-                        show: false
-                        /*
-                        show: true,              // 显示图例
-                        left: "75%",             // 图例组件离容器左侧的距离
-                        top: 10,                 // 图例组件离容器上侧的距离
-                        right: "15%",            // 图例组件离容器右侧的距离
-                        bottom: 30,              // 图例组件离容器下侧的距离
-                        width: "50%",            // 图例组件的宽度
-                        height: 10,              // 图例组件的高度
-                        itemGap: 15,             // 图例每项之间的间隔
-                        itemWidth: 10,           // 图例标记的图形宽度
-                        itemHeight: 15,          // 图例标记的图形高度
-                        textStyle: {             // 图例文本样式
-                          color: "rgba(239, 15, 15, 1)",
-                          fontStyle: "italic",
-                          fontWeight: "bold",
-                          fontFamily: "serif",
-                          fontSize: 15
-                        },
-                        icon: "circle"     // 图例项的 icon
-                        */
-                    },
-                    //表格数据
-                    series: [{
-                        name: "市值",
-                        type: "pie",
-                        //radius: "55%", //饼图弧度大小
-                        radius: ["30%", "75%"],
-                        center: ["40%", "50%"], //饼图位置
-                        data: pie_data,
-                            /*
-                            [
-                                { value: 335, name: "直接访问" },
-                                { value: 310, name: "邮件营销" },
-                                { value: 274, name: "联盟广告" },
-                                { value: 235, name: "视频广告" },
-                                { value: 400, name: "搜索引擎" }
-                            ].sort(function(a, b) {
-                                return a.value - b.value;
-                            }),
-                            */
-                        //roseType: "radius",
-                        //roseType: "area",
-                        // 标注字的的颜色
-                        /*
-                        label: {
-                            normal: {
-                                textStyle: {
-                                    color: "rgba(255, 255, 255, 0.3)"
-                                }
-                            }
-                        },
-                        */
-                        // 指示线的颜色
-                        /*
-                        labelLine: {
-                            normal: {
-                                lineStyle: {
-                                    color: "rgba(255, 255, 255, 0.3)"
-                                },
-                                smooth: 0.2,
-                                length: 10,
-                                length2: 20
-                            }
-                        },
-                        itemStyle: {
-                            normal: {
-                                color: "#c23531",
-                                shadowBlur: 200,
-                                shadowColor: "rgba(0, 0, 0, 0.5)"
-                            }
-                        },
-                        */
-                        animationType: "scale",
-                        animationEasing: "elasticOut",
-                        animationDelay: function(idx) {
-                            return Math.random() * 200;
-                        }
-                    }]
-                };
-		chart_pie.setOption(option);
-        window.onresize = function () { resize_chart(chart_pie, container); };
-	}
+            // 更新卡片标题
+            titleElement.innerHTML = `${
+                activeRange === 'cny' ? '人民币持仓' :
+                activeRange === 'hkd' ? '港元持仓' :
+                '美元持仓'
+            }`;
+        }
 
-	function get_pie_data(name_array, value_array) {
-		var pie_data = [];
-		for(i = 0; i < name_array.length; i++){
-			pie_data.push(
-				{
-				   value: value_array[i],
-				   name: name_array[i]
-				}
-			);
-		}
-		return pie_data;
-	}
+        // 显示指定表格
+        function showTable(range) {
+            cnyTable.style.display = range === 'cny' ? 'block' : 'none';
+            hkdTable.style.display = range === 'hkd' ? 'block' : 'none';
+            usdTable.style.display = range === 'usd' ? 'block' : 'none';
+            setActiveButton(range);
+        }
 
-    function resize_chart(chart, container){
-        container.style.width = (window.innerWidth - 250) + 'px';
-        chart.resize();
-    }
+        // 初始状态
+        showTable('cny');
+
+        // 添加切换按钮事件
+        document.querySelectorAll('#dataListSwitch button').forEach(button => {
+            button.addEventListener('click', function() {
+                showTable(this.dataset.range);
+            });
+        });
+
+    });
+
+    // 初始化所有图表
+    document.addEventListener('DOMContentLoaded', function() {
+        // 基金资产分布图
+        const chart = echarts.init(document.getElementById('marketValueDistributionChart'));
+        const chartData = {{ value_dict_toCNY|safe }};
+        console.log(chartData)
+        chart.setOption({
+            tooltip: {
+                trigger: 'item',
+                borderColor: 'transparent', // 设置边框颜色为透明
+                formatter: function (params) { // params 是一个对象，包含了当前数据项的所有信息
+                    return `<div style="font-weight:bold;margin-bottom:8px;">${params.name}</div>
+                            <div style="display:flex;align-items:center;">
+                                <span style="display:inline-block;width:12px;height:12px;background:${params.color};margin-right:8px;"></span>
+                                ${params.seriesName}：<span style="font-weight:bold;color:${params.color}">￥${params.data.value}万</span>
+                            </div>
+                            <div style="display:flex;align-items:center;">
+                                <span style="display:inline-block;width:12px;height:12px;background:${params.color};margin-right:8px;"></span>
+                                百分比：<span style="font-weight:bold;color:${params.color}">${params.percent}%</span>
+                            </div>`;
+                }
+            },
+            legend: {
+                orient: 'vertical',
+                right: 60,
+                top: 'center',
+                textStyle: {
+                    fontSize: 12
+                }
+            },
+            series: [{
+                name: '市值',
+                type: 'pie',
+                radius: ['40%', '70%'],
+                center: ['40%', '50%'],
+                avoidLabelOverlap: false,
+                itemStyle: {
+                    borderRadius: 10,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                },
+                label: {
+                    show: false,
+                    position: 'center'
+                },
+                emphasis: {
+                    label: {
+                        show: true,
+                        fontSize: 18,
+                        fontWeight: 'bold'
+                    }
+                },
+                labelLine: {
+                    show: false
+                },
+                data: [
+                    { value: (chartData[1]/10000).toFixed(2), name: '人民币账户', itemStyle: { color: '#4c6ef5' } },
+                    { value: (chartData[2]/10000).toFixed(2), name: '港元账户', itemStyle: { color: '#ff922b' } },
+                    { value: (chartData[3]/10000).toFixed(2), name: '美元账户', itemStyle: { color: '#40c057' } }
+                ]
+            }]
+        });
+
+        // 响应式调整
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+    });
+
 
 </script>
 {% endblock %}
