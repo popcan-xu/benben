@@ -10,132 +10,220 @@
 
 {% block page_content %}
 
-<div class="container-fluid">
+    <div class="container-fluid">
 
-    <!-- Page Heading -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <div class="col-xl-4" style="text-align:left">
-            <h1 class="h3 mb-0 font-weight-bold text-gray-700">资产</h1>
+        <!-- Page Heading -->
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <div class="col-xl-4" style="text-align:left">
+                <h1 class="h3 mb-0 font-weight-bold text-gray-700">资产</h1>
+            </div>
+            <div class="col-xl-4" style="text-align:center">
+    {#            <form action="" method="post" class="form-horizontal" role="form">#}
+    {#                {% csrf_token %}#}
+    {#                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-sync-alt"></i>&nbsp&nbsp{{ baseline.modified_time }}</button>#}
+    {#            </form>#}
+            </div>
+            <div class="col-xl-4" style="text-align:right">
+                <span>港元汇率：{{ rate.HKD|floatformat:4 }}，美元汇率：{{ rate.USD|floatformat:4 }}</span>
+            </div>
         </div>
-        <div class="col-xl-4" style="text-align:center">
-{#            <form action="" method="post" class="form-horizontal" role="form">#}
-{#                {% csrf_token %}#}
-{#                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-sync-alt"></i>&nbsp&nbsp{{ baseline.modified_time }}</button>#}
-{#            </form>#}
-        </div>
-        <div class="col-xl-4" style="text-align:right">
-            <span>港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}</span>
-        </div>
-    </div>
 
-    <!-- Content Card Row -->
-    <div class="row">
-        {% for funds in funds_list %}
-            <div class="col-xl-4 col-md-6 mb-4">
-                <div class="card shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                    <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">{{ funds.currency.name|safe }}资产</a>
+        <!-- Content Card Row -->
+        <div class="row">
+            {% for funds in funds_list %}
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
+                                        <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">{{ funds.currency.name|safe }}资产</a>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="metric-label">
+                                        <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-auto">
-                                <div class="metric-label">
-                                    <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>
+                            <!-- Divider -->
+                            <h3>&nbsp;</h3>
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="metric-label">总资产</div>
+                                    <div class="metric-value">
+                                        <span>{{ funds.funds_value|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <!-- Divider -->
-                        <h3>&nbsp;</h3>
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="metric-label">总资产</div>
-                                <div class="metric-value">
-                                    <span>{{ funds.funds_value|floatformat:0 }}</span>
-                                    <span class="metric-unit">元</span>
-                                </div>
-                            </div>
-                            <div class="col mr-2">
-                                <div class="metric-label">净值</div>
-                                <div class="metric-value">
-                                    <span>{{ funds.funds_net_value|floatformat:4 }}</span>
-                                    <span class="metric-unit">元</span>
+                                <div class="col mr-2">
+                                    <div class="metric-label">净值</div>
+                                    <div class="metric-value">
+                                        <span>{{ funds.funds_net_value|floatformat:4 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        {% endfor %}
-    </div>
+            {% endfor %}
+        </div>
 
-    <div class="row">
-        <!-- 资产列表 -->
-        <div class="col-xl-12 col-lg-12 d-flex">
-            <div class="card shadow mb-4 w-100 d-flex flex-column">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
-                    <h6 class="m-0 font-weight-bold text-primary">资产列表</h6>
+        <div class="row">
+            <!-- 资产分布图 -->
+            <div class="col-xl-4 col-lg-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">资产分布</h6>
+                    </div>
+                    <div class="chart-container" id="assetDistributionChart" style="width:100%; height:350px; display:block;"></div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                        <span></span>
+                    </div>
                 </div>
-                <div class="card-body" style="position: relative; flex-grow: 1; min-height: 0;">
-                    <div class="scroll-area">
-                        <!-- 资产列表 -->
-                        <div id="fundTable" class="h-100" style="display:block; overflow-y:auto;">
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
-                                    <thead class="bg-gradient-secondary text-gray-100">
-                                        <tr>
-                                            <th>名称</th>
-                                            <th>创立日期</th>
-                                            <th>基金价值</th>
-                                            <th>本金</th>
-                                            <th>单位</th>
-                                            <th>份数</th>
-                                            <th>净值</th>
-                                            <th>比较基准</th>
-                                            <th>更新日期</th>
-                                            <th>操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                                        {% for funds in funds_list %}
+            </div>
+
+            <!-- 资产列表 -->
+            <div class="col-xl-8 col-lg-8 d-flex">
+                <div class="card shadow mb-4 w-100 d-flex flex-column">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">资产列表</h6>
+                    </div>
+                    <div class="card-body" style="position: relative; flex-grow: 1; min-height: 0;">
+                        <div class="scroll-area">
+                            <!-- 资产列表 -->
+                            <div id="fundTable" class="h-100" style="display:block; overflow-y:auto;">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                        <thead class="bg-gradient-secondary text-gray-100">
                                             <tr>
-                                                <td>{{ funds.currency.name }}账户</td>
-                                                <td>{{ funds.funds_create_date|date:'Y-m-d' }}</td>
-                                                <td>{{ funds.funds_value|floatformat:0 }}</td>
-                                                <td>{{ funds.funds_principal|floatformat:0 }}</td>
-                                                <td>{{ funds.currency.code }}</td>
-                                                <td>{{ funds.funds_PHR|floatformat:0 }}</td>
-                                                <td>{{ funds.funds_net_value }}</td>
-                                                <td>{{ funds.baseline.name }}</td>
-                                                <td>{{ funds.update_date|date:'Y-m-d' }}</td>
-                                                <td>
-                                                    <a href="/benben/view_funds_details/{{ funds.id|safe }}" class="btn btn-default btn-sm">
-                                                        详情
-                                                    </a>
-                                                </td>
+                                                <th>名称</th>
+                                                <th>创立日期</th>
+                                                <th>基金价值</th>
+                                                <th>本金</th>
+                                                <th>单位</th>
+                                                <th>份数</th>
+                                                <th>净值</th>
+                                                <th>比较基准</th>
+                                                <th>更新日期</th>
+                                                <th>操作</th>
                                             </tr>
-                                        {% empty %}
-                                            <tr>
-                                                <td colspan="9">无相关记录！</td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            <!--#trade_list即为视图函数list_trade中render传入参数//-->
+                                            {% for funds in funds_list %}
+                                                <tr>
+                                                    <td>{{ funds.currency.name }}账户</td>
+                                                    <td>{{ funds.funds_create_date|date:'Y-m-d' }}</td>
+                                                    <td>{{ funds.funds_value|floatformat:0 }}</td>
+                                                    <td>{{ funds.funds_principal|floatformat:0 }}</td>
+                                                    <td>{{ funds.currency.code }}</td>
+                                                    <td>{{ funds.funds_PHR|floatformat:0 }}</td>
+                                                    <td>{{ funds.funds_net_value }}</td>
+                                                    <td>{{ funds.baseline.name }}</td>
+                                                    <td>{{ funds.update_date|date:'Y-m-d' }}</td>
+                                                    <td>
+                                                        <a href="/benben/view_funds_details/{{ funds.id|safe }}" class="btn btn-default btn-sm">
+                                                            详情
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr>
+                                                    <td colspan="9">无相关记录！</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
-                    <span></span>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                        <span></span>
+                    </div>
                 </div>
             </div>
+
         </div>
 
     </div>
 
-</div>
+    <script>
+        // 资产分布图
+        document.addEventListener('DOMContentLoaded', function() {
+            const chart = echarts.init(document.getElementById('assetDistributionChart'));
+            const chartData = {{ value_dict_toCNY|safe }};
+
+            function updateChart() {
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        borderColor: 'transparent', // 设置边框颜色为透明
+                        formatter: function (params) { // params 是一个对象，包含了当前数据项的所有信息
+                            return `<div style="font-weight:bold;margin-bottom:8px;">${params.name}</div>
+                                    <div style="display:flex;align-items:center;">
+                                        <span style="display:inline-block;width:12px;height:12px;background:${params.color};margin-right:8px;"></span>
+                                        ${params.seriesName}：<span style="font-weight:bold;color:${params.color}">￥${params.data.value}万</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;">
+                                        <span style="display:inline-block;width:12px;height:12px;background:${params.color};margin-right:8px;"></span>
+                                        百分比：<span style="font-weight:bold;color:${params.color}">${params.percent}%</span>
+                                    </div>`;
+                        }
+                    },
+                    legend: {
+                        orient: 'vertical',
+                        right: 60,
+                        top: 'center',
+                        textStyle: {
+                            fontSize: 12
+                        }
+                    },
+                    series: [{
+                        name: '市值',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['40%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: 18,
+                                fontWeight: 'bold'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        data: [
+                            { value: (chartData[1]/10000).toFixed(2), name: '人民币账户', itemStyle: { color: '#4c6ef5' } },
+                            { value: (chartData[2]/10000).toFixed(2), name: '港元账户', itemStyle: { color: '#ff922b' } },
+                            { value: (chartData[3]/10000).toFixed(2), name: '美元账户', itemStyle: { color: '#40c057' } }
+                        ]
+                    }]
+                };
+                chart.setOption(option, true);
+            }
+
+            // 初始加载
+            updateChart();
+            window.addEventListener('resize', () => chart.resize());
+        });
+
+    </script>
+
 
 {% endblock %}

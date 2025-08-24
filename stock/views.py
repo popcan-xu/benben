@@ -309,11 +309,15 @@ def view_funds(request):
     funds_list = funds.objects.all()
     # rate_HKD, rate_USD = get_rate()
     rate = get_rate()
-    rate_HKD = rate['HKD']
-    rate_USD = rate['USD']
+    # rate_HKD = rate['HKD']
+    # rate_USD = rate['USD']
+    # 创建一个字典，格式为 {货币ID: {'code': 代码, 'name': 名称}}
+    currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in currency.objects.all()}
+    value_dict_toCNY = {}
+    for key in currency_dict:
+        value_dict_toCNY[key] = float(funds.objects.get(currency_id=key).funds_value) * rate[currency_dict[key]['code']]
 
     updating_time = datetime.datetime.now()
-
     return render(request, templates_path + 'view_funds.html', locals())
 
 
