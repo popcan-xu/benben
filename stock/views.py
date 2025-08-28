@@ -5,9 +5,9 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.shortcuts import render, redirect, HttpResponse
 from django.db import models, connection
-from .models import currency, broker, market, account, industry, stock, position, trade, dividend, subscription, \
-    dividend_history, \
-    funds, funds_details, baseline, historical_position, historical_rate, historical_market_value
+from .models import Currency, Broker, Market, Account, Industry, Stock, Position, Trade, Dividend, Subscription, \
+    DividendHistory, \
+    Funds, FundsDetails, Baseline, HistoricalPosition, HistoricalRate, HistoricalMarketValue
 from utils.excel2db import *
 from utils.statistics import *
 from utils.utils import *
@@ -44,12 +44,12 @@ def overview(request):
     currency_dict = {}
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_dict = dict(zip(keys, values))
 
-    #rate_HKD, rate_USD = get_rate()
+    # rate_HKD, rate_USD = get_rate()
     rate = get_rate()
     rate_HKD = rate['HKD']
     rate_USD = rate['USD']
@@ -63,7 +63,7 @@ def overview(request):
     else:  # 若json文件不存在or点击了刷新按钮，重写json文件（文件不存在则创建文件），再从json文件中读取overview页面需要的数据
         # 计算基金价值总和
         funds_value_sum = 0
-        funds_list = funds.objects.all()
+        funds_list = Funds.objects.all()
         # 获得资产占比数据，用于生成chart图表
         funds_value_array = []
         funds_principal_array = []
@@ -98,7 +98,7 @@ def overview(request):
                 key]
 
         # 计算人民币持仓市值总和，用于进一步计算人民币基金的持仓比例
-        stock_dict = position.objects.values("stock").annotate(
+        stock_dict = Position.objects.values("stock").annotate(
             count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
         stock_code_array = []
         for d in stock_dict:
@@ -115,9 +115,9 @@ def overview(request):
 
         # 获取所有funds同时存在记录的最大有效日期
         # 获取所有不同的基金数量
-        total_funds = funds_details.objects.values('funds').distinct().count()
+        total_funds = FundsDetails.objects.values('funds').distinct().count()
         # 查找所有日期及其对应的基金数量，并筛选出基金数等于总基金数的日期
-        valid_dates = funds_details.objects.values('date').annotate(
+        valid_dates = FundsDetails.objects.values('date').annotate(
             funds_count=Count('funds', distinct=True)
         ).filter(funds_count=total_funds).order_by('-date')
         if valid_dates.exists():
@@ -128,13 +128,13 @@ def overview(request):
 
         for key, value in currency_dict.items():
             # funds_id = funds.objects.get(funds_currency=key).id
-            funds_id = funds.objects.get(currency_id=key).id
-            funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
-            market_value_dict[key] = historical_market_value.objects.get(currency_id=key, date=max_date_funds).value
+            funds_id = Funds.objects.get(currency_id=key).id
+            funds_value_dict[key] = FundsDetails.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
+            market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_funds).value
             position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
         # 人民币基金的持仓比例通过511880的市值占比计算
         current_price, increase, color = get_quote_snowball('511880')  # 银华日利
-        positions = position.objects.filter(stock=93)  # 银华日利
+        positions = Position.objects.filter(stock=93)  # 银华日利
         quantity = 0
         for pos in positions:
             quantity += pos.position_quantity
@@ -148,16 +148,16 @@ def overview(request):
 
         current_year = datetime.datetime.now().year
         # 获得人民币、港元、美元分红总收益
-        dividend_sum_CNY = dividend.objects.filter(currency_id=1).aggregate(amount=Sum('dividend_amount'))['amount']
-        dividend_sum_HKD = dividend.objects.filter(currency_id=2).aggregate(amount=Sum('dividend_amount'))['amount']
-        dividend_sum_USD = dividend.objects.filter(currency_id=3).aggregate(amount=Sum('dividend_amount'))['amount']
+        dividend_sum_CNY = Dividend.objects.filter(currency_id=1).aggregate(amount=Sum('dividend_amount'))['amount']
+        dividend_sum_HKD = Dividend.objects.filter(currency_id=2).aggregate(amount=Sum('dividend_amount'))['amount']
+        dividend_sum_USD = Dividend.objects.filter(currency_id=3).aggregate(amount=Sum('dividend_amount'))['amount']
         dividend_sum = float(dividend_sum_CNY) + float(dividend_sum_HKD) * rate_HKD + float(dividend_sum_USD) * rate_USD
         # 获得当年人民币、港元、美元分红总收益
-        current_dividend_sum_CNY = dividend.objects.filter(currency_id=1, dividend_date__year=current_year).aggregate(
+        current_dividend_sum_CNY = Dividend.objects.filter(currency_id=1, dividend_date__year=current_year).aggregate(
             amount=Sum('dividend_amount'))['amount']
-        current_dividend_sum_HKD = dividend.objects.filter(currency_id=2, dividend_date__year=current_year).aggregate(
+        current_dividend_sum_HKD = Dividend.objects.filter(currency_id=2, dividend_date__year=current_year).aggregate(
             amount=Sum('dividend_amount'))['amount']
-        current_dividend_sum_USD = dividend.objects.filter(currency_id=3, dividend_date__year=current_year).aggregate(
+        current_dividend_sum_USD = Dividend.objects.filter(currency_id=3, dividend_date__year=current_year).aggregate(
             amount=Sum('dividend_amount'))['amount']
         if current_dividend_sum_CNY == None:
             current_dividend_sum_CNY = 0
@@ -168,25 +168,25 @@ def overview(request):
         current_dividend_sum = float(current_dividend_sum_CNY) + float(current_dividend_sum_HKD) * rate_HKD + float(
             current_dividend_sum_USD) * rate_USD
         # 获得新股、新债总收益、中签数量
-        subscription_sum = float(subscription.objects.aggregate(
+        subscription_sum = float(Subscription.objects.aggregate(
             amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount'])
-        subscription_stock_num = subscription.objects.filter(subscription_type=1).count()
-        subscription_band_num = subscription.objects.filter(subscription_type=2).count()
+        subscription_stock_num = Subscription.objects.filter(subscription_type=1).count()
+        subscription_band_num = Subscription.objects.filter(subscription_type=2).count()
         # 获得当年新股、新债总收益、中签数量
-        current_subscription_sum = subscription.objects.filter(subscription_date__year=current_year).aggregate(
+        current_subscription_sum = Subscription.objects.filter(subscription_date__year=current_year).aggregate(
             amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity")))['amount']
         if current_subscription_sum == None:
             current_subscription_sum = 0
         current_subscription_sum = float(current_subscription_sum)
-        current_subscription_stock_num = subscription.objects.filter(subscription_date__year=current_year,
+        current_subscription_stock_num = Subscription.objects.filter(subscription_date__year=current_year,
                                                                      subscription_type=1).count()
-        current_subscription_band_num = subscription.objects.filter(subscription_date__year=current_year,
+        current_subscription_band_num = Subscription.objects.filter(subscription_date__year=current_year,
                                                                     subscription_type=2).count()
         # 获取持仓股票数量
-        holding_stock_number = position.objects.values("stock").annotate(count=Count("stock")).count()
+        holding_stock_number = Position.objects.values("stock").annotate(count=Count("stock")).count()
         # 获得总市值、持仓股票一览数据、持仓前五占比数据
         price_array = []  # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
-        stock_dict = position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
+        stock_dict = Position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
 
         stock_code_array = []
         for d in stock_dict:
@@ -209,11 +209,11 @@ def overview(request):
         market_name_array, market_value_array = get_value_market_sum(price_array, rate_HKD, rate_USD)
 
         # 获得近期交易列表
-        top5_trade_list = trade.objects.all().order_by('-trade_date', '-modified_time')[:5]
+        top5_trade_list = Trade.objects.all().order_by('-trade_date', '-modified_time')[:5]
         # 获得近期分红列表
-        top5_dividend_list = dividend.objects.all().order_by('-dividend_date', '-modified_time')[:5]
+        top5_dividend_list = Dividend.objects.all().order_by('-dividend_date', '-modified_time')[:5]
         # 获得近期打新列表
-        top5_subscription_list = subscription.objects.all().order_by('-subscription_date', '-modified_time')[:5]
+        top5_subscription_list = Subscription.objects.all().order_by('-subscription_date', '-modified_time')[:5]
 
         # 写入overview.json
         overview = {}
@@ -306,16 +306,16 @@ def overview(request):
 
 # 资产概览
 def view_funds(request):
-    funds_list = funds.objects.all()
+    funds_list = Funds.objects.all()
     # rate_HKD, rate_USD = get_rate()
     rate = get_rate()
     # rate_HKD = rate['HKD']
     # rate_USD = rate['USD']
     # 创建一个字典，格式为 {货币ID: {'code': 代码, 'name': 名称}}
-    currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in currency.objects.all()}
+    currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in Currency.objects.all()}
     value_dict_toCNY = {}
     for key in currency_dict:
-        value_dict_toCNY[key] = float(funds.objects.get(currency_id=key).funds_value) * rate[currency_dict[key]['code']]
+        value_dict_toCNY[key] = float(Funds.objects.get(currency_id=key).funds_value) * rate[currency_dict[key]['code']]
 
     updating_time = datetime.datetime.now()
     return render(request, templates_path + 'view_funds.html', locals())
@@ -335,10 +335,10 @@ def view_funds_details(request, funds_id):
     list1 = []
     list2 = []
 
-    funds_details_list = funds_details.objects.filter(funds=funds_id).order_by("date")
-    funds_name = funds.objects.get(id=funds_id).funds_name
+    funds_details_list = FundsDetails.objects.filter(funds=funds_id).order_by("date")
+    funds_name = Funds.objects.get(id=funds_id).funds_name
     # funds_baseline_name = funds.objects.get(id=funds_id).funds_baseline
-    baseline_name = funds.objects.get(id=funds_id).baseline.name
+    baseline_name = Funds.objects.get(id=funds_id).baseline.name
     max_date = get_max_date(funds_id)
     min_date = get_min_date(funds_id)
     years = max_date.year - min_date.year
@@ -346,7 +346,7 @@ def view_funds_details(request, funds_id):
     current_funds_details_object = funds_details_list.get(date=max_date)  # 生成概要数据
     profit_rate = current_funds_details_object.funds_profit / current_funds_details_object.funds_principal
     last_period_value = current_funds_details_object.funds_value - current_funds_details_object.funds_current_profit
-    last_year_max_date = funds_details.objects.filter(
+    last_year_max_date = FundsDetails.objects.filter(
         date__year=datetime.date.today().year - 1,
         funds=funds_id
     ).aggregate(
@@ -368,15 +368,15 @@ def view_funds_details(request, funds_id):
     name_list.append(baseline_name)
 
     path = pathlib.Path("./templates/dashboard/baseline.json")
-    if path.is_file() == True and request.method != 'POST':  # 若json文件存在and未点击刷新按钮，从json文件中读取需要的数据以提高性能
+    if path.is_file() and request.method != 'POST':  # 若json文件存在and未点击刷新按钮，从json文件中读取需要的数据以提高性能
         pass
-    elif path.is_file() == False:  # json文件不存在，则创建文件
+    elif not path.is_file():  # json文件不存在，则创建文件
         # 获取指数历史数据
         get_his_index()
     else:  # 点击刷新按钮
         # 更新当年指数数据
         baseline_name_array = []
-        for rs in funds.objects.all():
+        for rs in Funds.objects.all():
             baseline_name_array.append(rs.baseline.name)
         get_current_index(baseline_name_array)
     with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
@@ -404,7 +404,7 @@ def view_funds_details(request, funds_id):
         baseline_profit_rate = baseline_net_value / pre_baseline_net_value - 1
         pre_baseline_net_value = baseline_net_value
 
-        earliest_date = funds.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
+        earliest_date = Funds.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
         # earliest_date = get_min_date(funds_id)
         years = float((year_end_date - earliest_date).days / 365)
         if years == 0:
@@ -502,8 +502,8 @@ def view_funds_details(request, funds_id):
         })
 
     # 近期资产、收益、年度收益列表
-    funds_details_list_TOP = funds_details.objects.filter(funds=funds_id).order_by("-date")[:12]
-    yearly_profit_list = funds_details.objects.filter(funds=funds_id).values('date__year').annotate(
+    funds_details_list_TOP = FundsDetails.objects.filter(funds=funds_id).order_by("-date")[:12]
+    yearly_profit_list = FundsDetails.objects.filter(funds=funds_id).values('date__year').annotate(
         yearly_profit=Sum('funds_current_profit')
     ).order_by('-date__year')
     profit_total = sum(entry['yearly_profit'] for entry in yearly_profit_list)
@@ -518,8 +518,8 @@ def view_funds_details(request, funds_id):
         })
 
     # 近期、年度出入金列表
-    recent_in_out_list = funds_details.objects.filter(funds=funds_id).exclude(funds_in_out=0).order_by('-date')[:12]
-    yearly_in_out_list = funds_details.objects.filter(funds=funds_id).values('date__year').annotate(
+    recent_in_out_list = FundsDetails.objects.filter(funds=funds_id).exclude(funds_in_out=0).order_by('-date')[:12]
+    yearly_in_out_list = FundsDetails.objects.filter(funds=funds_id).values('date__year').annotate(
         yearly_in_out=Sum('funds_in_out')
     ).order_by('-date__year')
     in_out_total = sum(entry['yearly_in_out'] for entry in yearly_in_out_list)
@@ -534,7 +534,6 @@ def view_funds_details(request, funds_id):
             "amount": amount
         })
 
-
     updating_time = datetime.datetime.now()
 
     return render(request, templates_path + 'view_funds_details.html', locals())
@@ -547,10 +546,10 @@ def view_market_value(request):
     rate_HKD = rate['HKD']
     rate_USD = rate['USD']
     # 创建一个字典，格式为 {货币ID: {'code': 代码, 'name': 名称}}
-    currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in currency.objects.all()}
+    currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in Currency.objects.all()}
 
     # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_array中，以提高性能
-    stock_dict = position.objects.values("stock").annotate(
+    stock_dict = Position.objects.values("stock").annotate(
         count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
     stock_code_array = []
     for d in stock_dict:
@@ -573,18 +572,17 @@ def view_market_value(request):
     #     values.append(rs.name)
     # currency_dict = dict(zip(keys, values))
 
-
     value_dict = {}
     value_dict_toCNY = {}
-    result = historical_market_value.objects.aggregate(
+    result = HistoricalMarketValue.objects.aggregate(
         max_date=Max('date')  # 最大值（最新日期）
     )
     current_date = result['max_date']
 
     for key in currency_dict:
         # code = currency.objects.get(id=key).code
-        if historical_market_value.objects.filter(currency_id=key, date=current_date).exists():
-            value_dict[key] = historical_market_value.objects.get(currency_id=key, date=current_date).value
+        if HistoricalMarketValue.objects.filter(currency_id=key, date=current_date).exists():
+            value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=current_date).value
             value_dict_toCNY[key] = float(value_dict[key]) * rate[currency_dict[key]['code']]
         else:
             value_dict[key] = 0
@@ -597,9 +595,9 @@ def view_market_value(request):
 
     # 获取所有funds同时存在记录的最大有效日期
     # 获取所有不同的基金数量
-    total_funds = funds_details.objects.values('funds').distinct().count()
+    total_funds = FundsDetails.objects.values('funds').distinct().count()
     # 查找所有日期及其对应的基金数量，并筛选出基金数等于总基金数的日期
-    valid_dates = funds_details.objects.values('date').annotate(
+    valid_dates = FundsDetails.objects.values('date').annotate(
         funds_count=Count('funds', distinct=True)
     ).filter(funds_count=total_funds).order_by('-date')
     if valid_dates.exists():
@@ -609,14 +607,14 @@ def view_market_value(request):
         max_date_funds = None
 
     for key, value in currency_dict.items():
-        funds_id = funds.objects.get(currency_id=key).id
-        funds_value_dict[key] = funds_details.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
-        market_value_dict[key] = historical_market_value.objects.get(currency_id=key, date=max_date_funds).value
+        funds_id = Funds.objects.get(currency_id=key).id
+        funds_value_dict[key] = FundsDetails.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
+        market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_funds).value
         position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
 
     # 人民币基金的持仓比例通过511880的市值占比计算
     current_price, increase, color = get_quote_snowball('511880')  # 银华日利
-    positions = position.objects.filter(stock=93)  # 银华日利
+    positions = Position.objects.filter(stock=93)  # 银华日利
     quantity = 0
     for pos in positions:
         quantity += pos.position_quantity
@@ -630,7 +628,7 @@ def view_market_value(request):
 
 # 市值详情
 def view_market_value_details(request, currency_id):
-    currency_name = currency.objects.get(id=currency_id).name
+    currency_name = Currency.objects.get(id=currency_id).name
     # currency_dict = {1: '人民币', 2: '港元', 3: '美元'}
     # currency_dict = {}
     # keys = []
@@ -640,7 +638,7 @@ def view_market_value_details(request, currency_id):
     #     values.append(rs.name)
     # currency_dict = dict(zip(keys, values))
 
-    result = historical_market_value.objects.aggregate(
+    result = HistoricalMarketValue.objects.aggregate(
         max_date=Max('date')  # 最大值（最新日期）
     )
     current_date = result['max_date']
@@ -648,14 +646,14 @@ def view_market_value_details(request, currency_id):
     #     value = historical_market_value.objects.get(currency=currency_dict[currency_id], date=current_date).value
     # else:
     #     value = 0
-    market_value_obj = historical_market_value.objects.get(currency_id=currency_id, date=current_date)
+    market_value_obj = HistoricalMarketValue.objects.get(currency_id=currency_id, date=current_date)
 
     today = datetime.date.today()  # 假设当前日期
     last_day_of_last_month = today.replace(day=1) - relativedelta(days=1)  # 上月最后一天
     last_day_of_last_year = datetime.date(today.year - 1, 12, 31)  # 上年最后一天
 
     # 获取上月最大日期
-    last_month_max_date = historical_market_value.objects.filter(
+    last_month_max_date = HistoricalMarketValue.objects.filter(
         date__month=last_day_of_last_month.month,
         date__year=last_day_of_last_month.year,
         currency_id=currency_id
@@ -664,20 +662,20 @@ def view_market_value_details(request, currency_id):
     )['max_date']
 
     # 按货币分组获取上年最大日期
-    last_year_max_date = historical_market_value.objects.filter(
+    last_year_max_date = HistoricalMarketValue.objects.filter(
         date__year=last_day_of_last_year.year,
         currency_id=currency_id
     ).aggregate(
         max_date=Max('date')
     )['max_date']
 
-    last_month_value = historical_market_value.objects.get(date=last_month_max_date, currency_id=currency_id).value
+    last_month_value = HistoricalMarketValue.objects.get(date=last_month_max_date, currency_id=currency_id).value
     month_change_amount = market_value_obj.value - last_month_value
     if last_month_value != Decimal('0.0000') and month_change_amount != Decimal('0.0000'):
         month_change_rate = month_change_amount / last_month_value
     else:
         month_change_rate = 0
-    last_year_value = historical_market_value.objects.get(date=last_year_max_date, currency_id=currency_id).value
+    last_year_value = HistoricalMarketValue.objects.get(date=last_year_max_date, currency_id=currency_id).value
     year_change_amount = market_value_obj.value - last_year_value
     if last_year_value != Decimal('0.0000') and year_change_amount != Decimal('0.0000'):
         year_change_rate = year_change_amount / last_year_value
@@ -686,7 +684,7 @@ def view_market_value_details(request, currency_id):
 
     # 生成持仓市值曲线数据data
     data_market_value = []
-    market_value_list = historical_market_value.objects.filter(currency_id=currency_id).order_by("date")
+    market_value_list = HistoricalMarketValue.objects.filter(currency_id=currency_id).order_by("date")
     for rs in market_value_list:
         date = str(rs.date)
         value = float(rs.value)
@@ -703,10 +701,10 @@ def view_market_value_details(request, currency_id):
         assetChanges[date] = amount
 
     # 获得近期市值列表
-    market_value_list_TOP = historical_market_value.objects.filter(currency_id=currency_id).order_by("-date")[:12]
+    market_value_list_TOP = HistoricalMarketValue.objects.filter(currency_id=currency_id).order_by("-date")[:12]
     # 获得近期交易列表
     # trade_list_TOP = trade.objects.filter(settlement_currency=currency_id).order_by('-trade_date', '-modified_time')[:10]
-    trade_list_TOP = trade.objects.filter(
+    trade_list_TOP = Trade.objects.filter(
         currency_id=currency_id
     ).select_related('stock').values(
         'trade_date',
@@ -717,16 +715,16 @@ def view_market_value_details(request, currency_id):
         # 计算净交易金额（买入为负，卖出为正）
         net_amount=Sum(
             Case(
-                When(trade_type=trade.BUY, then=-F('trade_quantity') * F('trade_price')),
-                When(trade_type=trade.SELL, then=F('trade_quantity') * F('trade_price')),
+                When(trade_type=Trade.BUY, then=-F('trade_quantity') * F('trade_price')),
+                When(trade_type=Trade.SELL, then=F('trade_quantity') * F('trade_price')),
                 output_field=DecimalField(max_digits=12, decimal_places=3)
             )
         ),
         # 计算净交易量（买入增加，卖出减少）
         net_quantity=Sum(
             Case(
-                When(trade_type=trade.BUY, then=F('trade_quantity')),
-                When(trade_type=trade.SELL, then=-F('trade_quantity')),
+                When(trade_type=Trade.BUY, then=F('trade_quantity')),
+                When(trade_type=Trade.SELL, then=-F('trade_quantity')),
                 output_field=IntegerField()
             )
         ),
@@ -750,7 +748,7 @@ def view_dividend(request):
     print(rate)
     dividend_summary = []
     dividend_chart_data = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         currency_id = rs.id
         currency_code = rs.code
         currency_name = rs.name
@@ -758,7 +756,7 @@ def view_dividend(request):
         year_amount = get_dividend_current_year(currency_id)
         total_amount_toCNY = float(total_amount) * rate[currency_code]
         year_amount_toCNY = float(year_amount) * rate[currency_code]
-        result = dividend.objects.filter(currency=currency_id).aggregate(
+        result = Dividend.objects.filter(currency=currency_id).aggregate(
             max_date=Max('dividend_date')  # 最大值（最新日期）
         )
         max_date = result['max_date']
@@ -781,8 +779,8 @@ def view_dividend(request):
 
 # 分红详情
 def view_dividend_details(request, currency_id):
-    currency_name = currency.objects.get(id=currency_id).name
-    result = dividend.objects.aggregate(
+    currency_name = Currency.objects.get(id=currency_id).name
+    result = Dividend.objects.aggregate(
         max_date=Max('dividend_date')  # 最大值（最新日期）
     )
     current_date = result['max_date']
@@ -855,7 +853,7 @@ def view_dividend_details(request, currency_id):
     dividend_rate_pre_year = result['dividend_rate_yearly'][-2]
 
     # 获得近期分红列表
-    dividend_list_TOP = dividend.objects.filter(
+    dividend_list_TOP = Dividend.objects.filter(
         currency_id=currency_id
     ).select_related('stock').values(
         'dividend_date',
@@ -873,7 +871,7 @@ def view_dividend_details(request, currency_id):
 
     # 获得分红图表数据
     current_year = datetime.datetime.now().year
-    dividend_current_year = dividend.objects.filter(
+    dividend_current_year = Dividend.objects.filter(
         dividend_date__year=current_year,
         currency_id=currency_id,
         currency__isnull=False  # 排除货币为空的记录
@@ -890,7 +888,7 @@ def view_dividend_details(request, currency_id):
         name_current_year_list.append(item['stock_name'])
         dividend_current_year_list.append(round(item['total_dividend']))
 
-    dividend_total = dividend.objects.filter(
+    dividend_total = Dividend.objects.filter(
         currency_id=currency_id,
         currency__isnull=False  # 排除货币为空的记录
     ).values(
@@ -926,12 +924,12 @@ def view_stock_details(request, stock_id):
         cache.set(rate_key, rate_dict, 3600)  # 缓存1小时
 
     # 2. 预取相关对象，减少查询次数
-    stock_obj = stock.objects.select_related(
+    stock_obj = Stock.objects.select_related(
         'market', 'market__currency'
     ).prefetch_related(
-        Prefetch('position_set', queryset=position.objects.all()),
-        Prefetch('trade_set', queryset=trade.objects.all().order_by('-trade_date', '-modified_time')),
-        Prefetch('dividend_set', queryset=dividend.objects.all().order_by('-dividend_date', '-modified_time'))
+        Prefetch('position_set', queryset=Position.objects.all()),
+        Prefetch('trade_set', queryset=Trade.objects.all().order_by('-trade_date', '-modified_time')),
+        Prefetch('dividend_set', queryset=Dividend.objects.all().order_by('-dividend_date', '-modified_time'))
     ).get(id=stock_id)
 
     # 3. 提取常用属性
@@ -1092,8 +1090,10 @@ def view_stock_details(request, stock_id):
     dividends_rmb = [float(item['total_dividend_rmb']) for item in sorted_annual_dividends]
 
     # 从原始数据中获取最小和最大年份
-    min_year = min(item['year'] for item in sorted_annual_dividends) if sorted_annual_dividends else datetime.datetime.today().year
-    max_year = max(item['year'] for item in sorted_annual_dividends) if sorted_annual_dividends else datetime.datetime.today().year
+    min_year = min(
+        item['year'] for item in sorted_annual_dividends) if sorted_annual_dividends else datetime.datetime.today().year
+    max_year = max(
+        item['year'] for item in sorted_annual_dividends) if sorted_annual_dividends else datetime.datetime.today().year
 
     # 创建年份范围列表（连续年份）
     years_range = list(range(min_year, max_year + 1))
@@ -1110,6 +1110,7 @@ def view_stock_details(request, stock_id):
     updating_time = datetime.datetime.now()
 
     return render(request, templates_path + 'view_stock_details.html', locals())
+
 
 '''
 def view_stock_details1(request, stock_id):
@@ -1199,6 +1200,7 @@ def view_stock_details1(request, stock_id):
     return render(request, templates_path + 'view_stock_details.html', locals())
 '''
 
+
 # 交易录入
 def input_trade(request):
     trade_type_items = (
@@ -1213,12 +1215,12 @@ def input_trade(request):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
-    account_active = account.objects.filter(is_active=True)
-    account_not_active = account.objects.filter(is_active=False)
+    account_active = Account.objects.filter(is_active=True)
+    account_not_active = Account.objects.filter(is_active=False)
     stock_hold, stock_not_hold = get_stock_hold_or_not()
 
     if request.method == 'POST':
@@ -1234,7 +1236,7 @@ def input_trade(request):
             return render(request, templates_path + 'input/input_trade.html', locals())
         try:
             # 新增一条交易记录
-            p = trade.objects.create(
+            p = Trade.objects.create(
                 account_id=account_id,
                 stock_id=stock_id,
                 trade_date=trade_date,
@@ -1245,7 +1247,7 @@ def input_trade(request):
                 filed_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
             # 更新（删除）或新增一条仓位记录
-            position_objects = position.objects.filter(stock_id=stock_id, account_id=account_id)
+            position_objects = Position.objects.filter(stock_id=stock_id, account_id=account_id)
             if position_objects.exists():
                 # 更新一条仓位记录
                 if trade_type == '2':
@@ -1259,7 +1261,7 @@ def input_trade(request):
                         position_object.delete()
             else:
                 # 新增一条仓位记录
-                q = position.objects.create(
+                q = Position.objects.create(
                     account_id=account_id,
                     stock_id=stock_id,
                     position_quantity=trade_quantity,
@@ -1285,12 +1287,12 @@ def input_dividend(request):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
-    account_active = account.objects.filter(is_active=True)
-    account_not_active = account.objects.filter(is_active=False)
+    account_active = Account.objects.filter(is_active=True)
+    account_not_active = Account.objects.filter(is_active=False)
     stock_hold, stock_not_hold = get_stock_hold_or_not()
 
     if request.method == 'POST':
@@ -1302,7 +1304,7 @@ def input_dividend(request):
         if stock_id.strip() == '':
             return render(request, templates_path + 'input/input_dividend.html', locals())
         try:
-            p = dividend.objects.create(
+            p = Dividend.objects.create(
                 account_id=account_id,
                 stock_id=stock_id,
                 dividend_date=dividend_date,
@@ -1323,8 +1325,8 @@ def input_subscription(request):
         (1, '股票'),
         (2, '可转债'),
     )
-    account_active = account.objects.filter(is_active=True)
-    account_not_active = account.objects.filter(is_active=False)
+    account_active = Account.objects.filter(is_active=True)
+    account_not_active = Account.objects.filter(is_active=False)
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
         subscription_name = request.POST.get('subscription_name')
@@ -1336,7 +1338,7 @@ def input_subscription(request):
         if account_id.strip() == '':
             return render(request, templates_path + 'input/input_subscription.html', locals())
         try:
-            p = subscription.objects.create(
+            p = Subscription.objects.create(
                 account_id=account_id,
                 subscription_name=subscription_name,
                 subscription_date=subscription_date,
@@ -1370,22 +1372,22 @@ def stats_position(request):
         cache.set(rate_cache_key, rates, 3600)  # 缓存1小时
 
     rate_dict = {
-        currency.CNY_ID: 1,
-        currency.HKD_ID: rates['HKD'],
-        currency.USD_ID: rates['USD']
+        Currency.CNY_ID: 1,
+        Currency.HKD_ID: rates['HKD'],
+        Currency.USD_ID: rates['USD']
     }
 
     # 顺序处理三种货币
     results = {}
     positions = []
     currencies = [
-        currency.CNY_ID,
-        currency.HKD_ID,
-        currency.USD_ID
+        Currency.CNY_ID,
+        Currency.HKD_ID,
+        Currency.USD_ID
     ]
 
     for currency_id in currencies:
-        currency_obj = currency.objects.get(id=currency_id)
+        currency_obj = Currency.objects.get(id=currency_id)
         try:
             # 直接调用仓位处理函数
             results[currency_id] = get_position_content(currency_id, rate_dict)
@@ -1458,7 +1460,6 @@ def stats_value(request):
     rate_HKD = rate['HKD']
     rate_USD = rate['USD']
 
-
     if request.method == 'POST':
         caliber = int(request.POST.get('caliber'))
         currency = int(request.POST.get('currency'))
@@ -1466,7 +1467,7 @@ def stats_value(request):
         condition_id = str(caliber) + str(currency)
         # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
         # stock_dict = position.objects.filter(position_currency=currency).values("stock").annotate(count=Count("stock")).values('stock__stock_code')
-        stock_dict = position.objects.filter(currency_id=currency).values("stock").annotate(
+        stock_dict = Position.objects.filter(currency_id=currency).values("stock").annotate(
             count=Count("stock")).values('stock__stock_code')
         # for dict in stock_dict:
         #     stock_code = dict['stock__stock_code']
@@ -1497,8 +1498,8 @@ def stats_value(request):
 
 # 账户统计
 def stats_account(request):
-    account_list1 = account.objects.all().filter(broker__broker_script='境内券商')
-    account_list2 = account.objects.all().filter(broker__broker_script='境外券商')
+    account_list1 = Account.objects.all().filter(broker__broker_script='境内券商')
+    account_list2 = Account.objects.all().filter(broker__broker_script='境外券商')
     account_abbreviation = '银河6811'
     # rate_HKD, rate_USD = get_rate()
     rate = get_rate()
@@ -1507,10 +1508,10 @@ def stats_account(request):
 
     if request.method == 'POST':
         account_abbreviation = request.POST.get('account')
-        account_id = account.objects.get(account_abbreviation=account_abbreviation).id
+        account_id = Account.objects.get(account_abbreviation=account_abbreviation).id
         price_array = []
         # 将仓位表中涉及的股票的价格和涨跌幅一次性从数据库取出，存放在元组列表price_increase_array中，以提高性能
-        stock_dict = position.objects.filter(account=account_id).values("stock").annotate(
+        stock_dict = Position.objects.filter(account=account_id).values("stock").annotate(
             count=Count("stock")).values('stock__stock_code')
         # for dict in stock_dict:
         #     stock_code = dict['stock__stock_code']
@@ -1543,7 +1544,7 @@ def stats_dividend(request):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
@@ -1616,8 +1617,8 @@ def stats_profit(request):
     holding_profit_sum = 0
     cleared_profit_sum = 0
     holding_value_sum = 0
-    holding_stock_list = stock.objects.filter(position__stock_id__isnull=False).distinct().order_by('stock_code')
-    cleared_stock_list = stock.objects.filter(position__stock_id__isnull=True,
+    holding_stock_list = Stock.objects.filter(position__stock_id__isnull=False).distinct().order_by('stock_code')
+    cleared_stock_list = Stock.objects.filter(position__stock_id__isnull=True,
                                               trade__stock_id__isnull=False).distinct().order_by('stock_code')
     for rs in holding_stock_list:
         stock_id = rs.id
@@ -1625,7 +1626,7 @@ def stats_profit(request):
         stock_name = rs.stock_name
         # transaction_currency = rs.market.transaction_currency
         currency_value = rs.market.currency
-        trade_list = trade.objects.all().filter(stock=stock_id)
+        trade_list = Trade.objects.all().filter(stock=stock_id)
         trade_array, amount_sum, value, quantity_sum, price_avg, price, profit, profit_margin, cost_sum = get_holding_stock_profit(
             stock_code)
         if currency_value == 2:
@@ -1644,7 +1645,7 @@ def stats_profit(request):
         stock_name = rs.stock_name
         # transaction_currency = rs.market.transaction_currency
         currency_value = rs.market.currency
-        trade_list = trade.objects.all().filter(stock=stock_id)
+        trade_list = Trade.objects.all().filter(stock=stock_id)
         if trade_list.exists() and stock_code != '-1':
             trade_array, profit, profit_margin, cost_sum = get_cleared_stock_profit(stock_code)
             if currency_value == 2:
@@ -1658,11 +1659,11 @@ def stats_profit(request):
 
 # 交易查询
 def query_trade(request):
-    stock_list = stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
-    holding_stock_list = stock.objects.filter(position__stock_id__isnull=False).distinct().values('stock_name',
+    stock_list = Stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
+    holding_stock_list = Stock.objects.filter(position__stock_id__isnull=False).distinct().values('stock_name',
                                                                                                   'stock_code').order_by(
         'stock_code')
-    cleared_stock_list = stock.objects.filter(position__stock_id__isnull=True,
+    cleared_stock_list = Stock.objects.filter(position__stock_id__isnull=True,
                                               trade__stock_id__isnull=False).distinct().values('stock_name',
                                                                                                'stock_code').order_by(
         'stock_code')
@@ -1671,14 +1672,14 @@ def query_trade(request):
         form = None
         if form_type == 'holding_stock':
             stock_code = request.POST.get('stock_code')
-            stock_name = stock.objects.get(stock_code=stock_code).stock_name
-            market = stock.objects.get(stock_code=stock_code).market
+            stock_name = Stock.objects.get(stock_code=stock_code).stock_name
+            market = Stock.objects.get(stock_code=stock_code).market
             trade_array_1, amount_sum_1, value_1, quantity_sum_1, price_avg_1, price_1, profit_1, profit_margin_1, cost_sum_1 = get_holding_stock_profit(
                 stock_code)
         elif form_type == 'cleared_stock':
             stock_code = request.POST.get('stock_code')
-            stock_name = stock.objects.get(stock_code=stock_code).stock_name
-            market = stock.objects.get(stock_code=stock_code).market
+            stock_name = Stock.objects.get(stock_code=stock_code).stock_name
+            market = Stock.objects.get(stock_code=stock_code).market
             trade_array_2, profit_2, profit_margin_2, cost_sum_2 = get_cleared_stock_profit(stock_code)
     return render(request, templates_path + 'query/query_trade.html', locals())
 
@@ -1693,17 +1694,17 @@ def query_dividend_value(request):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
-    stock_list = stock.objects.all().values('stock_code', 'stock_name', 'last_dividend_date', 'next_dividend_date')
+    stock_list = Stock.objects.all().values('stock_code', 'stock_name', 'last_dividend_date', 'next_dividend_date')
     # 持仓股票列表，通过.filter(dividend__stock_id__isnull = False)，过滤出在dividend表中存在的stock_id所对应的stock表记录
     dividends_stock_list = stock_list.filter(dividend__stock_id__isnull=False).distinct()
     # 分红年份列表，通过.dates('dividend_date', 'year')，过滤出dividend表中存在的dividend_date所对应的年份列表
-    year_list = dividend.objects.dates('dividend_date', 'year')
+    year_list = Dividend.objects.dates('dividend_date', 'year')
     # 按账号对应的券商备注（境内券商或境外券商）排序
-    account_list = account.objects.all().order_by('broker__broker_script')
+    account_list = Account.objects.all().order_by('broker__broker_script')
     # 第一次进入页面，默认货币为人民币，账户全选、年份全选为否。
     currency_value = 1
     # 根据dividend_currency的值从dividend_currency_items中生成dividend_currency_name
@@ -1716,7 +1717,7 @@ def query_dividend_value(request):
         if stock_code is None:
             error_info = '股票不能为空！'
             return render(request, templates_path + 'query/query_dividend_value.html', locals())
-        stock_object = stock.objects.get(stock_code=stock_code)
+        stock_object = Stock.objects.get(stock_code=stock_code)
         stock_id = stock_object.id
         stock_name = stock_object.stock_name
         dividend_year_list = request.POST.getlist('dividend_year_list')
@@ -1733,7 +1734,7 @@ def query_dividend_value(request):
         conditions['dividend_date__year__in'] = dividend_year_list
         conditions['account__in'] = dividend_account_list
         conditions['currency_id'] = currency_value
-        dividend_list = dividend.objects.all().filter(**conditions).order_by('-dividend_date')
+        dividend_list = Dividend.objects.all().filter(**conditions).order_by('-dividend_date')
         amount_sum = 0
         for i in dividend_list:
             amount_sum += i.dividend_amount
@@ -1746,7 +1747,7 @@ def query_dividend_value(request):
 def query_dividend_date(request):
     current_year = datetime.datetime.today().year
 
-    stock_list = stock.objects.all().values('stock_name', 'stock_code', 'last_dividend_date',
+    stock_list = Stock.objects.all().values('stock_name', 'stock_code', 'last_dividend_date',
                                             'next_dividend_date').order_by('stock_code')
     # 持仓股票列表，通过.filter(position__stock_id__isnull = False)，过滤出在position表中存在的stock_id所对应的stock表记录
     position_stock_list = stock_list.filter(position__stock_id__isnull=False).distinct().order_by('-next_dividend_date',
@@ -1781,11 +1782,11 @@ def query_dividend_date(request):
 
 # 分红历史查询
 def query_dividend_history(request):
-    stock_list = stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
+    stock_list = Stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
     if request.method == 'POST':
         stock_code = request.POST.get('stock_code')
         stock_dividend_dict = get_stock_dividend_history(stock_code)
-        stock_name = stock.objects.get(stock_code=stock_code).stock_name
+        stock_name = Stock.objects.get(stock_code=stock_code).stock_name
     return render(request, templates_path + 'query/query_dividend_history.html', locals())
 
 
@@ -1800,7 +1801,7 @@ def add_currency(request):
             error_info = '货币代码不能为空！'
             return render(request, templates_path + 'backstage/add_currency.html', locals())
         try:
-            p = currency.objects.create(
+            p = Currency.objects.create(
                 code=code,
                 name=name,
                 unit=unit,
@@ -1816,7 +1817,7 @@ def add_currency(request):
 
 
 def del_currency(request, currency_id):
-    currency_object = currency.objects.get(id=currency_id)
+    currency_object = Currency.objects.get(id=currency_id)
     currency_object.delete()
     return redirect('/benben/list_currency/')
 
@@ -1828,7 +1829,7 @@ def edit_currency(request, currency_id):
         name = request.POST.get('name')
         unit = request.POST.get('unit')
         script = request.POST.get('script')
-        currency_object = currency.objects.get(id=id)
+        currency_object = Currency.objects.get(id=id)
         try:
             currency_object.code = code
             currency_object.name = name
@@ -1842,12 +1843,12 @@ def edit_currency(request, currency_id):
             pass
         return redirect('/benben/list_currency/')
     else:
-        currency_object = currency.objects.get(id=currency_id)
+        currency_object = Currency.objects.get(id=currency_id)
         return render(request, templates_path + 'backstage/edit_currency.html', locals())
 
 
 def list_currency(request):
-    currency_list = currency.objects.all()
+    currency_list = Currency.objects.all()
     return render(request, templates_path + 'backstage/list_currency.html', locals())
 
 
@@ -1860,7 +1861,7 @@ def add_broker(request):
             error_info = '券商名称不能为空！'
             return render(request, templates_path + 'backstage/add_broker.html', locals())
         try:
-            p = broker.objects.create(
+            p = Broker.objects.create(
                 broker_name=broker_name,
                 broker_script=broker_script
             )
@@ -1874,7 +1875,7 @@ def add_broker(request):
 
 
 def del_broker(request, broker_id):
-    broker_object = broker.objects.get(id=broker_id)
+    broker_object = Broker.objects.get(id=broker_id)
     broker_object.delete()
     return redirect('/benben/list_broker/')
 
@@ -1884,7 +1885,7 @@ def edit_broker(request, broker_id):
         id = request.POST.get('id')
         broker_name = request.POST.get('broker_name')
         broker_script = request.POST.get('broker_script')
-        broker_object = broker.objects.get(id=id)
+        broker_object = Broker.objects.get(id=id)
         try:
             broker_object.broker_name = broker_name
             broker_object.broker_script = broker_script
@@ -1896,12 +1897,12 @@ def edit_broker(request, broker_id):
             pass
         return redirect('/benben/list_broker/')
     else:
-        broker_object = broker.objects.get(id=broker_id)
+        broker_object = Broker.objects.get(id=broker_id)
         return render(request, templates_path + 'backstage/edit_broker.html', locals())
 
 
 def list_broker(request):
-    broker_list = broker.objects.all()
+    broker_list = Broker.objects.all()
     return render(request, templates_path + 'backstage/list_broker.html', locals())
 
 
@@ -1915,7 +1916,7 @@ def add_market(request):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
@@ -1927,7 +1928,7 @@ def add_market(request):
             error_info = '市场名称不能为空！'
             return render(request, templates_path + 'backstage/add_market.html', locals())
         try:
-            p = market.objects.create(
+            p = Market.objects.create(
                 market_name=market_name,
                 market_abbreviation=market_abbreviation,
                 currency_id=currency_value
@@ -1942,7 +1943,7 @@ def add_market(request):
 
 
 def del_market(request, market_id):
-    market_object = market.objects.get(id=market_id)
+    market_object = Market.objects.get(id=market_id)
     market_object.delete()
     return redirect('/benben/list_market/')
 
@@ -1956,7 +1957,7 @@ def edit_market(request, market_id):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
@@ -1966,7 +1967,7 @@ def edit_market(request, market_id):
         market_abbreviation = request.POST.get('market_abbreviation')
         # transaction_currency = request.POST.get('transaction_currency')
         currency_value = request.POST.get('currency')  # 变量名为currency_value，以避免和表名currency混淆
-        market_object = market.objects.get(id=id)
+        market_object = Market.objects.get(id=id)
         try:
             market_object.market_name = market_name
             market_object.market_abbreviation = market_abbreviation
@@ -1980,18 +1981,18 @@ def edit_market(request, market_id):
             pass
         return redirect('/benben/list_market/')
     else:
-        market_object = market.objects.get(id=market_id)
+        market_object = Market.objects.get(id=market_id)
         return render(request, templates_path + 'backstage/edit_market.html', locals())
 
 
 def list_market(request):
-    market_list = market.objects.all()
+    market_list = Market.objects.all()
     return render(request, templates_path + 'backstage/list_market.html', locals())
 
 
 # 账户表的增删改查
 def add_account(request):
-    broker_list = broker.objects.all().order_by('broker_script')
+    broker_list = Broker.objects.all().order_by('broker_script')
     if request.method == 'POST':
         account_number = request.POST.get('account_number')
         broker_id = request.POST.get('broker_id')
@@ -2002,14 +2003,14 @@ def add_account(request):
             return render(request, templates_path + 'backstage/add_account.html', locals())
         try:
             if is_active == 'TRUE':
-                p = account.objects.create(
+                p = Account.objects.create(
                     account_number=account_number,
                     broker_id=broker_id,
                     account_abbreviation=account_abbreviation,
                     is_active=True
                 )
             else:
-                p = account.objects.create(
+                p = Account.objects.create(
                     account_number=account_number,
                     broker_id=broker_id,
                     account_abbreviation=account_abbreviation,
@@ -2025,13 +2026,13 @@ def add_account(request):
 
 
 def del_account(request, account_id):
-    account_object = account.objects.get(id=account_id)
+    account_object = Account.objects.get(id=account_id)
     account_object.delete()
     return redirect('/benben/list_account/')
 
 
 def edit_account(request, account_id):
-    broker_list = broker.objects.all()
+    broker_list = Broker.objects.all()
     if request.method == 'POST':
         id = request.POST.get('id')
         account_number = request.POST.get('account_number')
@@ -2039,7 +2040,7 @@ def edit_account(request, account_id):
         account_abbreviation = request.POST.get('account_abbreviation')
         is_active = request.POST.get('is_active')
         # print(is_active)
-        account_object = account.objects.get(id=id)
+        account_object = Account.objects.get(id=id)
         try:
             account_object.account_number = account_number
             account_object.broker_id = broker_id
@@ -2056,12 +2057,12 @@ def edit_account(request, account_id):
             pass
         return redirect('/benben/list_account/')
     else:
-        account_object = account.objects.get(id=account_id)
+        account_object = Account.objects.get(id=account_id)
         return render(request, templates_path + 'backstage/edit_account.html', locals())
 
 
 def list_account(request):
-    account_list = account.objects.all().order_by("-is_active", "broker")
+    account_list = Account.objects.all().order_by("-is_active", "broker")
     return render(request, templates_path + 'backstage/list_account.html', locals())
 
 
@@ -2075,7 +2076,7 @@ def add_industry(request):
             error_info = '行业代码不能为空！'
             return render(request, templates_path + 'backstage/add_industry.html', locals())
         try:
-            p = industry.objects.create(
+            p = Industry.objects.create(
                 industry_code=industry_code,
                 industry_name=industry_name,
                 industry_abbreviation=industry_abbreviation
@@ -2090,7 +2091,7 @@ def add_industry(request):
 
 
 def del_industry(request, industry_id):
-    industry_object = industry.objects.get(id=industry_id)
+    industry_object = Industry.objects.get(id=industry_id)
     industry_object.delete()
     return redirect('/benben/list_industry/')
 
@@ -2101,7 +2102,7 @@ def edit_industry(request, industry_id):
         industry_code = request.POST.get('industry_code')
         industry_name = request.POST.get('industry_name')
         industry_abbreviation = request.POST.get('industry_abbreviation')
-        industry_object = industry.objects.get(id=id)
+        industry_object = Industry.objects.get(id=id)
         try:
             industry_object.industry_code = industry_code
             industry_object.industry_name = industry_name
@@ -2114,19 +2115,19 @@ def edit_industry(request, industry_id):
             pass
         return redirect('/benben/list_industry/')
     else:
-        industry_object = industry.objects.get(id=industry_id)
+        industry_object = Industry.objects.get(id=industry_id)
         return render(request, templates_path + 'backstage/edit_industry.html', locals())
 
 
 def list_industry(request):
-    industry_list = industry.objects.all()
+    industry_list = Industry.objects.all()
     return render(request, templates_path + 'backstage/list_industry.html', locals())
 
 
 # 股票表的增删改查
 def add_stock(request):
-    market_list = market.objects.all()
-    industry_list = industry.objects.all()
+    market_list = Market.objects.all()
+    industry_list = Industry.objects.all()
     if request.method == 'POST':
         stock_code = request.POST.get('stock_code')
         stock_name = request.POST.get('stock_name')
@@ -2136,7 +2137,7 @@ def add_stock(request):
             error_info = '股票代码不能为空！'
             return render(request, templates_path + 'backstage/add_stock.html', locals())
         try:
-            p = stock.objects.create(
+            p = Stock.objects.create(
                 stock_code=stock_code,
                 stock_name=stock_name,
                 industry_id=industry_id,
@@ -2152,21 +2153,21 @@ def add_stock(request):
 
 
 def del_stock(request, stock_id):
-    stock_object = stock.objects.get(id=stock_id)
+    stock_object = Stock.objects.get(id=stock_id)
     stock_object.delete()
     return redirect('/benben/list_stock/')
 
 
 def edit_stock(request, stock_id):
-    market_list = market.objects.all()
-    industry_list = industry.objects.all()
+    market_list = Market.objects.all()
+    industry_list = Industry.objects.all()
     if request.method == 'POST':
         id = request.POST.get('id')
         stock_code = request.POST.get('stock_code')
         stock_name = request.POST.get('stock_name')
         industry_id = request.POST.get('industry_id')
         market_id = request.POST.get('market_id')
-        stock_object = stock.objects.get(id=id)
+        stock_object = Stock.objects.get(id=id)
         try:
             stock_object.stock_code = stock_code
             stock_object.stock_name = stock_name
@@ -2180,19 +2181,19 @@ def edit_stock(request, stock_id):
             pass
         return redirect('/benben/list_stock/')
     else:
-        stock_object = stock.objects.get(id=stock_id)
+        stock_object = Stock.objects.get(id=stock_id)
         return render(request, templates_path + 'backstage/edit_stock.html', locals())
 
 
 def list_stock(request):
-    stock_list = stock.objects.all()
+    stock_list = Stock.objects.all()
     return render(request, templates_path + 'backstage/list_stock.html', locals())
 
 
 # 持仓表增删改查
 def add_position(request):
-    account_list = account.objects.all()
-    stock_list = stock.objects.all().order_by('stock_code')
+    account_list = Account.objects.all()
+    stock_list = Stock.objects.all().order_by('stock_code')
     # position_currency_items = (
     #     (1, '人民币'),
     #     (2, '港元'),
@@ -2201,7 +2202,7 @@ def add_position(request):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
@@ -2215,7 +2216,7 @@ def add_position(request):
             error_info = '股票不能为空！'
             return render(request, templates_path + 'backstage/add_position.html', locals())
         try:
-            p = position.objects.create(
+            p = Position.objects.create(
                 account_id=account_id,
                 stock_id=stock_id,
                 position_quantity=position_quantity,
@@ -2232,7 +2233,7 @@ def add_position(request):
 
 
 def del_position(request, position_id):
-    position_object = position.objects.get(id=position_id)
+    position_object = Position.objects.get(id=position_id)
     position_object.delete()
     return redirect('/benben/list_position/')
 
@@ -2246,12 +2247,12 @@ def edit_position(request, position_id):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
-    account_list = account.objects.all()
-    stock_list = stock.objects.all()
+    account_list = Account.objects.all()
+    stock_list = Stock.objects.all()
     if request.method == 'POST':
         id = request.POST.get('id')
         account_id = request.POST.get('account_id')
@@ -2259,7 +2260,7 @@ def edit_position(request, position_id):
         position_quantity = request.POST.get('position_quantity')
         # position_currency = request.POST.get('position_currency')
         currency_value = request.POST.get('currency')
-        position_object = position.objects.get(id=id)
+        position_object = Position.objects.get(id=id)
         try:
             position_object.account_id = account_id
             position_object.stock_id = stock_id
@@ -2274,12 +2275,12 @@ def edit_position(request, position_id):
             pass
         return redirect('/benben/list_position/')
     else:
-        position_object = position.objects.get(id=position_id)
+        position_object = Position.objects.get(id=position_id)
         return render(request, templates_path + 'backstage/edit_position.html', locals())
 
 
 def list_position(request):
-    position_list = position.objects.all()
+    position_list = Position.objects.all()
     return render(request, templates_path + 'backstage/list_position.html', locals())
 
 
@@ -2298,7 +2299,7 @@ def edit_historical_position(request, historical_position_id):
 def list_historical_position(request):
     # historical_position_list = historical_position.objects.filter(date='2025-02-27')
     # historical_position_list = historical_position.objects.all()
-    historical_position_list = historical_position.objects.order_by('-date')[:200]
+    historical_position_list = HistoricalPosition.objects.order_by('-date')[:200]
     return render(request, templates_path + 'backstage/list_historical_position.html', locals())
 
 
@@ -2316,12 +2317,12 @@ def add_trade(request):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
-    account_list = account.objects.all()
-    stock_list = stock.objects.all().order_by('stock_code')
+    account_list = Account.objects.all()
+    stock_list = Stock.objects.all().order_by('stock_code')
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
         stock_id = request.POST.get('stock_id')
@@ -2334,7 +2335,7 @@ def add_trade(request):
             error_info = "股票不能为空！"
             return render(request, templates_path + 'backstage/add_trade.html', locals())
         try:
-            p = trade.objects.create(
+            p = Trade.objects.create(
                 account_id=account_id,
                 stock_id=stock_id,
                 trade_date=trade_date,
@@ -2355,7 +2356,7 @@ def add_trade(request):
 
 
 def del_trade(request, trade_id):
-    trade_object = trade.objects.get(id=trade_id)
+    trade_object = Trade.objects.get(id=trade_id)
     trade_object.delete()
     return redirect('/benben/list_trade/')
 
@@ -2373,12 +2374,12 @@ def edit_trade(request, trade_id):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
-    account_list = account.objects.all()
-    stock_list = stock.objects.all()
+    account_list = Account.objects.all()
+    stock_list = Stock.objects.all()
     if request.method == 'POST':
         id = request.POST.get('id')
         account_id = request.POST.get('account_id')
@@ -2388,7 +2389,7 @@ def edit_trade(request, trade_id):
         trade_price = request.POST.get('trade_price')
         trade_quantity = request.POST.get('trade_quantity')
         currency_value = request.POST.get('currency')
-        trade_object = trade.objects.get(id=id)
+        trade_object = Trade.objects.get(id=id)
         try:
             trade_object.account_id = account_id
             trade_object.stock_id = stock_id
@@ -2405,12 +2406,12 @@ def edit_trade(request, trade_id):
             pass
         return redirect('/benben/list_trade/')
     else:
-        trade_object = trade.objects.get(id=trade_id)
+        trade_object = Trade.objects.get(id=trade_id)
         return render(request, templates_path + 'backstage/edit_trade.html', locals())
 
 
 def list_trade(request):
-    trade_list = trade.objects.all().order_by('-trade_date', '-modified_time')[:100]
+    trade_list = Trade.objects.all().order_by('-trade_date', '-modified_time')[:100]
     return render(request, templates_path + 'backstage/list_trade.html', locals())
 
 
@@ -2424,12 +2425,12 @@ def add_dividend(request):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
-    account_list = account.objects.all()
-    stock_list = stock.objects.all().order_by('stock_code')
+    account_list = Account.objects.all()
+    stock_list = Stock.objects.all().order_by('stock_code')
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
         stock_id = request.POST.get('stock_id')
@@ -2440,7 +2441,7 @@ def add_dividend(request):
             error_info = '股票不能为空！'
             return render(request, templates_path + 'backstage/add_dividend.html', locals())
         try:
-            p = dividend.objects.create(
+            p = Dividend.objects.create(
                 account_id=account_id,
                 stock_id=stock_id,
                 dividend_date=dividend_date,
@@ -2457,7 +2458,7 @@ def add_dividend(request):
 
 
 def del_dividend(request, dividend_id):
-    dividend_object = dividend.objects.get(id=dividend_id)
+    dividend_object = Dividend.objects.get(id=dividend_id)
     dividend_object.delete()
     return redirect('/benben/list_dividend/')
 
@@ -2471,12 +2472,12 @@ def edit_dividend(request, dividend_id):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
-    account_list = account.objects.all()
-    stock_list = stock.objects.all()
+    account_list = Account.objects.all()
+    stock_list = Stock.objects.all()
     if request.method == 'POST':
         id = request.POST.get('id')
         account_id = request.POST.get('account_id')
@@ -2484,7 +2485,7 @@ def edit_dividend(request, dividend_id):
         dividend_date = request.POST.get('dividend_date')
         dividend_amount = request.POST.get('dividend_amount')
         currency_value = request.POST.get('currency')
-        dividend_object = dividend.objects.get(id=id)
+        dividend_object = Dividend.objects.get(id=id)
         try:
             dividend_object.account_id = account_id
             dividend_object.stock_id = stock_id
@@ -2499,12 +2500,12 @@ def edit_dividend(request, dividend_id):
             pass
         return redirect('/benben/list_dividend/')
     else:
-        dividend_object = dividend.objects.get(id=dividend_id)
+        dividend_object = Dividend.objects.get(id=dividend_id)
         return render(request, templates_path + 'backstage/edit_dividend.html', locals())
 
 
 def list_dividend(request):
-    dividend_list = dividend.objects.all().order_by('-dividend_date', '-modified_time')
+    dividend_list = Dividend.objects.all().order_by('-dividend_date', '-modified_time')
     return render(request, templates_path + 'backstage/list_dividend.html', locals())
 
 
@@ -2514,7 +2515,7 @@ def add_subscription(request):
         (1, '股票'),
         (2, '可转债'),
     )
-    account_list = account.objects.all()
+    account_list = Account.objects.all()
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
         subscription_name = request.POST.get('subscription_name')
@@ -2527,7 +2528,7 @@ def add_subscription(request):
             error_info = '证券账户不能为空！'
             return render(request, templates_path + 'backstage/add_subscription.html', locals())
         try:
-            p = subscription.objects.create(
+            p = Subscription.objects.create(
                 account_id=account_id,
                 subscription_name=subscription_name,
                 subscription_date=subscription_date,
@@ -2546,7 +2547,7 @@ def add_subscription(request):
 
 
 def del_subscription(request, subscription_id):
-    subscription_object = subscription.objects.get(id=subscription_id)
+    subscription_object = Subscription.objects.get(id=subscription_id)
     subscription_object.delete()
     return redirect('/benben/list_subscription/')
 
@@ -2556,7 +2557,7 @@ def edit_subscription(request, subscription_id):
         (1, '股票'),
         (2, '可转债'),
     )
-    account_list = account.objects.all()
+    account_list = Account.objects.all()
     if request.method == 'POST':
         id = request.POST.get('id')
         account_id = request.POST.get('account_id')
@@ -2566,7 +2567,7 @@ def edit_subscription(request, subscription_id):
         subscription_quantity = request.POST.get('subscription_quantity')
         buying_price = request.POST.get('buying_price')
         selling_price = request.POST.get('selling_price')
-        subscription_object = subscription.objects.get(id=id)
+        subscription_object = Subscription.objects.get(id=id)
         try:
             subscription_object.account_id = account_id
             subscription_object.subscription_name = subscription_name
@@ -2583,18 +2584,18 @@ def edit_subscription(request, subscription_id):
             pass
         return redirect('/benben/list_subscription/')
     else:
-        subscription_object = subscription.objects.get(id=subscription_id)
+        subscription_object = Subscription.objects.get(id=subscription_id)
         return render(request, templates_path + 'backstage/edit_subscription.html', locals())
 
 
 def list_subscription(request):
-    subscription_list = subscription.objects.all().order_by('-subscription_date', '-modified_time')
+    subscription_list = Subscription.objects.all().order_by('-subscription_date', '-modified_time')
     return render(request, templates_path + 'backstage/list_subscription.html', locals())
 
 
 # 分红历史表增删改查
 def add_dividend_history(request):
-    stock_list = stock.objects.all().order_by('stock_code')
+    stock_list = Stock.objects.all().order_by('stock_code')
     if request.method == 'POST':
         stock_id = request.POST.get('stock_id')
         reporting_period = request.POST.get('reporting_period')
@@ -2607,7 +2608,7 @@ def add_dividend_history(request):
             error_info = "股票不能为空！"
             return render(request, templates_path + 'backstage/add_dividend_history.html', locals())
         try:
-            p = dividend_history.objects.create(
+            p = DividendHistory.objects.create(
                 stock_id=stock_id,
                 reporting_period=reporting_period,
                 dividend_plan=dividend_plan,
@@ -2626,13 +2627,13 @@ def add_dividend_history(request):
 
 
 def del_dividend_history(request, dividend_history_id):
-    dividend_history_object = dividend_history.objects.get(id=dividend_history_id)
+    dividend_history_object = DividendHistory.objects.get(id=dividend_history_id)
     dividend_history_object.delete()
     return redirect('/benben/list_dividend_history/')
 
 
 def edit_dividend_history(request, dividend_history_id):
-    stock_list = stock.objects.all().order_by('stock_code')
+    stock_list = Stock.objects.all().order_by('stock_code')
     if request.method == 'POST':
         id = request.POST.get('id')
         stock_id = request.POST.get('stock_id')
@@ -2642,7 +2643,7 @@ def edit_dividend_history(request, dividend_history_id):
         registration_date = request.POST.get('registration_date')
         ex_right_date = request.POST.get('ex_right_date')
         dividend_date = request.POST.get('dividend_date')
-        dividend_history_object = dividend_history.objects.get(id=id)
+        dividend_history_object = DividendHistory.objects.get(id=id)
         try:
             dividend_history_object.stock_id = stock_id
             dividend_history_object.reporting_period = reporting_period
@@ -2659,22 +2660,22 @@ def edit_dividend_history(request, dividend_history_id):
             pass
         return redirect('/benben/list_dividend_history/')
     else:
-        dividend_history_object = dividend_history.objects.get(id=dividend_history_id)
+        dividend_history_object = DividendHistory.objects.get(id=dividend_history_id)
         return render(request, templates_path + 'backstage/edit_dividend_history.html', locals())
 
 
 def list_dividend_history(request):
-    dividend_history_list = dividend_history.objects.all()
+    dividend_history_list = DividendHistory.objects.all()
     return render(request, templates_path + 'backstage/list_dividend_history.html', locals())
 
 
 # 基金表增删改查
 def add_funds(request):
-    baseline_list = baseline.objects.all().order_by('currency_id', 'code')
+    baseline_list = Baseline.objects.all().order_by('currency_id', 'code')
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
@@ -2693,7 +2694,7 @@ def add_funds(request):
             error_info = "基金名称不能为空！"
             return render(request, templates_path + 'backstage/add_funds.html', locals())
         try:
-            p = funds.objects.create(
+            p = Funds.objects.create(
                 funds_name=funds_name,
                 # funds_currency=funds_currency,
                 currency_id=currency_value,
@@ -2715,17 +2716,17 @@ def add_funds(request):
 
 
 def del_funds(request, funds_id):
-    funds_object = funds.objects.get(id=funds_id)
+    funds_object = Funds.objects.get(id=funds_id)
     funds_object.delete()
     return redirect('/benben/list_funds/')
 
 
 def edit_funds(request, funds_id):
-    baseline_list = baseline.objects.all().order_by('currency_id', 'code')
+    baseline_list = Baseline.objects.all().order_by('currency_id', 'code')
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
@@ -2741,7 +2742,7 @@ def edit_funds(request, funds_id):
         funds_net_value = request.POST.get('funds_net_value')
         baseline_value = request.POST.get('baseline')
         funds_script = request.POST.get('funds_script')
-        funds_object = funds.objects.get(id=id)
+        funds_object = Funds.objects.get(id=id)
         try:
             funds_object.funds_name = funds_name
             # funds_object.funds_currency = funds_currency
@@ -2761,18 +2762,18 @@ def edit_funds(request, funds_id):
             pass
         return redirect('/benben/list_funds/')
     else:
-        funds_object = funds.objects.get(id=funds_id)
+        funds_object = Funds.objects.get(id=funds_id)
         return render(request, templates_path + 'backstage/edit_funds.html', locals())
 
 
 def list_funds(request):
-    funds_list = funds.objects.all().order_by('id')
+    funds_list = Funds.objects.all().order_by('id')
     return render(request, templates_path + 'backstage/list_funds.html', locals())
 
 
 # 基金明细表增删改查
 def add_funds_details(request, funds_id):
-    funds_list = funds.objects.all()
+    funds_list = Funds.objects.all()
     if request.method == 'POST':
         funds_id = request.POST.get('funds_id')
         date = datetime.datetime.strptime(request.POST.get('date'), "%Y-%m-%d").date()
@@ -2792,18 +2793,18 @@ def add_funds_details(request, funds_id):
             funds_value = float(funds_value)
             funds_in_out = float(funds_in_out)
             latest_date = get_max_date(funds_id)
-            earliest_date = funds.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
+            earliest_date = Funds.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
             # earliest_date = get_min_date(funds_id)
             years = float((latest_date - earliest_date).days / 365)
             # print(latest_date,earliest_date,years)
-            latest_funds_value = float(funds_details.objects.get(funds_id=funds_id, date=latest_date).funds_value)
+            latest_funds_value = float(FundsDetails.objects.get(funds_id=funds_id, date=latest_date).funds_value)
             latest_funds_principal = float(
-                funds_details.objects.get(funds_id=funds_id, date=latest_date).funds_principal)
-            latest_funds_PHR = float(funds_details.objects.get(funds_id=funds_id, date=latest_date).funds_PHR)
+                FundsDetails.objects.get(funds_id=funds_id, date=latest_date).funds_principal)
+            latest_funds_PHR = float(FundsDetails.objects.get(funds_id=funds_id, date=latest_date).funds_PHR)
             latest_funds_net_value = float(
-                funds_details.objects.get(funds_id=funds_id, date=latest_date).funds_net_value)
+                FundsDetails.objects.get(funds_id=funds_id, date=latest_date).funds_net_value)
             latest_funds_profit_rate = float(
-                funds_details.objects.get(funds_id=funds_id, date=latest_date).funds_profit_rate)
+                FundsDetails.objects.get(funds_id=funds_id, date=latest_date).funds_profit_rate)
             # print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR)
 
             funds_principal = latest_funds_principal + funds_in_out
@@ -2829,7 +2830,7 @@ def add_funds_details(request, funds_id):
             # funds_annualized_profit_rate = (funds_net_value ** (1 / float(((latest_date - earliest_date).days) / 365)) - 1) * 100
             # print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR,funds_principal,funds_net_value,funds_PHR,funds_profit,funds_profit_rate,funds_annualized_profit_rate)
             # 插入一条基金明细记录
-            p = funds_details.objects.create(
+            p = FundsDetails.objects.create(
                 funds_id=funds_id,
                 date=date,
                 funds_value=funds_value,
@@ -2845,7 +2846,7 @@ def add_funds_details(request, funds_id):
             )
 
             # 更新一条基金记录
-            funds_object = funds.objects.get(id=funds_id)
+            funds_object = Funds.objects.get(id=funds_id)
             funds_object.funds_value = funds_value
             funds_object.funds_principal = funds_principal
             funds_object.funds_PHR = funds_PHR
@@ -2863,20 +2864,20 @@ def add_funds_details(request, funds_id):
             pass
     else:
         if funds_id != 0:
-            funds_object = funds.objects.get(id=funds_id)
+            funds_object = Funds.objects.get(id=funds_id)
         else:
-            funds_object = funds.objects.all()
+            funds_object = Funds.objects.all()
     return render(request, templates_path + 'backstage/add_funds_details.html', locals())
 
 
 def del_funds_details(request, funds_details_id):
-    funds_details_object = funds_details.objects.get(id=funds_details_id)
+    funds_details_object = FundsDetails.objects.get(id=funds_details_id)
     funds_details_object.delete()
     return redirect('/benben/list_funds_details/')
 
 
 def edit_funds_details(request, funds_details_id):
-    funds_list = funds.objects.all()
+    funds_list = Funds.objects.all()
     if request.method == 'POST':
         id = request.POST.get('id')
         date = request.POST.get('date')
@@ -2888,7 +2889,7 @@ def edit_funds_details(request, funds_details_id):
         funds_profit = request.POST.get('funds_profit')
         funds_profit_rate = request.POST.get('funds_profit_rate')
         funds_annualized_profit_rate = request.POST.get('funds_annualized_profit_rate')
-        funds_details_object = funds_details.objects.get(id=id)
+        funds_details_object = FundsDetails.objects.get(id=id)
         try:
             funds_details_object.date = date
             funds_details_object.funds_value = funds_value
@@ -2907,12 +2908,12 @@ def edit_funds_details(request, funds_details_id):
             pass
         return redirect('/benben/list_funds_details/')
     else:
-        funds_details_object = funds_details.objects.get(id=funds_details_id)
+        funds_details_object = FundsDetails.objects.get(id=funds_details_id)
         return render(request, templates_path + 'backstage/edit_funds_details.html', locals())
 
 
 def list_funds_details(request):
-    funds_details_list = funds_details.objects.all()
+    funds_details_list = FundsDetails.objects.all()
     return render(request, templates_path + 'backstage/list_funds_details.html', locals())
 
 
@@ -2921,7 +2922,7 @@ def add_baseline(request):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
@@ -2934,7 +2935,7 @@ def add_baseline(request):
             error_info = " 代码不能为空！"
             return render(request, templates_path + 'backstage/add_baseline.html', locals())
         try:
-            p = baseline.objects.create(
+            p = Baseline.objects.create(
                 code=baseline_code,
                 name=baseline_name,
                 currency_id=baseline_currency,
@@ -2950,7 +2951,7 @@ def add_baseline(request):
 
 
 def del_baseline(request, baseline_id):
-    baseline_object = baseline.objects.get(id=baseline_id)
+    baseline_object = Baseline.objects.get(id=baseline_id)
     baseline_object.delete()
     return redirect('/benben/list_baseline/')
 
@@ -2959,7 +2960,7 @@ def edit_baseline(request, baseline_id):
     currency_items = ()
     keys = []
     values = []
-    for rs in currency.objects.all():
+    for rs in Currency.objects.all():
         keys.append(rs.id)
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
@@ -2969,7 +2970,7 @@ def edit_baseline(request, baseline_id):
         baseline_name = request.POST.get('name')
         baseline_currency = request.POST.get('currency')
         baseline_script = request.POST.get('script')
-        baseline_object = baseline.objects.get(id=id)
+        baseline_object = Baseline.objects.get(id=id)
         try:
             baseline_object.code = baseline_code
             baseline_object.name = baseline_name
@@ -2983,19 +2984,19 @@ def edit_baseline(request, baseline_id):
             pass
         return redirect('/benben/list_baseline/')
     else:
-        baseline_object = baseline.objects.get(id=baseline_id)
+        baseline_object = Baseline.objects.get(id=baseline_id)
         return render(request, templates_path + 'backstage/edit_baseline.html', locals())
 
 
 def list_baseline(request):
-    baseline_list = baseline.objects.all().order_by('id')
+    baseline_list = Baseline.objects.all().order_by('id')
     return render(request, templates_path + 'backstage/list_baseline.html', locals())
 
 
 # 从网站中抓取数据导入数据库
 def capture_dividend_history(request):
-    stock_list = stock.objects.all().values('stock_code', 'stock_name').order_by('stock_code')
-    holding_stock_list = position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
+    stock_list = Stock.objects.all().values('stock_code', 'stock_name').order_by('stock_code')
+    holding_stock_list = Position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
     if request.method == 'POST':
         stock_code_list = []
         stock_code_POST = request.POST.get('stock_code')
@@ -3010,7 +3011,7 @@ def capture_dividend_history(request):
             stock_code_list.append(stock_code_POST)
         # print("stock_code_list=", stock_code_list)
         for stock_code in stock_code_list:
-            stock_object = stock.objects.get(stock_code=stock_code)
+            stock_object = Stock.objects.get(stock_code=stock_code)
             stock_id = stock_object.id
             stock_dividend_dict = get_stock_dividend_history(stock_code)
             next_dividend_date, last_dividend_date = get_dividend_date(stock_dividend_dict)
@@ -3018,7 +3019,7 @@ def capture_dividend_history(request):
             try:
                 # 删除dividend_history表中的相关记录
                 # dividend_history_object = dividend_history.objects.get(stock_id = stock_id)
-                dividend_history.objects.filter(stock_id=stock_id).delete()
+                DividendHistory.objects.filter(stock_id=stock_id).delete()
 
                 # 在dividend_history表中增加相关记录
                 for i in stock_dividend_dict:
@@ -3032,7 +3033,7 @@ def capture_dividend_history(request):
                         i['ex_right_date'] = None
                     if i['dividend_date'] == '' or i['dividend_date'] == 'None':
                         i['dividend_date'] = None
-                    p = dividend_history.objects.create(
+                    p = DividendHistory.objects.create(
                         stock_id=stock_id,
                         reporting_period=i['reporting_period'],
                         dividend_plan=i['dividend_plan'],
@@ -3060,7 +3061,7 @@ def capture_dividend_history(request):
 
 # 从excel表读取数据导入数据库
 def batch_import(request):
-    funds_list = funds.objects.all()
+    funds_list = Funds.objects.all()
     if request.method == 'POST':
         form_name = request.POST.get('form_name')
         if form_name == '交易':
@@ -3080,14 +3081,13 @@ def batch_import(request):
             # excel2dividend('D:/gp/GP_操作.xlsm', '分红', -1, -1)
         elif form_name == '基金明细':
             funds_id = request.POST.get('funds_id')
-            funds_name = funds.objects.get(id=funds_id).funds_name
+            funds_name = Funds.objects.get(id=funds_id).funds_name
             file_name = 'c:/gp/GP（' + funds_name + '）.xls'
             excel2funds(file_name, funds_name, -1, -1)
             print(form_name, funds_id, funds_name)
         else:
             pass
     return render(request, templates_path + 'other/batch_import.html', locals())  # 这里用'/'，‘//’或者‘/’代替'\'，防止'\b'被转义
-
 
 
 # 更新历史持仓市值数据（historical_position、historical_rate、historical_market_value表）
@@ -3105,7 +3105,7 @@ task_status = {
 
 def update_historical_market_value(request):
     # 获取初始日期范围
-    result = historical_position.objects.aggregate(max_date=Max('date'))
+    result = HistoricalPosition.objects.aggregate(max_date=Max('date'))
     start_date = result['max_date'] - datetime.timedelta(days=30)
     end_date = datetime.date.today()
 
@@ -3283,7 +3283,7 @@ def generate_historical_positions(start_date, end_date):
         date_sequence = []
 
         # 1. 检查并加载初始持仓
-        initial_positions = historical_position.objects.filter(date=start_date)
+        initial_positions = HistoricalPosition.objects.filter(date=start_date)
         if initial_positions.exists():
             # 加载初始持仓（过滤零持仓）
             for pos in initial_positions.exclude(quantity=0):
@@ -3305,7 +3305,7 @@ def generate_historical_positions(start_date, end_date):
             current_date += datetime.timedelta(days=1)
 
         # 3. 获取需要处理的交易数据（排除已初始化的日期）
-        relevant_trades = trade.objects.filter(
+        relevant_trades = Trade.objects.filter(
             trade_date__gte=process_start,
             trade_date__lte=end_date
         ).order_by('trade_date').values(
@@ -3323,7 +3323,7 @@ def generate_historical_positions(start_date, end_date):
                 if t['trade_date'] == processing_date:
                     # 修改点3：使用 currency_id
                     key = (t['stock_id'], t['currency_id'])
-                    if t['trade_type'] == trade.BUY:
+                    if t['trade_type'] == Trade.BUY:
                         daily_trades[key]['buy'] += t['trade_quantity']
                     else:
                         daily_trades[key]['sell'] += t['trade_quantity']
@@ -3349,7 +3349,7 @@ def generate_historical_positions(start_date, end_date):
             # 生成当日记录（过滤零持仓）
             for (stock_id, currency_id), quantity in position_cache.items():
                 # 修改点4：使用 currency_id 替代 currency
-                new_positions.append(historical_position(
+                new_positions.append(HistoricalPosition(
                     date=processing_date,
                     stock_id=stock_id,
                     currency_id=currency_id,
@@ -3361,13 +3361,13 @@ def generate_historical_positions(start_date, end_date):
         # 5. 清理旧数据并保存新记录
         if date_sequence:
             # 删除可能存在的旧记录
-            historical_position.objects.filter(
+            HistoricalPosition.objects.filter(
                 date__gte=process_start,
                 date__lte=end_date
             ).delete()
 
             # 批量插入新记录
-            historical_position.objects.bulk_create(new_positions)
+            HistoricalPosition.objects.bulk_create(new_positions)
             print(f"[SUCCESS] 生成 {len(new_positions)} 条记录（{process_start} 至 {end_date}）")
             return len(new_positions)
 
@@ -3383,19 +3383,19 @@ def get_historical_closing_price(start_date, end_date):
     # start_date_str = (start_date - datetime.timedelta(days=10)).strftime("%Y%m%d") if start_date else ""
     start_date_str = start_date.strftime("%Y%m%d") if start_date else ""
     end_date_str = end_date.strftime("%Y%m%d") if end_date else ""
-    date_list = list(historical_position.objects.filter(
+    date_list = list(HistoricalPosition.objects.filter(
         date__gte=start_date,
         date__lte=end_date
     ).values_list('date', flat=True).distinct())
     # 获取stock字段的去重值列表
-    stock_list = list(historical_position.objects.filter(
+    stock_list = list(HistoricalPosition.objects.filter(
         date__gte=start_date,
         date__lte=end_date
     ).values_list('stock', flat=True).distinct())
     for i in stock_list:
-        stock_code = stock.objects.get(id=i).stock_code
-        market_name = stock.objects.get(id=i).market.market_name
-        market_abbreviation = stock.objects.get(id=i).market.market_abbreviation
+        stock_code = Stock.objects.get(id=i).stock_code
+        market_name = Stock.objects.get(id=i).market.market_name
+        market_abbreviation = Stock.objects.get(id=i).market.market_abbreviation
         price_dict = {}
         if market_name == '港股':
             stock_code_str = stock_code
@@ -3496,7 +3496,7 @@ def update_closing_prices(stock_code, price_dict):
 
     # 筛选需要更新的记录
     dates = price_dict.keys()
-    records = historical_position.objects.filter(date__in=dates, stock__stock_code=stock_code)
+    records = HistoricalPosition.objects.filter(date__in=dates, stock__stock_code=stock_code)
 
     # 批量赋值并更新
     for record in records:
@@ -3504,7 +3504,7 @@ def update_closing_prices(stock_code, price_dict):
 
     try:
         with transaction.atomic():
-            historical_position.objects.bulk_update(records, ['closing_price'])
+            HistoricalPosition.objects.bulk_update(records, ['closing_price'])
             print(stock_code)
             print("历史收盘价格更新成功！")
     except Exception as e:
@@ -3516,7 +3516,7 @@ def update_closing_prices(stock_code, price_dict):
 def fill_missing_closing_price(start_date, end_date):
     with transaction.atomic():
         # 获取指定日期范围内收盘价为0的所有记录
-        records = historical_position.objects.filter(
+        records = HistoricalPosition.objects.filter(
             date__range=(start_date, end_date),
             closing_price=0
         )
@@ -3526,7 +3526,7 @@ def fill_missing_closing_price(start_date, end_date):
 
         for record in records:
             # 查找同一股票和货币的最近有效收盘价记录
-            prev_entry = historical_position.objects.filter(
+            prev_entry = HistoricalPosition.objects.filter(
                 stock=record.stock,
                 currency_id=record.currency_id,
                 date__lt=record.date,
@@ -3540,7 +3540,7 @@ def fill_missing_closing_price(start_date, end_date):
 
         # 批量更新记录
         if updates:
-            historical_position.objects.bulk_update(updates, ['closing_price'])
+            HistoricalPosition.objects.bulk_update(updates, ['closing_price'])
 
         print(f"补全了 {count} 条缺失的收盘价格")
 
@@ -3552,9 +3552,9 @@ def get_today_price():
     while current_date.weekday() >= 5:
         current_date -= datetime.timedelta(days=1)
     # 获取stock字段的去重值列表
-    stock_list = list(historical_position.objects.filter(date=current_date).values_list('stock', flat=True).distinct())
+    stock_list = list(HistoricalPosition.objects.filter(date=current_date).values_list('stock', flat=True).distinct())
     for i in stock_list:
-        stock_code = stock.objects.get(id=i).stock_code
+        stock_code = Stock.objects.get(id=i).stock_code
         price_dict = {}
         current_price, increase, color = get_quote_snowball(stock_code)
         price_dict[current_date] = current_price
@@ -3567,7 +3567,7 @@ def update_today_prices(current_date, stock_code, price_dict):
     # dates = price_dict.keys()
     # current_date = datetime.date.today()
 
-    records = historical_position.objects.filter(date=current_date, stock__stock_code=stock_code)
+    records = HistoricalPosition.objects.filter(date=current_date, stock__stock_code=stock_code)
 
     # 批量赋值并更新
     for record in records:
@@ -3575,7 +3575,7 @@ def update_today_prices(current_date, stock_code, price_dict):
 
     try:
         with transaction.atomic():
-            historical_position.objects.bulk_update(records, ['closing_price'])
+            HistoricalPosition.objects.bulk_update(records, ['closing_price'])
             print(stock_code)
             print("当日价格更新成功！")
     except Exception as e:
@@ -3589,8 +3589,8 @@ def get_historical_rate(start_date, end_date):
     end_date_str = end_date.strftime("%Y%m%d") if end_date else ""
 
     # +++ 修改点1：获取货币对象 +++
-    currency_hkd = currency.objects.get(name='港元')
-    currency_usd = currency.objects.get(name='美元')
+    currency_hkd = Currency.objects.get(name='港元')
+    currency_usd = Currency.objects.get(name='美元')
 
     try:
         df = ak.currency_boc_sina(symbol="港币", start_date=start_date_str, end_date=end_date_str)
@@ -3626,7 +3626,7 @@ def update_historical_rate(df: pd.DataFrame, currency_obj, start_date, end_date)
 
     # 准备模型实例列表
     instances = [
-        historical_rate(
+        HistoricalRate(
             date=row['日期'],
             # +++ 修改点4：使用货币对象而不是名称 +++
             currency=currency_obj,
@@ -3638,14 +3638,14 @@ def update_historical_rate(df: pd.DataFrame, currency_obj, start_date, end_date)
     # 原子操作：删除旧数据 + 插入新数据
     with transaction.atomic():
         # 删除该货币所有旧数据
-        historical_rate.objects.filter(
+        HistoricalRate.objects.filter(
             # +++ 修改点5：使用货币对象替代名称 +++
             currency=currency_obj,
             date__gte=start_date,
             date__lte=end_date
         ).delete()
         # 批量写入新数据
-        historical_rate.objects.bulk_create(instances)
+        HistoricalRate.objects.bulk_create(instances)
 
 
 # 补充akshare数据中缺失的日期
@@ -3663,10 +3663,10 @@ def fill_missing_historical_rates():
 
     # 获取需要补全的日期和货币组合
     # +++ 修改点1：直接查询 currency_id 不转换为名称 +++
-    positions = historical_position.objects.values('date', 'currency_id').distinct()
+    positions = HistoricalPosition.objects.values('date', 'currency_id').distinct()
 
     # 获取已存在的汇率记录
-    existing_rates = historical_rate.objects.filter(
+    existing_rates = HistoricalRate.objects.filter(
         # +++ 修改点2：直接使用 currency_id 过滤 +++
         Q(date__in=[pos['date'] for pos in positions]) &
         Q(currency_id__in=[pos['currency_id'] for pos in positions])
@@ -3695,7 +3695,7 @@ def fill_missing_historical_rates():
     for currency_id, dates in currency_date_map.items():
         # 获取该货币所有历史记录
         # +++ 修改点5：按 currency_id 而不是名称查询 +++
-        currency_rates = historical_rate.objects.filter(currency_id=currency_id) \
+        currency_rates = HistoricalRate.objects.filter(currency_id=currency_id) \
             .order_by('-date').values('date', 'rate')
 
         if not currency_rates:
@@ -3716,7 +3716,7 @@ def fill_missing_historical_rates():
             # 最多向前查找30天防止无限循环
             for _ in range(30):
                 if current_date in rate_dict:
-                    new_rates.append(historical_rate(
+                    new_rates.append(HistoricalRate(
                         date=target_date,
                         # +++ 修改点7：直接设置 currency_id +++
                         currency_id=currency_id,
@@ -3734,7 +3734,7 @@ def fill_missing_historical_rates():
 
     # 批量插入新记录
     if new_rates:
-        historical_rate.objects.bulk_create(new_rates)
+        HistoricalRate.objects.bulk_create(new_rates)
 
     print(f"补全了 {len(new_rates)} 条记录")
     return len(new_rates), errors
@@ -3749,13 +3749,13 @@ def calculate_market_value(start_date, end_date):
         # 使用原子事务保证数据一致性
         with transaction.atomic():
             # 1. 清空历史市值表
-            historical_market_value.objects.filter(
+            HistoricalMarketValue.objects.filter(
                 date__gte=start_date,
                 date__lte=end_date
             ).delete()
 
             # 2. 预加载汇率数据（日期范围 + 货币）
-            rate_records = historical_rate.objects.filter(
+            rate_records = HistoricalRate.objects.filter(
                 date__gte=start_date,
                 date__lte=end_date
             ).values('date', 'currency_id', 'rate')  # +++ 修改点1：添加 currency_id +++
@@ -3767,7 +3767,7 @@ def calculate_market_value(start_date, end_date):
             }
 
             # 4. 获取所有持仓记录并按日期分组
-            positions = historical_position.objects.filter(
+            positions = HistoricalPosition.objects.filter(
                 date__gte=start_date,
                 date__lte=end_date
             ).select_related('stock')
@@ -3795,9 +3795,9 @@ def calculate_market_value(start_date, end_date):
                     # 6.2 获取汇率（人民币特殊处理）
                     # 如持仓货币为人民币且股票市场为港股，则为港股通持仓，需按港元汇率计算人民币市值
                     # +++ 修改点4：直接比较 currency_id +++
-                    if currency_id == currency.objects.get(name='人民币').id and pos.stock.market.currency_id == 2:
+                    if currency_id == Currency.objects.get(name='人民币').id and pos.stock.market.currency_id == 2:
                         # +++ 修改点5：使用港元 currency_id 获取汇率 +++
-                        hkd_currency_id = currency.objects.get(name='港元').id
+                        hkd_currency_id = Currency.objects.get(name='港元').id
                         exchange_rate = rate_dict.get((current_date, hkd_currency_id), Decimal(1))
                     else:
                         exchange_rate = Decimal(1)
@@ -3811,7 +3811,7 @@ def calculate_market_value(start_date, end_date):
                 # +++ 修改点7：使用 currency_id 而不是名称 +++
                 for currency_id, total in currency_totals.items():
                     market_values.append(
-                        historical_market_value(
+                        HistoricalMarketValue(
                             date=current_date,
                             # 直接设置 currency_id
                             currency_id=currency_id,
@@ -3823,7 +3823,7 @@ def calculate_market_value(start_date, end_date):
                 current_date += datetime.timedelta(days=1)
 
             # 8. 批量写入数据库
-            historical_market_value.objects.bulk_create(market_values)
+            HistoricalMarketValue.objects.bulk_create(market_values)
         print("历史持仓市值写入成功！")
     except Exception as e:
         print(f"历史持仓市值写入失败: {e}")
@@ -3841,7 +3841,7 @@ def calculate_and_fill_historical_data(start_date, end_date):
         workdays = generate_workdays(start_date, end_date)
 
         # 获取所有货币种类（包括新增数据可能包含的新货币）
-        currencies = historical_market_value.objects.values_list(
+        currencies = HistoricalMarketValue.objects.values_list(
             'currency', flat=True
         ).distinct()
 
@@ -3849,7 +3849,7 @@ def calculate_and_fill_historical_data(start_date, end_date):
         for currency in currencies:
             # 获取该货币在指定范围内的现有日期
             existing_dates = set(
-                historical_market_value.objects.filter(
+                HistoricalMarketValue.objects.filter(
                     currency=currency,
                     date__range=(start_date, end_date)
                 ).values_list('date', flat=True)
@@ -3860,8 +3860,8 @@ def calculate_and_fill_historical_data(start_date, end_date):
 
             # 批量创建记录（新补全记录的初始值后续会更新）
             if missing_dates:
-                historical_market_value.objects.bulk_create([
-                    historical_market_value(
+                HistoricalMarketValue.objects.bulk_create([
+                    HistoricalMarketValue(
                         currency=currency,
                         date=day,
                         value=0,
@@ -3874,7 +3874,7 @@ def calculate_and_fill_historical_data(start_date, end_date):
 
         # ================== 阶段2：指标计算 ==================
         # 关键修改：先注释前值再过滤日期范围
-        queryset = historical_market_value.objects.annotate(
+        queryset = HistoricalMarketValue.objects.annotate(
             prev_value_calc=Window(
                 expression=Lag('value', 1),
                 partition_by=[F('currency')],
@@ -3893,7 +3893,7 @@ def calculate_and_fill_historical_data(start_date, end_date):
             # 智能获取前日值逻辑
             if obj.prev_value_calc is None:  # 没有前日记录
                 # 检查是否真的是首条记录
-                has_previous = historical_market_value.objects.filter(
+                has_previous = HistoricalMarketValue.objects.filter(
                     currency=obj.currency,
                     date__lt=obj.date
                 ).exists()
@@ -3914,12 +3914,12 @@ def calculate_and_fill_historical_data(start_date, end_date):
                             current_date -= datetime.timedelta(days=1)
                         # 尝试获取记录
                         try:
-                            prev_val = historical_market_value.objects.get(
+                            prev_val = HistoricalMarketValue.objects.get(
                                 currency=obj.currency,
                                 date=current_date
                             ).value
                             break
-                        except historical_market_value.DoesNotExist:
+                        except HistoricalMarketValue.DoesNotExist:
                             continue  # 继续向前查找
             else:
                 prev_val = obj.prev_value_calc
@@ -3939,7 +3939,7 @@ def calculate_and_fill_historical_data(start_date, end_date):
 
             # 批量提交
             if len(update_buffer) >= BATCH_SIZE:
-                historical_market_value.objects.bulk_update(
+                HistoricalMarketValue.objects.bulk_update(
                     update_buffer,
                     ['prev_value', 'change_amount', 'change_rate'],
                     batch_size=BATCH_SIZE
@@ -3948,7 +3948,7 @@ def calculate_and_fill_historical_data(start_date, end_date):
 
         # 提交剩余数据
         if update_buffer:
-            historical_market_value.objects.bulk_update(
+            HistoricalMarketValue.objects.bulk_update(
                 update_buffer,
                 ['prev_value', 'change_amount', 'change_rate'],
                 batch_size=BATCH_SIZE
@@ -4029,7 +4029,7 @@ def test(request):
     # # print(data)
 
     data = []
-    market_value_list = historical_market_value.objects.filter(currency=1).order_by("date")
+    market_value_list = HistoricalMarketValue.objects.filter(currency=1).order_by("date")
     for rs in market_value_list:
         date = str(rs.date)
         value = float(rs.value)
@@ -4212,6 +4212,7 @@ def test(request):
     # migrate_historical_market_value_currencies()
 
     return render(request, templates_path + 'test.html', locals())
+
 
 '''
 def migrate_market_currencies():

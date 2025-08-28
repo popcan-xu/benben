@@ -8,7 +8,7 @@ import django
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import broker, market, account, stock, trade, dividend, subscription, funds, funds_details
+from stock.models import Broker, Market, Account, Stock, Trade, Dividend, Subscription, Funds, FundsDetails
 import re
 from django.contrib import messages
 
@@ -22,7 +22,7 @@ def excel2trade(file_name, sheet_name, start_row, end_row):
     else:
         currency_value = 1
     if sheet_name != '打新':
-        trade_account_id = account.objects.get(account_abbreviation=sheet_name).id
+        trade_account_id = Account.objects.get(account_abbreviation=sheet_name).id
     # 获取总行数
     nrows = sht.nrows  # 包括标题
     # 获取总列数
@@ -48,14 +48,14 @@ def excel2trade(file_name, sheet_name, start_row, end_row):
                 if colspan.get((i, j)):
                     if j == 0:
                         if sheet_name == '打新':
-                            trade_account_id = account.objects.get(
+                            trade_account_id = Account.objects.get(
                                 account_abbreviation=sht.cell_value(*colspan.get((i, j)))).id
                     elif j == 1:
                         trade_stock = sht.cell_value(*colspan.get((i, j)))
                 else:
                     if j == 0:
                         if sheet_name == '打新':
-                            trade_account_id = account.objects.get(account_abbreviation=sht.cell_value(i, j)).id
+                            trade_account_id = Account.objects.get(account_abbreviation=sht.cell_value(i, j)).id
                     elif j == 1:
                         trade_stock = sht.cell_value(i, j)
             trade_date = xldate_as_datetime(sht.cell(i, 2).value, 0)
@@ -72,10 +72,10 @@ def excel2trade(file_name, sheet_name, start_row, end_row):
             list1 = re.findall(p1, trade_stock)
             trade_stock_code = list1[0]
             try:
-                stock_object = stock.objects.get(stock_code=trade_stock_code)
+                stock_object = Stock.objects.get(stock_code=trade_stock_code)
             except:
                 trade_stock_code = -1
-                stock_object = stock.objects.get(stock_code=trade_stock_code)
+                stock_object = Stock.objects.get(stock_code=trade_stock_code)
             else:
                 pass
             trade_stock_id = stock_object.id
@@ -83,7 +83,7 @@ def excel2trade(file_name, sheet_name, start_row, end_row):
             count += 1
 
             try:
-                p = trade.objects.create(
+                p = Trade.objects.create(
                     account_id=trade_account_id,
                     stock_id=trade_stock_id,
                     trade_date=trade_date,
@@ -117,7 +117,7 @@ def excel2dividend(file_name, sheet_name, start_row, end_row):
         if sht.cell(i, 1).value != '':
             dividend_date = xldate_as_datetime(sht.cell(i, 0).value, 0)
             stock_code = sht.cell(i, 1).value
-            stock_id = stock.objects.get(stock_code=stock_code).id
+            stock_id = Stock.objects.get(stock_code=stock_code).id
             stock_name = sht.cell(i, 2).value
             for j in range(3, ncols):
                 if sht.cell(i, j).value != '':
@@ -126,7 +126,7 @@ def excel2dividend(file_name, sheet_name, start_row, end_row):
                     if account_abbreviation[-2:] != '小计':  # 判断字符串后两位
                         if account_abbreviation[0:3] == '银河1':  # 判断字符串前三位
                             account_abbreviation = '银河1'
-                        account_id = account.objects.get(account_abbreviation=account_abbreviation).id
+                        account_id = Account.objects.get(account_abbreviation=account_abbreviation).id
                         if j < 13:
                             currency_value = 1  # 人民币分红
                         elif j < 19:
@@ -134,7 +134,7 @@ def excel2dividend(file_name, sheet_name, start_row, end_row):
                         else:
                             currency_value = 3  # 美元分虹
                         try:
-                            p = dividend.objects.create(
+                            p = Dividend.objects.create(
                                 dividend_date=dividend_date,
                                 stock_id=stock_id,
                                 account_id=account_id,
@@ -170,13 +170,13 @@ def excel2subscription(file_name, sheet_name, start_row, end_row):
             account_abbreviation = sht.cell(i, 1).value
             if account_abbreviation[0:3] == '银河1':  # 判断字符串前三位
                 account_abbreviation = '银河1'
-            account_id = account.objects.get(account_abbreviation=account_abbreviation).id
+            account_id = Account.objects.get(account_abbreviation=account_abbreviation).id
             subscription_name = sht.cell(i, 2).value
             subscription_quantity = sht.cell(i, 3).value
             buying_price = sht.cell(i, 4).value
             selling_price = sht.cell(i, 5).value
             try:
-                p = subscription.objects.create(
+                p = Subscription.objects.create(
                     subscription_date=subscription_date,
                     account_id=account_id,
                     subscription_name=subscription_name,
@@ -194,7 +194,7 @@ def excel2subscription(file_name, sheet_name, start_row, end_row):
 def excel2funds(file_name, sheet_name, start_row, end_row):
     workbook = xlrd.open_workbook(file_name)
     sht = workbook.sheet_by_name(sheet_name)
-    funds_id = funds.objects.get(funds_name=sheet_name).id
+    funds_id = Funds.objects.get(funds_name=sheet_name).id
     # 获取总行数
     nrows = sht.nrows  # 包括标题
     # 获取总列数
@@ -245,7 +245,7 @@ def excel2funds(file_name, sheet_name, start_row, end_row):
             try:
                 # 更新或新增一条记录
                 print(funds_id,date)
-                rs = funds_details.objects.filter(funds_id=funds_id, date=date)
+                rs = FundsDetails.objects.filter(funds_id=funds_id, date=date)
                 print(rs)
                 if rs.exists():
                     # 删除一条记录
@@ -271,7 +271,7 @@ def excel2funds(file_name, sheet_name, start_row, end_row):
                     print('更新记录成功！', funds_id, date, funds_value, funds_in_out, funds_principal, funds_PHR, funds_net_value, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
                     '''
                 # 新增一条记录
-                p = funds_details.objects.create(
+                p = FundsDetails.objects.create(
                     funds_id=funds_id,
                     date=date,
                     funds_value=funds_value,

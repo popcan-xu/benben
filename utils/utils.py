@@ -31,7 +31,8 @@ import re
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import market, stock, trade, position, dividend, subscription, funds_details, currency, funds, historical_market_value, historical_rate
+from stock.models import Market, Stock, Trade, Position, Dividend, Subscription, FundsDetails, Currency, Funds, \
+    HistoricalMarketValue, HistoricalRate
 
 
 # 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
@@ -42,7 +43,8 @@ class FileOperate:
     若为写入，需向dictData传入字典类型数据
     默认为utf-8格式
     '''
-    def __init__(self,filepath,filename,way='r',dictData = None,encoding='utf-8'):
+
+    def __init__(self, filepath, filename, way='r', dictData=None, encoding='utf-8'):
         self.filepath = filepath
         self.filename = filename
         self.way = way
@@ -54,7 +56,7 @@ class FileOperate:
             self.way = 'w'
         with open(self.filepath + self.filename, self.way, encoding=self.encoding) as f:
             if self.dictData:
-                #print(self.dictData)
+                # print(self.dictData)
                 f.write(json.dumps(self.dictData, ensure_ascii=False, indent=2))
             else:
                 if '.json' in self.filename:
@@ -123,7 +125,7 @@ def get_chart_array(content, max_rows, name_col, value_col):
 def get_stock_price(stock_code):
     # stock_object = stock.objects.get(stock_code=stock_code)
     path = pathlib.Path("./templates/dashboard/price.json")
-    if path.is_file(): # 若json文件存在，从json文件中读取price、increase、color、price_time、index
+    if path.is_file():  # 若json文件存在，从json文件中读取price、increase、color、price_time、index
         # 读取price.json
         price_dict = FileOperate(filepath='./templates/dashboard/', filename='price.json').operation_file()
         price_array = price_dict['price_array']
@@ -134,7 +136,7 @@ def get_stock_price(stock_code):
             price = float(price_array[index][1])
             increase = float(price_array[index][2])
             color = str(price_array[index][3])
-    else: # 若json文件不存在，创建json文件
+    else:  # 若json文件不存在，创建json文件
         price_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
         index = -1
         price_array = []
@@ -146,8 +148,9 @@ def get_stock_price(stock_code):
     time2 = datetime.datetime.now()
     time3 = datetime.datetime(time1.year, time1.month, time1.day, 16, 29, 59)
     # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与数据库价格获取时间间隔大于900秒 且 数据库价格获取时间早于当天的16点30分)
-    if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0) or index == -1:
-    # if (time2 - time1).total_seconds() >= 0: # 用于调试
+    if time1.date() != time2.date() or (
+            (time2 - time1).total_seconds() >= 900 and (time1 - time3).total_seconds() <= 0) or index == -1:
+        # if (time2 - time1).total_seconds() >= 0: # 用于调试
         # 1.从雪球网抓取实时行情
         price, increase, color = get_quote_snowball(stock_code)
 
@@ -176,13 +179,13 @@ def get_stock_price(stock_code):
 def get_stock_array_price(stock_code_array):
     # stock_object = stock.objects.get(stock_code=stock_code)
     path = pathlib.Path("./templates/dashboard/price.json")
-    if path.is_file(): # 若json文件存在，从json文件中读取price、increase、color、price_time、index
+    if path.is_file():  # 若json文件存在，从json文件中读取price、increase、color、price_time、index
         # 读取price.json
         price_dict = FileOperate(filepath='./templates/dashboard/', filename='price.json').operation_file()
         price_array = price_dict['price_array']
         price_time = datetime.datetime.strptime(price_dict['modified_time'], "%Y-%m-%d %H:%M:%S")
         # price, increase, color, price_time, index = search_price_array(price_array, stock_code)
-    else: # 若json文件不存在，创建json文件
+    else:  # 若json文件不存在，创建json文件
         price_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
         # index = -1
         price_array = []
@@ -196,7 +199,7 @@ def get_stock_array_price(stock_code_array):
     price_array_current = price_array
     # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与price.json文件价格获取时间间隔大于60秒 且 price.json文件价格获取时间早于当天的16点30分)
     if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 60 and (time1 - time3).total_seconds() <= 0):
-    # if (time2 - time1).total_seconds() >= 0: # 用于调试
+        # if (time2 - time1).total_seconds() >= 0: # 用于调试
         # 1.从雪球网抓取实时行情
         # price, increase, color = get_quote_snowball(stock_code)
 
@@ -234,7 +237,7 @@ def get_stock_array_price(stock_code_array):
 
 # 从akshare获取单一股票实时行情
 def get_quote_akshare(stock_code):
-    stock_object = stock.objects.get(stock_code=stock_code)
+    stock_object = Stock.objects.get(stock_code=stock_code)
     market_name = stock_object.market.market_name
     if market_name == '港股':
         # df = ak.stock_hk_spot_em()
@@ -280,20 +283,19 @@ def get_quote_akshare(stock_code):
     # df = ak.fund_etf_spot_em()
     # print(df.query('代码=="511880"')['最新价'].iloc[0])
 
-
     return price, increase, color
 
 
 # 从雪球抓取单一股票实时行情
 def get_quote_snowball(stock_code):
-    stock_object = stock.objects.get(stock_code=stock_code)
+    stock_object = Stock.objects.get(stock_code=stock_code)
     market = stock_object.market.market_abbreviation
     if market == 'hk':
         code = stock_code
     else:
         code = market.upper() + stock_code
     url = 'https://stock.xueqiu.com/v5/stock/realtime/quotec.json?symbol=' + code
-    quote_json = json.loads(getHTMLText(url)) # 将getHTMLText()返回的字符串转换为json格式的list
+    quote_json = json.loads(getHTMLText(url))  # 将getHTMLText()返回的字符串转换为json格式的list
     price = quote_json['data'][0]['current']
     increase = quote_json['data'][0]['percent']
     if increase > 0:
@@ -311,7 +313,7 @@ def get_quote_array_snowball(stock_code_array):
     quote_array = []
     code_str = ''
     for i in stock_code_array:
-        stock_object = stock.objects.get(stock_code=i)
+        stock_object = Stock.objects.get(stock_code=i)
         market = stock_object.market.market_abbreviation
         if market == 'hk':
             code = i
@@ -320,18 +322,18 @@ def get_quote_array_snowball(stock_code_array):
         code_array.append(code)
         code_str = ','.join(code_array)
     url = 'https://stock.xueqiu.com/v5/stock/realtime/quotec.json?symbol=' + code_str
-    quote_json = json.loads(getHTMLText(url)) # 将getHTMLText()返回的字符串转换为json格式的list
+    quote_json = json.loads(getHTMLText(url))  # 将getHTMLText()返回的字符串转换为json格式的list
     data = quote_json['data']
     for i in data:
         stock_code = i['symbol']
         price = i['current']
-        increase = i['percent']/100 if i['percent']!=None else 0
+        increase = i['percent'] / 100 if i['percent'] != None else 0
         if increase > 0:
-            color = '#ef4444' # 红色
+            color = '#ef4444'  # 红色
         elif increase < 0:
-            color = '#10b981' # 绿色
+            color = '#10b981'  # 绿色
         else:
-            color = '#6b7280' # 深灰色
+            color = '#6b7280'  # 深灰色
         quote_array.append((remove_prefix(stock_code), price, increase, color))
     return quote_array
 
@@ -346,7 +348,7 @@ def remove_prefix(stock_code):
 # 从http://qt.gtimg.cn/抓取实时行情
 def get_quote_gtimg(stock_code):
     price_str = []
-    stock_object = stock.objects.get(stock_code=stock_code)
+    stock_object = Stock.objects.get(stock_code=stock_code)
     market = stock_object.market.market_abbreviation
     if market == 'hk':
         url = 'http://qt.gtimg.cn/q=r_' + market + stock_code  # 在股票代码前面加上'r_'，用于获得实时港股行情
@@ -366,10 +368,11 @@ def get_quote_gtimg(stock_code):
         color = 'grey'
     return price, increase, color
 
+
 # 从akshare或http://qt.gtimg.cn/获取汇率数据
 def get_rate1():
     path = pathlib.Path("./templates/dashboard/rate.json")
-    if path.is_file() == True: # 若json文件存在
+    if path.is_file() == True:  # 若json文件存在
         # 1. 读取JSON文件
         with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -408,7 +411,6 @@ def get_rate1():
                 html = getHTMLText(url)
                 rate_USD = extract_rate(html)
                 data["rate_USD"] = rate_USD
-
 
                 # ak.currency_boc_sina接口
                 # current_date = pd.to_datetime(datetime.date.today())
@@ -485,9 +487,10 @@ def get_rate1():
             rate_USD = 1
     return rate_HKD, rate_USD
 
+
 def get_rate():
     path = pathlib.Path("./templates/dashboard/rate.json")
-    if path.is_file() == True: # 若json文件存在
+    if path.is_file() == True:  # 若json文件存在
         # 1. 读取JSON文件
         with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -526,7 +529,6 @@ def get_rate():
                 html = getHTMLText(url)
                 rate_USD = extract_rate(html)
                 data["rate_USD"] = rate_USD
-
 
                 # ak.currency_boc_sina接口
                 # current_date = pd.to_datetime(datetime.date.today())
@@ -641,6 +643,7 @@ def extract_rate(input_str: str) -> float or None:
     # except (IndexError, ValueError, TypeError):
     #     return None
 
+
 '''
 # 从https://wocha.cn/网站抓取汇率数据
 def get_rate_wocha():
@@ -748,7 +751,7 @@ def get_rate_ip138():
 
 # 从https://stock.xueqiu.com/网站抓取股票历史分红数据
 def get_stock_dividend_history(stock_code):
-    stock_object = stock.objects.get(stock_code=stock_code)
+    stock_object = Stock.objects.get(stock_code=stock_code)
     market = stock_object.market.market_abbreviation
     stock_dividend_history_list = []
 
@@ -819,7 +822,7 @@ def get_stock_dividend_history(stock_code):
 
 
 def get_stock_dividend_history_2lines(stock_code):
-    stock_object = stock.objects.get(stock_code=stock_code)
+    stock_object = Stock.objects.get(stock_code=stock_code)
     market = stock_object.market.market_abbreviation
     stock_dividend_history_list = []
 
@@ -1093,12 +1096,13 @@ def getDateRate_usd(date):
 
     return usd_rate
 
+
 # 从指数历史数据生成json文件
 def get_his_index():
     # 上证指数
     item = []
     data = []
-    df = ak.stock_zh_index_daily(symbol="sh000001").sort_values(by='date',ascending=False)
+    df = ak.stock_zh_index_daily(symbol="sh000001").sort_values(by='date', ascending=False)
     current_year = df.head(1)['date'].iloc[0].year
     current_latest = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
@@ -1120,7 +1124,7 @@ def get_his_index():
     # 深证成份指数
     item = []
     data = []
-    df = ak.stock_zh_index_daily(symbol="sz399001").sort_values(by='date',ascending=False)
+    df = ak.stock_zh_index_daily(symbol="sz399001").sort_values(by='date', ascending=False)
     current_year = df.head(1)['date'].iloc[0].year
     current_latest = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
@@ -1142,7 +1146,7 @@ def get_his_index():
     # 创业板指数
     item = []
     data = []
-    df = ak.stock_zh_index_daily(symbol="sz399006").sort_values(by='date',ascending=False)
+    df = ak.stock_zh_index_daily(symbol="sz399006").sort_values(by='date', ascending=False)
     current_year = df.head(1)['date'].iloc[0].year
     current_latest = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
@@ -1169,7 +1173,7 @@ def get_his_index():
     data = []
     # df = ak.stock_zh_index_daily_em(symbol="sh000300").sort_values(by='date',ascending=False)
     # current_year = datetime.datetime.strptime(df.head(1)['date'].iloc[0], "%Y-%m-%d").year
-    df = ak.stock_zh_index_daily(symbol="sh000300").sort_values(by='date',ascending=False)
+    df = ak.stock_zh_index_daily(symbol="sh000300").sort_values(by='date', ascending=False)
     current_year = df.head(1)['date'].iloc[0].year
     current_latest = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
@@ -1192,7 +1196,8 @@ def get_his_index():
     # 沪深300全收益指数
     item = []
     data = []
-    df = ak.stock_zh_index_hist_csindex(symbol="H00300", start_date="20120101", end_date="20250610").sort_values(by='日期',ascending=False)
+    df = ak.stock_zh_index_hist_csindex(symbol="H00300", start_date="20120101", end_date="20250610").sort_values(
+        by='日期', ascending=False)
     # df['日期'] = pd.to_datetime(df['日期'])
     # current_H00300 = float(df[df['日期'] == '2025-06-09']['收盘'].iloc[0])
     current_year = df.head(1)['日期'].iloc[0].year
@@ -1221,14 +1226,13 @@ def get_his_index():
     df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
     dict_data_H00300 = df.to_dict(orient='records')
 
-
     # 恒生指数
     item = []
     data = []
     # df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date',ascending=False)
     # current_year = datetime.datetime.strptime(df.head(1)['date'].iloc[0], "%Y-%m-%d").year
     # current_latest = float(df.head(1)['latest'].iloc[0])
-    df = ak.stock_hk_index_daily_sina(symbol="HSI").sort_values(by='date',ascending=False)
+    df = ak.stock_hk_index_daily_sina(symbol="HSI").sort_values(by='date', ascending=False)
     current_year = df.head(1)['date'].iloc[0].year
     current_latest = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
@@ -1248,11 +1252,10 @@ def get_his_index():
     df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
     dict_data_HSI = df.to_dict(orient='records')
 
-
     # 国企指数
     item = []
     data = []
-    df = ak.stock_hk_index_daily_sina(symbol="HSCEI").sort_values(by='date',ascending=False)
+    df = ak.stock_hk_index_daily_sina(symbol="HSCEI").sort_values(by='date', ascending=False)
     current_year = df.head(1)['date'].iloc[0].year
     current_latest = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
@@ -1275,7 +1278,7 @@ def get_his_index():
     # 恒生科技指数
     item = []
     data = []
-    df = ak.stock_hk_index_daily_sina(symbol="HSTECH").sort_values(by='date',ascending=False)
+    df = ak.stock_hk_index_daily_sina(symbol="HSTECH").sort_values(by='date', ascending=False)
     current_year = df.head(1)['date'].iloc[0].year
     current_latest = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
@@ -1309,7 +1312,7 @@ def get_his_index():
     # 标普500指数
     item = []
     data = []
-    df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date',ascending=False) #标普500指数历史
+    df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date', ascending=False)  # 标普500指数历史
     current_year = df.head(1)['date'].iloc[0].year
     current_close = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
@@ -1331,7 +1334,7 @@ def get_his_index():
     # 道琼斯指数
     item = []
     data = []
-    df = ak.index_us_stock_sina(symbol=".DJI").sort_values(by='date',ascending=False) #标普500指数历史
+    df = ak.index_us_stock_sina(symbol=".DJI").sort_values(by='date', ascending=False)  # 标普500指数历史
     current_year = df.head(1)['date'].iloc[0].year
     current_close = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
@@ -1353,7 +1356,7 @@ def get_his_index():
     # 纳斯达克指数
     item = []
     data = []
-    df = ak.index_us_stock_sina(symbol=".IXIC").sort_values(by='date',ascending=False) #标普500指数历史
+    df = ak.index_us_stock_sina(symbol=".IXIC").sort_values(by='date', ascending=False)  # 标普500指数历史
     current_year = df.head(1)['date'].iloc[0].year
     current_close = float(df.head(1)['close'].iloc[0])
     item.append(current_year)
@@ -1391,10 +1394,11 @@ def get_his_index():
 
     return
 
+
 # 从指数当年数据更新json文件
 def get_current_index(baseline_name_array):
     # 1. 读取JSON文件
-    #baseline = FileOperate(filepath='./templates/dashboard/', filename='baseline.json').operation_file()
+    # baseline = FileOperate(filepath='./templates/dashboard/', filename='baseline.json').operation_file()
     with open('./templates/dashboard/baseline.json', 'r', encoding='utf-8') as f:
         baseline = json.load(f)
     current_year = datetime.datetime.now().year
@@ -1461,6 +1465,7 @@ def get_current_index(baseline_name_array):
 
     return
 
+
 def get_baseline_closing_price(baseline_object, target_year):
     # min_year_data = min(baseline_object, key=lambda x: x['Year'])
     # min_year_closing_price = min_year_data['ClosingPrice']
@@ -1475,26 +1480,32 @@ def get_baseline_closing_price(baseline_object, target_year):
 
 # 从基金明细表获取当前基金的最大记账日期
 def get_max_date(funds_id):
-    max_date = funds_details.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
+    max_date = FundsDetails.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
     return max_date
+
 
 # 从基金明细表获取当前基金的最小记账日期
 def get_min_date(funds_id):
-    min_date = funds_details.objects.filter(funds_id=funds_id).aggregate(min_date=Min('date'))['min_date']
+    min_date = FundsDetails.objects.filter(funds_id=funds_id).aggregate(min_date=Min('date'))['min_date']
     return min_date
+
 
 # 从基金明细表获取当前基金的第二大记账日期
 def get_second_max_date(funds_id):
-    max_date = funds_details.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
-    second_max_date = funds_details.objects.filter(funds_id=funds_id).exclude(date=max_date).order_by('-date').values_list('date', flat=True)[0]
+    max_date = FundsDetails.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
+    second_max_date = \
+    FundsDetails.objects.filter(funds_id=funds_id).exclude(date=max_date).order_by('-date').values_list('date',
+                                                                                                        flat=True)[0]
     # second_max_date = funds_details.objects.filter(funds_id=funds_id).order_by('-date').values_list('date', flat=True)[1]
     # third_max_date = funds_details.objects.filter(funds_id=funds_id).order_by('-date').values_list('date', flat=True)[2]
     return second_max_date
 
+
 # 从基金明细表获取指定年份的年末日期
 def get_year_end_date(funds_id, year):
     year_end_date = None
-    year_end_date = funds_details.objects.filter(funds_id=funds_id, date__year=year).aggregate(max_date=Max('date'))['max_date']
+    year_end_date = FundsDetails.objects.filter(funds_id=funds_id, date__year=year).aggregate(max_date=Max('date'))[
+        'max_date']
     return year_end_date
 
 
@@ -1532,6 +1543,7 @@ def take_col8(list):
 def take_col7(list):
     return float(list[6])
 '''
+
 
 # 时间戳（10位）转日期格式
 def timeStamp10_2_date(timeStamp):
@@ -1659,11 +1671,11 @@ def get_akshare():
     print(df[df['代码'] == 'HSI']['最新价'])
     '''
 
-    #currency_boc_safe_df = ak.currency_boc_safe(start_date="20250101", end_date="20250120")
-    #print(currency_boc_safe_df['美元'])
+    # currency_boc_safe_df = ak.currency_boc_safe(start_date="20250101", end_date="20250120")
+    # print(currency_boc_safe_df['美元'])
 
-    #stock_zh_index_spot_em_df = ak.stock_zh_index_spot_em(symbol="深证系列指数")
-    #print(stock_zh_index_spot_em_df)
+    # stock_zh_index_spot_em_df = ak.stock_zh_index_spot_em(symbol="深证系列指数")
+    # print(stock_zh_index_spot_em_df)
 
     # df = ak.fx_quote_baidu(symbol="人民币")
     # print(df)
@@ -1681,8 +1693,8 @@ def get_akshare():
     # df = ak.currency_boc_sina(symbol="美元", start_date="20250125", end_date="20250204")
     # print(df)
 
-    #df = ak.currency_convert(base="USD", to="CNY", amount="100")
-    #print(df)
+    # df = ak.currency_convert(base="USD", to="CNY", amount="100")
+    # print(df)
 
     # df = ak.stock_bid_ask_em(symbol="600519")
     # print(df)
@@ -1715,6 +1727,7 @@ def get_akshare():
 
     return
 
+
 def classify_stock_code(code):
     if code.startswith(('600', '601', '603', '605')):
         return "沪市A股"
@@ -1732,64 +1745,67 @@ def classify_stock_code(code):
         return "上证指数"
     elif code == '399001':
         return "深证成指"
-    elif code.startswith(('51', '150', '159')): # 恒生ETF（sz159920）、H股B（sz150176）
+    elif code.startswith(('51', '150', '159')):  # 恒生ETF（sz159920）、H股B（sz150176）
         return "ETF"
     elif code.startswith('01'):
         return "国债"
-    elif code.startswith(('12', '13', '112', '155')): # 19恒大01（sh155406）、16冀中01（sz112292）
+    elif code.startswith(('12', '13', '112', '155')):  # 19恒大01（sh155406）、16冀中01（sz112292）
         return "企业债"
     else:
         return "未知类型"
 
+
 # 从股票表中获取持仓股票和未持仓股票集合
 def get_stock_hold_or_not():
-    stock_list = stock.objects.all().order_by('stock_code')
+    stock_list = Stock.objects.all().order_by('stock_code')
     stock_hold = []
     stock_not_hold = []
     code_hold = []
     code_not_hold = []
     for rs in stock_list:
-        if position.objects.filter(stock=rs.id).exists():
+        if Position.objects.filter(stock=rs.id).exists():
             code_hold.append(rs.stock_code)
         else:
             code_not_hold.append(rs.stock_code)
     for code in code_hold:
-        stock_hold.append(stock.objects.get(stock_code=code))
+        stock_hold.append(Stock.objects.get(stock_code=code))
     for code in code_not_hold:
-        stock_not_hold.append(stock.objects.get(stock_code=code))
+        stock_not_hold.append(Stock.objects.get(stock_code=code))
     return stock_hold, stock_not_hold
 
+'''
 # 从账户表中获取在用账户和未用账户集合
 def get_account_used_or_not():
-    stock_list = stock.objects.all().order_by('stock_code')
+    stock_list = Stock.objects.all().order_by('stock_code')
     stock_hold = []
     stock_not_hold = []
     code_hold = []
     code_not_hold = []
     for rs in stock_list:
-        if position.objects.filter(stock=rs.id).exists():
+        if Position.objects.filter(stock=rs.id).exists():
             code_hold.append(rs.stock_code)
         else:
             code_not_hold.append(rs.stock_code)
-    #codes = code_hold + code_not_hold
+    # codes = code_hold + code_not_hold
     for code in code_hold:
-        stock_hold.append(stock.objects.get(stock_code=code))
+        stock_hold.append(Stock.objects.get(stock_code=code))
     for code in code_not_hold:
-        stock_not_hold.append(stock.objects.get(stock_code=code))
+        stock_not_hold.append(Stock.objects.get(stock_code=code))
     return stock_hold, stock_not_hold
-
+'''
 
 def get_dividend_summary(currency_id):
-    result = dividend.objects.filter(
+    result = Dividend.objects.filter(
         currency_id=currency_id
     ).aggregate(
         total_amount=Sum('dividend_amount')
     )
     return result['total_amount'] or Decimal('0.00')
 
+
 def get_dividend_current_year(currency_id):
     current_year = datetime.datetime.now().year
-    result = dividend.objects.filter(
+    result = Dividend.objects.filter(
         currency_id=currency_id,
         dividend_date__year=current_year
     ).aggregate(
@@ -1797,12 +1813,13 @@ def get_dividend_current_year(currency_id):
     )
     return result['total_amount'] or Decimal('0.00')
 
+
 def get_dividend_in_past_year(currency_id):
     # 计算日期范围
     today = datetime.datetime.now().date()
     one_year_ago = today - datetime.timedelta(days=365)
     # 查询近一年的分红总额
-    result = dividend.objects.filter(
+    result = Dividend.objects.filter(
         currency_id=currency_id,
         dividend_date__gte=one_year_ago,
         dividend_date__lte=today
@@ -1819,7 +1836,7 @@ def get_dividend_annual_average(currency_id, years):
     end_year = current_year - 1
 
     # 获取每年总分红
-    annual_totals = dividend.objects.filter(
+    annual_totals = Dividend.objects.filter(
         currency_id=currency_id,
         dividend_date__year__gte=start_year,
         dividend_date__year__lte=end_year
@@ -1845,7 +1862,7 @@ def get_year_span(currency_id):
     :return: (最早年份, 最晚年份, 年份跨度) 元组
     """
     # 获取该货币的所有分红记录中的最早和最晚日期
-    result = dividend.objects.filter(currency_id=currency_id).aggregate(
+    result = Dividend.objects.filter(currency_id=currency_id).aggregate(
         min_date=Min('dividend_date'),
         max_date=Max('dividend_date')
     )
@@ -1867,11 +1884,11 @@ def get_year_span(currency_id):
 
 def calculate_market_value_yearly_avg(currency_id):
     # 验证货币是否存在
-    if not currency.objects.filter(id=currency_id).exists():
+    if not Currency.objects.filter(id=currency_id).exists():
         return []
 
     # 获取指定货币的记录
-    records = historical_market_value.objects.filter(currency_id=currency_id)
+    records = HistoricalMarketValue.objects.filter(currency_id=currency_id)
 
     # 如果没有记录，返回空列表
     if not records.exists():
@@ -1895,11 +1912,11 @@ def calculate_market_value_yearly_avg(currency_id):
     ).values('year').annotate(
         avg_value=Avg('value')
     ).order_by('year')
-    print('yearly_avg=',yearly_avg)
+    print('yearly_avg=', yearly_avg)
 
     # 转换为字典
     avg_dict = {item['year']: item['avg_value'] for item in yearly_avg}
-    print('avg_dict=',avg_dict)
+    print('avg_dict=', avg_dict)
 
     # 单独检查每个年份是否全为零
     for year in range(min_year, max_year + 1):
@@ -1909,7 +1926,7 @@ def calculate_market_value_yearly_avg(currency_id):
 
         # 检查该年份是否所有记录都为零
         year_records = records.filter(date__year=year)
-        print('year_records=',year_records)
+        print('year_records=', year_records)
         if year_records.exists() and year_records.exclude(value=0).count() == 0:
             avg_dict[year] = 0.0
         elif year not in avg_dict:
@@ -1921,7 +1938,7 @@ def calculate_market_value_yearly_avg(currency_id):
         {'year': year, 'average_value': avg_dict.get(year, 0.0)}
         for year in range(min_year, max_year + 1)
     ]
-    print('result=',result)
+    print('result=', result)
     # 过滤掉 value = 0 的条目
     result = [item for item in result if item['average_value'] != 0]
     print('result=', result)
@@ -1956,13 +1973,13 @@ def calculate_overall_average(yearly_results):
 
     # 计算平均值
     overall_avg = total / Decimal(len(yearly_results))
-    print('overall_avg=',overall_avg,'years=',len(yearly_results))
+    print('overall_avg=', overall_avg, 'years=', len(yearly_results))
     return overall_avg
 
 
 def calculate_dividend_data(currency_id):
     # 步骤1：获取所有有效日期范围
-    date_range = historical_market_value.objects.filter(currency_id=currency_id, value__gt=0).aggregate(
+    date_range = HistoricalMarketValue.objects.filter(currency_id=currency_id, value__gt=0).aggregate(
         min_date=Min('date'),
         max_date=Max('date')
     )
@@ -1976,7 +1993,7 @@ def calculate_dividend_data(currency_id):
 
     # 步骤2：计算整体加权平均市值
     # 使用ORM直接计算所有记录的市值平均值
-    overall_avg_value = historical_market_value.objects.filter(
+    overall_avg_value = HistoricalMarketValue.objects.filter(
         currency_id=currency_id,
         value__gt=0
     ).aggregate(avg_value=Avg('value'))['avg_value'] or Decimal('0.0')
@@ -1991,7 +2008,7 @@ def calculate_dividend_data(currency_id):
     # 步骤4：遍历每个年份计算年度数据
     for year in years:
         # 检查年份有效性 (存在非零市值)
-        year_data = historical_market_value.objects.filter(
+        year_data = HistoricalMarketValue.objects.filter(
             currency_id=currency_id,
             date__year=year,
             # value__gt=0 # 是否剔除max_date、min_date之间的市值为0的年份
@@ -2002,7 +2019,7 @@ def calculate_dividend_data(currency_id):
         valid_years.append(year)
 
         # 计算年度分红总额
-        yearly_dividends = dividend.objects.filter(
+        yearly_dividends = Dividend.objects.filter(
             currency_id=currency_id,
             dividend_date__year=year
         ).aggregate(sum=Sum('dividend_amount'))['sum'] or Decimal('0.0')
@@ -2019,7 +2036,8 @@ def calculate_dividend_data(currency_id):
             dividend_rate_yearly.append(0)
 
     # print(years,valid_years)
-    n = len([x for x in market_value_yearly_avg if x != 0]) # 用于计算avg_dividend_rate的年份数为market_value_yearly_avg列表中的非0元素的个数
+    n = len(
+        [x for x in market_value_yearly_avg if x != 0])  # 用于计算avg_dividend_rate的年份数为market_value_yearly_avg列表中的非0元素的个数
     # n = len(valid_years)
     avg_dividend_rate = 0
     if n > 0:
@@ -2051,13 +2069,13 @@ def get_dividend_summary_by_currency(stock_id):
               包含汇总无货币记录的键为None的条目
     """
     summary = {
-        1: Decimal('0.0'),   # 基准货币
-        2: Decimal('0.0'),   # 港元
-        3: Decimal('0.0'),   # 美元
+        1: Decimal('0.0'),  # 基准货币
+        2: Decimal('0.0'),  # 港元
+        3: Decimal('0.0'),  # 美元
         # 可以添加更多货币
     }
     # 分组聚合查询
-    results = dividend.objects.filter(
+    results = Dividend.objects.filter(
         stock_id=stock_id
     ).values('currency_id').annotate(
         total_dividend=Sum('dividend_amount')
@@ -2106,21 +2124,19 @@ def calculate_total_dividend(dividend_dict, exchange_rates):
                 rate = Decimal(str(rate))
             total += amount * rate
 
-
-
     return float(total)
 
 
 def calculate_stock_trade_summary(stock_id):
     # 1. 获取股票信息并判断是否为港股
     try:
-        stock_obj = stock.objects.select_related('market').get(id=stock_id)
+        stock_obj = Stock.objects.select_related('market').get(id=stock_id)
         is_hk_stock = (stock_obj.market_id == 5)  # 假设港股市场ID为5
-    except stock.DoesNotExist:
+    except Stock.DoesNotExist:
         return {}
 
     # 2. 获取目标股票的所有交易记录
-    trades = trade.objects.filter(stock_id=stock_id).select_related('currency')
+    trades = Trade.objects.filter(stock_id=stock_id).select_related('currency')
 
     # 3. 准备汇率查询数据
     date_currency_pairs = []
@@ -2143,7 +2159,7 @@ def calculate_stock_trade_summary(stock_id):
         dates = [pair[0] for pair in unique_pairs]
         currency_ids = [pair[1] for pair in unique_pairs]
 
-        rate_records = historical_rate.objects.filter(
+        rate_records = HistoricalRate.objects.filter(
             date__in=dates,
             currency_id__in=currency_ids
         ).values('date', 'currency_id', 'rate')
@@ -2196,11 +2212,9 @@ def calculate_stock_trade_summary(stock_id):
             summary[target_currency_id] = {'buy': Decimal('0.0'), 'sell': Decimal('0.0')}
 
         # 按交易类型分类累加到目标货币
-        if t.trade_type == trade.BUY:
+        if t.trade_type == Trade.BUY:
             summary[target_currency_id]['buy'] += amount
-        elif t.trade_type == trade.SELL:
+        elif t.trade_type == Trade.SELL:
             summary[target_currency_id]['sell'] += amount
 
     return dict(summary)
-
-

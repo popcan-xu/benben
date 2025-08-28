@@ -3,7 +3,7 @@
 from django import template
 from django.utils.safestring import mark_safe
 
-from stock.models import currency
+from stock.models import Currency
 register = template.Library()
 
 @register.filter

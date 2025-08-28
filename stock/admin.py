@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import broker,market,account,historical_rate
+from .models import Broker,Market,Account,HistoricalRate
 
 # Register your models here.
 class brokerAdmin(admin.ModelAdmin):
@@ -12,6 +12,6 @@ class accountAdmin(admin.ModelAdmin):
     list_display = ('account_number','broker')
 
 
-admin.site.register(broker,brokerAdmin)
-admin.site.register(market,marketAdmin)
-admin.site.register(account,accountAdmin)
+admin.site.register(Broker, brokerAdmin)
+admin.site.register(Market, marketAdmin)
+admin.site.register(Account, accountAdmin)

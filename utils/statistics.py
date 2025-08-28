@@ -5,7 +5,7 @@ import django
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import market, stock, trade, position, dividend, subscription, account
+from stock.models import Market, Stock, Trade, Position, Dividend, Subscription, Account
 from django.db.models import Avg, Max, Min, Count, Sum, F
 
 from utils.utils import *
@@ -248,7 +248,7 @@ def get_position_content_250710(currency):
 
 def get_position_content(currency_id, rate_dict):
     # 获取所有账户及缩写
-    accounts = account.objects.filter(
+    accounts = Account.objects.filter(
         position__currency_id=currency_id
     ).distinct().values('id', 'account_abbreviation').order_by('broker_id', 'id')
 
@@ -257,7 +257,7 @@ def get_position_content(currency_id, rate_dict):
     account_num = len(accounts)
 
     # 优化：预取相关数据，减少查询次数
-    positions = position.objects.filter(
+    positions = Position.objects.filter(
         currency_id=currency_id
     ).select_related('stock', 'stock__market')
 
@@ -424,14 +424,14 @@ def get_value_stock_content(currency_value, price_increase_array, HKD_rate, USD_
 
     # 构建查询集
     if currency_value == 0:
-        stock_data = position.objects.values("stock").annotate(
+        stock_data = Position.objects.values("stock").annotate(
             quantity=Sum("position_quantity")
         ).values(
             'stock_id', 'stock__stock_name', 'stock__stock_code',
             'quantity', 'stock__market__currency'
         )
     else:
-        stock_data = position.objects.filter(currency_id=currency_value).values("stock").annotate(
+        stock_data = Position.objects.filter(currency_id=currency_value).values("stock").annotate(
             quantity=Sum("position_quantity")
         ).values(
             'stock_id', 'stock__stock_name', 'stock__stock_code',
@@ -514,7 +514,7 @@ def get_value_industry_content(currency_value, price_array, HKD_rate, USD_rate):
     amount_sum = 0.0
     # 对position表分组查询，按stock、industry跨表字段分组，返回每个分组的id（通过双下划线取得多级关联表的字段值）和每个分组的quantity个数
     # industry_dict = position.objects.filter(position_currency=position_currency).values("stock__industry").annotate(
-    industry_dict = position.objects.filter(currency_id=currency_value).values("stock__industry").annotate(
+    industry_dict = Position.objects.filter(currency_id=currency_value).values("stock__industry").annotate(
         count=Count("stock")).values(
         'stock__industry__id',
         'stock__industry__industry_name'
@@ -528,7 +528,7 @@ def get_value_industry_content(currency_value, price_array, HKD_rate, USD_rate):
         industry_name = dict['stock__industry__industry_name']
         # 对position表进行跨表过滤，使用双下划线取得多级关联表的字段名
         # record_list = position.objects.filter(stock__industry=industry_id, position_currency=position_currency).values(
-        record_list = position.objects.filter(stock__industry=industry_id, currency_id=currency_value).values(
+        record_list = Position.objects.filter(stock__industry=industry_id, currency_id=currency_value).values(
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
@@ -588,7 +588,7 @@ def get_value_market_sum(price_array, HKD_rate, USD_rate):
     percent_array = []
     amount_sum = 0.0
     # 对position表分组查询，按stock、industry跨表字段分组，返回每个分组的id（通过双下划线取得多级关联表的字段值）和每个分组的quantity个数
-    market_dict = position.objects.values("stock__market").annotate(
+    market_dict = Position.objects.values("stock__market").annotate(
         count=Count("stock")).values(
         'stock__market__id',
         'stock__market__market_name'
@@ -599,7 +599,7 @@ def get_value_market_sum(price_array, HKD_rate, USD_rate):
         market_id = dict['stock__market__id']
         market_name = dict['stock__market__market_name']
         # 对position表进行跨表过滤，使用双下划线取得多级关联表的字段名
-        record_list = position.objects.filter(stock__market=market_id).values(
+        record_list = Position.objects.filter(stock__market=market_id).values(
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
@@ -640,7 +640,7 @@ def get_value_market_content(currency_value, price_array, HKD_rate, USD_rate):
     percent_array = []
     amount_sum = 0.0
     # 对position表分组查询，按stock、industry跨表字段分组，返回每个分组的id（通过双下划线取得多级关联表的字段值）和每个分组的quantity个数
-    market_dict = position.objects.filter(currency_id=currency_value).values("stock__market").annotate(
+    market_dict = Position.objects.filter(currency_id=currency_value).values("stock__market").annotate(
         count=Count("stock")).values(
         'stock__market__id',
         'stock__market__market_name'
@@ -655,7 +655,7 @@ def get_value_market_content(currency_value, price_array, HKD_rate, USD_rate):
         market_name = dict['stock__market__market_name']
         # 对position表进行跨表过滤，使用双下划线取得多级关联表的字段名
         # record_list = position.objects.filter(stock__market=market_id, position_currency=position_currency).values(
-        record_list = position.objects.filter(stock__market=market_id, currency_id=currency_value).values(
+        record_list = Position.objects.filter(stock__market=market_id, currency_id=currency_value).values(
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
@@ -717,7 +717,7 @@ def get_value_account_content(currency_value, price_array, HKD_rate, USD_rate):
     percent_array = []
     amount_sum = 0.0
     # 对position表分组查询，按account字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
-    account_dict = position.objects.filter(currency_id=currency_value).values("account").annotate(
+    account_dict = Position.objects.filter(currency_id=currency_value).values("account").annotate(
         count=Count("account")).values(
         'account__id',
         'account__account_abbreviation'
@@ -730,7 +730,7 @@ def get_value_account_content(currency_value, price_array, HKD_rate, USD_rate):
         account_id = dict['account__id']
         account_abbreviation = dict['account__account_abbreviation']
         # record_list = position.objects.filter(account=account_id, position_currency=position_currency).values(
-        record_list = position.objects.filter(account=account_id, currency_id=currency_value).values(
+        record_list = Position.objects.filter(account=account_id, currency_id=currency_value).values(
             'stock__stock_code',
             'stock__stock_name',
             'position_quantity',
@@ -791,7 +791,7 @@ def get_dividend_stock_content(currency):
     stock_name_array = []
     amount_array = []
     percent_array = []
-    stock_dict = dividend.objects.filter(currency_id=currency).values("stock").annotate(
+    stock_dict = Dividend.objects.filter(currency_id=currency).values("stock").annotate(
         amount=Sum("dividend_amount")).values('stock__stock_code', 'stock__stock_name', 'amount')
     for dict in stock_dict:
         amount = 0.0
@@ -822,7 +822,7 @@ def get_dividend_year_content(currency):
     amount_array = []
     percent_array = []
     # 通过dividend_date__year按年份分组
-    year_dict = dividend.objects.filter(currency_id=currency).values("dividend_date__year").annotate(
+    year_dict = Dividend.objects.filter(currency_id=currency).values("dividend_date__year").annotate(
         amount=Sum("dividend_amount")).values('dividend_date__year', 'amount')
     for dict in year_dict:
         name_array1 = []
@@ -830,7 +830,7 @@ def get_dividend_year_content(currency):
         year = dict['dividend_date__year']
         amount = dict['amount']
         amount_sum += float(amount)
-        record_list = dividend.objects.filter(dividend_date__year=year, currency_id=currency).values(
+        record_list = Dividend.objects.filter(dividend_date__year=year, currency_id=currency).values(
             'stock__stock_name')
         for record in record_list:
             stock_name = record['stock__stock_name']
@@ -868,7 +868,7 @@ def get_dividend_industry_content(currency):
     amount_array = []
     percent_array = []
     # 通过stock__industry按股票所属行业分组
-    industry_dict = dividend.objects.filter(currency_id=currency).values("stock__industry").annotate(
+    industry_dict = Dividend.objects.filter(currency_id=currency).values("stock__industry").annotate(
         amount=Sum("dividend_amount")).values(
         'stock__industry__id',
         'stock__industry__industry_name',
@@ -882,7 +882,7 @@ def get_dividend_industry_content(currency):
         amount = dict['amount']
         amount_sum += float(amount)
         #percent = format(float(amount) / amount_sum, '.2%')
-        record_list = dividend.objects.filter(stock__industry=industry_id, currency_id=currency).values(
+        record_list = Dividend.objects.filter(stock__industry=industry_id, currency_id=currency).values(
             'stock__stock_name')
         for record in record_list:
             stock_name = record['stock__stock_name']
@@ -922,7 +922,7 @@ def get_dividend_market_content(currency):
     amount_array = []
     percent_array = []
     # 通过stock__industry按股票所属行业分组
-    market_dict = dividend.objects.filter(currency_id=currency).values("stock__market").annotate(
+    market_dict = Dividend.objects.filter(currency_id=currency).values("stock__market").annotate(
         amount=Sum("dividend_amount")).values(
         'stock__market__id',
         'stock__market__market_name',
@@ -936,7 +936,7 @@ def get_dividend_market_content(currency):
         amount = dict['amount']
         amount_sum += float(amount)
         #percent = format(float(amount) / amount_sum, '.2%')
-        record_list = dividend.objects.filter(stock__market=market_id, currency_id=currency).values(
+        record_list = Dividend.objects.filter(stock__market=market_id, currency_id=currency).values(
             'stock__stock_name')
         for record in record_list:
             stock_name = record['stock__stock_name']
@@ -976,7 +976,7 @@ def get_dividend_account_content(currency):
     amount_array = []
     percent_array = []
     # 通过stock__account按股票所属账号分组
-    account_dict = dividend.objects.filter(currency_id=currency).values("account").annotate(
+    account_dict = Dividend.objects.filter(currency_id=currency).values("account").annotate(
         amount=Sum("dividend_amount")).values(
         'account__id',
         'account__account_abbreviation',
@@ -990,7 +990,7 @@ def get_dividend_account_content(currency):
         amount = dict['amount']
         amount_sum += float(amount)
         #percent = format(float(amount) / amount_sum, '.2%')
-        record_list = dividend.objects.filter(account=account_id, currency_id=currency).values(
+        record_list = Dividend.objects.filter(account=account_id, currency_id=currency).values(
             'stock__stock_name')
         for record in record_list:
             stock_name = record['stock__stock_name']
@@ -1028,7 +1028,7 @@ def get_subscription_year_content(subscription_type):
     amount_array = []
     percent_array = []
     amount_sum = 0.0
-    year_dict = subscription.objects.filter(subscription_type=subscription_type).values(
+    year_dict = Subscription.objects.filter(subscription_type=subscription_type).values(
         "subscription_date__year"
     ).annotate(
         amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity"))
@@ -1059,7 +1059,7 @@ def get_subscription_account_content(subscription_type):
     amount_array = []
     percent_array = []
     amount_sum = 0.0
-    account_dict = subscription.objects.filter(subscription_type=subscription_type).values(
+    account_dict = Subscription.objects.filter(subscription_type=subscription_type).values(
         "account"
     ).annotate(
         amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity"))
@@ -1089,7 +1089,7 @@ def get_subscription_name_content(subscription_type):
     amount_array = []
     percent_array = []
     amount_sum = 0.0
-    subscription_dict = subscription.objects.filter(subscription_type=subscription_type).values(
+    subscription_dict = Subscription.objects.filter(subscription_type=subscription_type).values(
         "subscription_name"
     ).annotate(
         amount=Sum((F("selling_price") - F("buying_price")) * F("subscription_quantity"))
@@ -1126,7 +1126,7 @@ def get_account_stock_content(account_id, price_increase_array, HKD_rate, USD_ra
     amount_sum = 0.0
 
     # 对position表分组查询，按stock字段分组，返回每个分组的id（通过双下划线取得关联表的字段值）和每个分组的quantity个数
-    stock_dict = position.objects.filter(account=account_id).values("stock").annotate(
+    stock_dict = Position.objects.filter(account=account_id).values("stock").annotate(
         quantity=Sum("position_quantity")).values(
         'stock__stock_name',
         'stock__stock_code',
@@ -1182,8 +1182,8 @@ def get_holding_stock_profit(stock_code):
     quantity_sum = 0
     cost_sum = 0
     trade_array = []
-    stock_id = stock.objects.all().get(stock_code=stock_code).id
-    trade_list = trade.objects.all().filter(stock=stock_id).order_by('trade_date')
+    stock_id = Stock.objects.all().get(stock_code=stock_code).id
+    trade_list = Trade.objects.all().filter(stock=stock_id).order_by('trade_date')
     price, increase, color = get_stock_price(stock_code)
     for rs in trade_list:
         if rs.trade_type == 2:
@@ -1220,8 +1220,8 @@ def get_cleared_stock_profit(stock_code):
     amount_sum = 0
     cost_sum = 0
     trade_array = []
-    stock_id = stock.objects.all().get(stock_code=stock_code).id
-    trade_list = trade.objects.all().filter(stock=stock_id).order_by('trade_date')
+    stock_id = Stock.objects.all().get(stock_code=stock_code).id
+    trade_list = Trade.objects.all().filter(stock=stock_id).order_by('trade_date')
     for rs in trade_list:
         if rs.trade_type == 2:
             trade_quantity = -1 * rs.trade_quantity
