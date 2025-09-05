@@ -1,5 +1,7 @@
 import os
 import json
+from collections import defaultdict
+
 import django
 
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量

@@ -1,26 +1,20 @@
-import random
-from decimal import Decimal, ROUND_HALF_UP
-from multiprocessing import Value
-
-import requests
-from bs4 import BeautifulSoup
-import bs4
-import os
+import datetime
 import json
-import django
-import datetime, time
+import os
 import pathlib
-import requests
-from django.db.models import Sum, Avg, Min, Max, Case, When, Q, F, IntegerField, Subquery
-from django.db import models
-from django.db.models.functions import ExtractYear, Coalesce, Cast
-from collections import defaultdict
+import re
+import time
+from decimal import Decimal
 
 # import tushare as ts
 import akshare as ak
+import bs4
+import django
 import pandas as pd
-
-import re
+import requests
+from bs4 import BeautifulSoup
+from django.db.models import Sum, Avg, Min, Max
+from django.db.models.functions import ExtractYear
 
 # import pysnowball as ball
 
@@ -31,8 +25,7 @@ import re
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import Market, Stock, Trade, Position, Dividend, Subscription, FundsDetails, Currency, Funds, \
-    HistoricalMarketValue, HistoricalRate
+from stock.models import Stock, Trade, Position, Dividend, FundsDetails, Currency, HistoricalMarketValue, HistoricalRate
 
 
 # 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
@@ -98,7 +91,7 @@ def get_chart_array1(content, max_rows, name_col, value_col):
             other += content[i][value_col]
         name_array.append('其他')
         value_array.append(int(other))
-    return (name_array, value_array)
+    return name_array, value_array
 
 
 def get_chart_array(content, max_rows, name_col, value_col):
@@ -1494,8 +1487,9 @@ def get_min_date(funds_id):
 def get_second_max_date(funds_id):
     max_date = FundsDetails.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
     second_max_date = \
-    FundsDetails.objects.filter(funds_id=funds_id).exclude(date=max_date).order_by('-date').values_list('date',
-                                                                                                        flat=True)[0]
+        FundsDetails.objects.filter(funds_id=funds_id).exclude(date=max_date).order_by('-date').values_list('date',
+                                                                                                            flat=True)[
+            0]
     # second_max_date = funds_details.objects.filter(funds_id=funds_id).order_by('-date').values_list('date', flat=True)[1]
     # third_max_date = funds_details.objects.filter(funds_id=funds_id).order_by('-date').values_list('date', flat=True)[2]
     return second_max_date
@@ -1773,6 +1767,7 @@ def get_stock_hold_or_not():
         stock_not_hold.append(Stock.objects.get(stock_code=code))
     return stock_hold, stock_not_hold
 
+
 '''
 # 从账户表中获取在用账户和未用账户集合
 def get_account_used_or_not():
@@ -1793,6 +1788,7 @@ def get_account_used_or_not():
         stock_not_hold.append(Stock.objects.get(stock_code=code))
     return stock_hold, stock_not_hold
 '''
+
 
 def get_dividend_summary(currency_id):
     result = Dividend.objects.filter(

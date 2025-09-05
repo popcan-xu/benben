@@ -12,836 +12,866 @@
 <!-- Begin Page Content -->
 {% block page_content %}
 
-<div class="container-fluid">
+    <div class="container-fluid">
 
-    <!-- Page Heading -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <div class="col-xl-4" style="text-align:left">
-            <h1 class="h3 mb-0 font-weight-bold text-gray-700">总览</h1>
-        </div>
-        <div class="col-xl-4" style="text-align:center">
-            <form action="" method="post" class="form-horizontal" role="form">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-sync-alt"></i>&nbsp&nbsp{{ overview.modified_time }}</button>
-            </form>
-        </div>
-        <div class="col-xl-4" style="text-align:right">
-             <span>港元汇率：{{ rate_HKD|floatformat:4 }}，美元汇率：{{ rate_USD|floatformat:4 }}</span>
-        </div>
-    </div>
-
-    <!-- Content Card Row -->
-
-    <div class="row">
-        <!-- 资产 -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                <a href="/benben/view_funds/" style="color: inherit; text-decoration: none;">资产</a>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <div class="metric-label">
-                                <a href="/benben/view_funds/" style="color: inherit; text-decoration: none;">详情 ></a>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Divider -->
-                    <h3>&nbsp;</h3>
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="metric-label">总资产</div>
-                            <div class="metric-value">
-                                <span>{{ overview.funds_value_sum|floatformat:0 }}</span>
-                                <span class="metric-unit">元</span>
-                            </div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="metric-label">净值</div>
-                            <div class="metric-value">
-                                <span>{{ overview.funds_net_value_weighting|floatformat:4 }}</span>
-                                <span class="metric-unit">元</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <!-- Page Heading -->
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <div class="col-xl-4" style="text-align:left">
+                <h1 class="h3 mb-0 font-weight-bold text-gray-700">总览</h1>
+            </div>
+            <div class="col-xl-4" style="text-align:center">
+                <form action="" method="post" class="form-horizontal" role="form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-sync-alt"></i>&nbsp&nbsp{{ overview.modified_time }}</button>
+                </form>
+            </div>
+            <div class="col-xl-4" style="text-align:right">
+                 <span>港元汇率：{{ rate.HKD|floatformat:4 }}，美元汇率：{{ rate.USD|floatformat:4 }}</span>
             </div>
         </div>
 
-        <!-- 市值 -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                <a href="/benben/view_market_value/" style="color: inherit; text-decoration: none;">市值</a>
+        <!-- Content Card Row -->
+
+        <div class="row">
+            <!-- 资产 -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
+                                    <a href="/benben/view_funds/" style="color: inherit; text-decoration: none;">资产</a>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <div class="metric-label">
+                                    <a href="/benben/view_funds/" style="color: inherit; text-decoration: none;">详情 ></a>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-auto">
-                            <div class="metric-label">
-                                <a href="/benben/view_market_value/" style="color: inherit; text-decoration: none;">详情 ></a>
+                        <!-- Divider -->
+                        <h3>&nbsp;</h3>
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="metric-label">总资产</div>
+                                <div class="metric-value">
+                                    <span>{{ overview.funds_value_sum|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <!-- Divider -->
-                    <h3>&nbsp;</h3>
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="metric-label">总市值</div>
-                            <div class="metric-value">
-                                <span>{{ overview.market_value_sum|floatformat:0 }}</span>
-                                <span class="metric-unit">元</span>
-                            </div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="metric-label">仓位</div>
-                            <div class="metric-value">
-                                <span>{{ overview.position_percent_weighting|percent }}</span>
-                                <span class="metric-unit">%</span>
+                            <div class="col mr-2">
+                                <div class="metric-label">净值</div>
+                                <div class="metric-value">
+                                    <span>{{ overview.funds_net_value_weighting|floatformat:4 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- 分红 -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">分红</a>
+            <!-- 市值 -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
+                                    <a href="/benben/view_market_value/" style="color: inherit; text-decoration: none;">市值</a>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <div class="metric-label">
+                                    <a href="/benben/view_market_value/" style="color: inherit; text-decoration: none;">详情 ></a>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-auto">
-                            <div class="metric-label">
-                                <a href="/benben/view_dividend/" style="color: inherit; text-decoration: none;">详情 ></a>
+                        <!-- Divider -->
+                        <h3>&nbsp;</h3>
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="metric-label">总市值</div>
+                                <div class="metric-value">
+                                    <span>{{ overview.market_value_sum|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <!-- Divider -->
-                    <h3>&nbsp;</h3>
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="metric-label">累计分红</div>
-                            <div class="metric-value">
-                                <span>{{ overview.dividend_sum|floatformat:0 }}</span>
-                                <span class="metric-unit">元</span>
-                            </div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="metric-label">当年分红</div>
-                            <div class="metric-value">
-                                <span>{{ overview.current_dividend_sum|floatformat:0 }}</span>
-                                <span class="metric-unit">元</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 打新 -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">打新</a>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Divider -->
-                    <h3>&nbsp;</h3>
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="metric-label">累计打新</div>
-                            <div class="metric-value">
-                                <span>{{ overview.subscription_sum|floatformat:0 }}</span>
-                                <span class="metric-unit">元</span>
-                            </div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="metric-label">当年打新</div>
-                            <div class="metric-value">
-                                <span>{{ overview.current_subscription_sum|floatformat:0 }}</span>
-                                <span class="metric-unit">元</span>
+                            <div class="col mr-2">
+                                <div class="metric-label">仓位</div>
+                                <div class="metric-value">
+                                    <span>{{ overview.position_percent_weighting|percent }}</span>
+                                    <span class="metric-unit">%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-    </div>
-
-    <!-- Content Chart Row -->
-
-    <div class="row">
-        <!-- 资产币种占比 -->
-        <div class="col-xl-4 col-lg-4">
-            <div class="card shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div
-                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">资产币种占比</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div id="bar_funds" style="width:100%; height:320px; display:block;"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 持仓市场占比 -->
-        <div class="col-xl-4 col-lg-4">
-            <div class="card shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div
-                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">持仓市场占比</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div id="pie_area_market" style="width:100%; height:320px; display:block;"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 持仓前五占比 -->
-        <div class="col-xl-4 col-lg-4">
-            <div class="card shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div
-                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">持仓前五占比（{{ overview.top5_percent|floatformat:2 }}%）</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div style="height:320px; width:100%; display:block; overflow-y:auto;">
-                        {% for i in overview.top5_array %}
-                            <h4 class="small font-weight-bold"><a href="/benben/view_stock_details/{{ i.4|safe }}" style="color: inherit; text-decoration: none;">{{ i.0 }}</a>
-                                <span>{{ i.1|floatformat:0 }}</span>
-                                <span class="float-right">{{ i.2|slice:":-1" }}%</span>
-                            </h4>
-                            <div class="progress mb-4">
-                                <div class="progress-bar bg-{{ i.3 }}" role="progressbar" style="width: {{ i.2|slice:":-1" }}%"
-                                    aria-valuenow="{{ i.2|slice:":-1" }}" aria-valuemin="0" aria-valuemax="100"></div>
+            <!-- 分红 -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
+                                    <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">分红</a>
+                                </div>
                             </div>
-                        {% endfor %}
+                            <div class="col-auto">
+                                <div class="metric-label">
+                                    <a href="/benben/view_dividend/" style="color: inherit; text-decoration: none;">详情 ></a>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Divider -->
+                        <h3>&nbsp;</h3>
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="metric-label">累计分红</div>
+                                <div class="metric-value">
+                                    <span>{{ overview.total_dividend_sum|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
+                            </div>
+                            <div class="col mr-2">
+                                <div class="metric-label">当年分红</div>
+                                <div class="metric-value">
+                                    <span>{{ overview.current_dividend_sum|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- 基金资产分布 -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <span>基金资产分布</span>
-                    <span class="card-info">币种占比</span>
+            <!-- 打新 -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
+                                    <a href="/benben/view_market_value_details/{{ key|safe }}" style="color: inherit; text-decoration: none;">打新</a>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Divider -->
+                        <h3>&nbsp;</h3>
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="metric-label">累计打新</div>
+                                <div class="metric-value">
+                                    <span>{{ overview.subscription_sum|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
+                            </div>
+                            <div class="col mr-2">
+                                <div class="metric-label">当年打新</div>
+                                <div class="metric-value">
+                                    <span>{{ overview.current_subscription_sum|floatformat:0 }}</span>
+                                    <span class="metric-unit">元</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="chart-container" id="fundDistributionChart" style="width:100%; height:450px; display:block;"></div>
             </div>
+
         </div>
 
-        <!-- 持仓股票市值占比 -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <span>持仓股票市值占比</span>
-                    <span class="card-info">前五大持仓占比96.86%</span>
+        <!-- Content Chart Row -->
+
+        <div class="row">
+            <!-- 基金资产分布 -->
+            <div class="col-xl-4 col-lg-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">资产分布</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" id="assetDistributionChart" style="width:100%; height:400px; display:block;"></div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：单位为人民币万元。</span>
+                    </div>
                 </div>
-                <div class="chart-container" id="holdingChart" style="width:100%; height:450px; display:block;"></div>
             </div>
+
+            <!-- 市场分布柱图 -->
+            <div class="col-xl-4 col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">市场分布</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" id="chart-container-Profit">
+                            <div id="marketDistributionChart" style="width:100%; height:400px;"></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：单位为人民币万元。</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分红分布 -->
+            <div class="col-xl-4 col-lg-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">分红分布</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" id="dividendDistributionChart" style="width:100%; height:400px; display:block;"></div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：单位为人民币万元。</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 持仓前五占比 -->
+            <div class="col-xl-6 col-lg-6">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">持仓前五占比（{{ overview.top5_percent|floatformat:2 }}%）</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="pl-2 pr-2" style="height:400px; width:100%; display:block;">
+                            {% for i in overview.top5_array %}
+                            <div style="flex:1; display:flex; flex-direction:column; justify-content:center; min-height:60px; padding: 10px 0;">
+                                <h4 class="small font-weight-bold"><a href="/benben/view_stock_details/{{ i.4|safe }}" style="color: inherit; text-decoration: none;">{{ i.0 }}</a>
+                                    <span>{{ i.1|floatformat:0 }}</span>
+                                    <span class="float-right">{{ i.2|slice:":-1" }}%</span>
+                                </h4>
+                                <div class="progress mb-4">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ i.2|slice:":-1" }}%; background-color: {{ i.3 }};"
+                                        aria-valuenow="{{ i.2|slice:":-1" }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：单位为人民币元。</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 持仓股票市值占比 -->
+            <div class="col-xl-6 col-lg-6">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">持仓股票占比</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" id="holdingChart" style="width:100%; height:400px; display:block;"></div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：单位为人民币万元。</span>
+                    </div>
+                </div>
+            </div>
+
+
+
         </div>
 
-    </div>
-
-    <!-- Content Row -->
-    <div class="row">
-        <!-- 近期交易 -->
-        <div class="col-xl-5 col-lg-5">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">近期交易</h6>
-                </div>
-                <div class="card-body">
-                    <div style="height:385px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
-                        <div class="table-responsive">
-                            <table class="table table-condensed table-hover list_tab">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>日期</th>
-                                        <th>股票/代码</th>
-                                        <th>类型</th>
-                                        <th>价格</th>
-                                        <th>数量</th>
-                                        <th>金额</th>
-                                        <th>结算货币</th>
-                                        <th>证券账户</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for i in overview.trade_array %}
+        <!-- Content Row -->
+        <div class="row">
+            <!-- 近期交易 -->
+            <div class="col-xl-5 col-lg-5">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">近期交易</h6>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:385px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                            <div class="table-responsive">
+                                <table class="table table-condensed table-hover list_tab">
+                                    <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
-                                            <td>{{ i.0 }}</td>
-                                            <td><a href="/benben/view_stock_details/{{ i.8|safe }}" style="color: inherit; text-decoration: none;">{{ i.1 }}</a></td>
-                                            <td>{{ i.2 }}</td>
-                                            <td>{{ i.3 }}</td>
-                                            <td>{{ i.4 }}</td>
-                                            <!-- 模板变量的乘法需要使用widthratio // -->
-                                            <td>{{ i.5|floatformat:0 }}</td>
-                                            <td>{{ i.6 }}</td>
-                                            <td>{{ i.7 }}</td>
+                                            <th>日期</th>
+                                            <th>股票/代码</th>
+                                            <th>类型</th>
+                                            <th>价格</th>
+                                            <th>数量</th>
+                                            <th>金额</th>
+                                            <th>结算货币</th>
+                                            <th>证券账户</th>
                                         </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in overview.trade_array %}
+                                            <tr>
+                                                <td>{{ i.0 }}</td>
+                                                <td><a href="/benben/view_stock_details/{{ i.8|safe }}" style="color: inherit; text-decoration: none;">{{ i.1 }}</a></td>
+                                                <td>{{ i.2 }}</td>
+                                                <td>{{ i.3 }}</td>
+                                                <td>{{ i.4 }}</td>
+                                                <!-- 模板变量的乘法需要使用widthratio // -->
+                                                <td>{{ i.5|floatformat:0 }}</td>
+                                                <td>{{ i.6 }}</td>
+                                                <td>{{ i.7 }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- 近期分红 -->
-        <div class="col-xl-3 col-lg-3">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">近期分红</h6>
-                </div>
-                <div class="card-body">
-                    <div style="height:385px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
-                        <div class="table-responsive">
-                            <table class="table table-condensed table-hover list_tab">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>分红日期</th>
-                                        <th>股票/代码</th>
-                                        <th>分红金额</th>
-                                        <th>证券账户</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for i in overview.dividend_array %}
+            <!-- 近期分红 -->
+            <div class="col-xl-3 col-lg-3">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">近期分红</h6>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:385px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                            <div class="table-responsive">
+                                <table class="table table-condensed table-hover list_tab">
+                                    <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
-                                            <td>{{ i.0 }}</td>
-                                            <td><a href="/benben/view_stock_details/{{ i.4|safe }}" style="color: inherit; text-decoration: none;">{{ i.1 }}</a></td>
-                                            <td>{{ i.2|floatformat:0 }}</td>
-                                            <td>{{ i.3 }}</td>
+                                            <th>分红日期</th>
+                                            <th>股票/代码</th>
+                                            <th>分红金额</th>
+                                            <th>证券账户</th>
                                         </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in overview.dividend_array %}
+                                            <tr>
+                                                <td>{{ i.0 }}</td>
+                                                <td><a href="/benben/view_stock_details/{{ i.4|safe }}" style="color: inherit; text-decoration: none;">{{ i.1 }}</a></td>
+                                                <td>{{ i.2|floatformat:0 }}</td>
+                                                <td>{{ i.3 }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- 近期打新 -->
-        <div class="col-xl-4 col-lg-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">近期打新</h6>
-                </div>
-                <div class="card-body">
-                    <div style="height:385px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
-                        <div class="table-responsive">
-                            <table class="table table-condensed table-hover list_tab">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>申购日期</th>
-                                        <th>申购名称</th>
-                                        <th>申购类型</th>
-                                        <th>申购数量</th>
-                                        <th>收益</th>
-                                        <th>收益率</th>
-                                        <th>证券账户</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for i in overview.subscription_array %}
+            <!-- 近期打新 -->
+            <div class="col-xl-4 col-lg-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">近期打新</h6>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:385px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                            <div class="table-responsive">
+                                <table class="table table-condensed table-hover list_tab">
+                                    <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
-                                            <td>{{ i.0 }}</td>
-                                            <td>{{ i.1 }}</td>
-                                            <td>{{ i.2 }}</td>
-                                            <td>{{ i.3 }}</td>
-                                            <td>{{ i.4|floatformat:0 }}</td>
-                                            <td>{{ i.5|floatformat:2 }}%</td>
-                                            <td>{{ i.6 }}</td>
+                                            <th>申购日期</th>
+                                            <th>申购名称</th>
+                                            <th>申购类型</th>
+                                            <th>申购数量</th>
+                                            <th>收益</th>
+                                            <th>收益率</th>
+                                            <th>证券账户</th>
                                         </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in overview.subscription_array %}
+                                            <tr>
+                                                <td>{{ i.0 }}</td>
+                                                <td>{{ i.1 }}</td>
+                                                <td>{{ i.2 }}</td>
+                                                <td>{{ i.3 }}</td>
+                                                <td>{{ i.4|floatformat:0 }}</td>
+                                                <td>{{ i.5|floatformat:2 }}%</td>
+                                                <td>{{ i.6 }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
 
-    </div>
-
-    <div class="row">
-        <!-- 持仓股票一览 -->
-        <div class="col-xl-12 col-lg-12">
-            <div class="card shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">持仓股票一览</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div style="height:100%; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
-                        <!--
-                        <div class="table-responsive">
-                            <table class="table table-condensed table-hover list_tab">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>股票/代码</th>
-                                        <th>价格（元）</th>
-                                        <th>涨跌幅</th>
-                                        <th>持仓数量（股）</th>
-                                        <th>金额（元）</th>
-                                        <th>百分比</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for i in overview.holding_stock_array %}
-                                        <tr>
-                                            <td style="text-align: left">{{ i.0|stringformat:"s" }}</td>
-                                            <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
-                                            <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
-                                            <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
-                                            <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
-                                            <td style="text-align: right">{{ i.6 }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        -->
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+        <div class="row">
+            <!-- 持仓股票一览 -->
+            <div class="col-xl-12 col-lg-12">
+                <div class="card shadow mb-4">
+                    <!-- Card Header - Dropdown -->
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">持仓股票一览</h6>
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <div style="height:100%; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                            <!--
+                            <div class="table-responsive">
+                                <table class="table table-condensed table-hover list_tab">
                                     <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
                                             <th>股票/代码</th>
                                             <th>价格（元）</th>
                                             <th>涨跌幅</th>
                                             <th>持仓数量（股）</th>
-                                            <th>持仓市值（元）</th>
+                                            <th>金额（元）</th>
                                             <th>百分比</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for i in overview.holding_stock_array %}
                                             <tr>
-                                                <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>
+                                                <td style="text-align: left">{{ i.0|stringformat:"s" }}</td>
                                                 <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
-                                                <td style="text-align: right">{{ i.2|value_display:"percent" }}<span style="color:{{ i.3 }}">%</span></td>
+                                                <td style="text-align: right; color:{{ i.3 }}">{{ i.2 }}</td>
                                                 <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
                                                 <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
                                                 <td style="text-align: right">{{ i.6 }}</td>
                                             </tr>
                                         {% endfor %}
-                                        <tr>
-                                            <td colspan="4"><b>合计</b>（股票数量：{{ overview.holding_stock_number }}）</td>
-                                            <td style="text-align: right"><b>{{ overview.market_value_sum|floatformat:0 }}</b></td>
-                                            <td style="text-align: right"><b>100.00%</b></td>
-                                        </tr>
                                     </tbody>
                                 </table>
-                        </div>
+                            </div>
+                            -->
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab">
+                                        <thead class="bg-gradient-secondary text-gray-100">
+                                            <tr>
+                                                <th>股票/代码</th>
+                                                <th>价格（元）</th>
+                                                <th>涨跌幅</th>
+                                                <th>持仓数量（股）</th>
+                                                <th>持仓市值（元）</th>
+                                                <th>百分比</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for i in overview.holding_stock_array %}
+                                                <tr>
+                                                    <td><a href="/benben/view_stock_details/{{ i.7|safe }}" style="color: inherit; text-decoration: none;">{{ i.0|stringformat:"s" }}</a></td>
+                                                    <td style="text-align: right">{{ i.1|floatformat:3 }}</td>
+                                                    <td style="text-align: right">{{ i.2|value_display:"percent" }}<span style="color:{{ i.3 }}">%</span></td>
+                                                    <td style="text-align: right">{{ i.4|floatformat:0 }}</td>
+                                                    <td style="text-align: right">{{ i.5|floatformat:0 }}</td>
+                                                    <td style="text-align: right">{{ i.6 }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                            <tr>
+                                                <td colspan="4"><b>合计</b>（股票数量：{{ overview.holding_stock_number }}）</td>
+                                                <td style="text-align: right"><b>{{ overview.market_value_sum|floatformat:0 }}</b></td>
+                                                <td style="text-align: right"><b>100.00%</b></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                            </div>
 
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：股票价格单位为报价单位，持仓市值单位为人民币元。</span>
                     </div>
                 </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                    <span>注：股票价格单位为报价单位，持仓市值单位为人民币元。</span>
-                </div>
             </div>
+
         </div>
+
 
     </div>
 
+    <script>
+        // 资产分布
+        document.addEventListener('DOMContentLoaded', function() {
+            const chart = echarts.init(document.getElementById('assetDistributionChart'));
+            const chartData = {{ overview.funds_value_array|safe }};
 
-</div>
-
-<script>
-    // 持仓市场占比饼图
-    document.addEventListener('DOMContentLoaded', function() {
-        const chart = echarts.init(document.getElementById('pie_area_market'));// 初始加载
-        const market_name_array = {{ overview.market_name_array|safe }};
-        const market_value_array = {{ overview.market_value_array|safe }};
-        const pie_data = get_pie_data(market_name_array, market_value_array);
-
-        // 初始加载
-        updateChart();
-        window.addEventListener('resize', () => chart.resize());
-
-        // 更新图表
-        function updateChart() {
-            const option = {
-                //backgroundColor: "#2c343c",
-                // 标题的一些配置参数
-                title: {
-                    text: "",
-                    left: "center",
-                    top: 10,
-                    /*
-                    textStyle: {
-                        color: "pink"
-                    }
-                    */
-                },
-                //鼠标点击出现的文字
-                tooltip: {
-                    trigger: "item",
-                    //formatter: "{b} : {c} ({d}%)"
-                    formatter: function(params) {
-                        const val = Math.round(params.data.value / 10000); // 动态计算
-                        return `${params.name}\n${val.toLocaleString('en-US')}万`;
-                    }
-                 },
-                //视觉映射器
-                /*
-                visualMap: {
-                    show: false,
-                    min: 20,
-                    max: 600,
-                    inRange: {
-                        colorLightness: [0, 1]
-                    }
-                },
-                */
-                legend: {
-                    right: "5%",
-                    top: "10%",
-                    orient: "vertical",    // 图例列表水平布局
-                    show: true
-                    /*
-                    show: true,              // 显示图例
-                    left: "75%",             // 图例组件离容器左侧的距离
-                    top: 10,                 // 图例组件离容器上侧的距离
-                    right: "15%",            // 图例组件离容器右侧的距离
-                    bottom: 30,              // 图例组件离容器下侧的距离
-                    width: "50%",            // 图例组件的宽度
-                    height: 10,              // 图例组件的高度
-                    itemGap: 15,             // 图例每项之间的间隔
-                    itemWidth: 10,           // 图例标记的图形宽度
-                    itemHeight: 15,          // 图例标记的图形高度
-                    textStyle: {             // 图例文本样式
-                      color: "rgba(239, 15, 15, 1)",
-                      fontStyle: "italic",
-                      fontWeight: "bold",
-                      fontFamily: "serif",
-                      fontSize: 15
+            function updateChart() {
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        borderColor: 'transparent', // 设置边框颜色为透明
+                        formatter: function (params) { // params 是一个对象，包含了当前数据项的所有信息
+                            return `<div style="font-weight:bold;margin-bottom:8px;">${params.name}</div>
+                                    <div style="display:flex;align-items:center;">
+                                        <span style="display:inline-block;width:12px;height:12px;background:${params.color};margin-right:8px;"></span>
+                                        ${params.seriesName}：<span style="font-weight:bold;color:${params.color}">￥${params.data.value}万</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;">
+                                        <span style="display:inline-block;width:12px;height:12px;background:${params.color};margin-right:8px;"></span>
+                                        百分比：<span style="font-weight:bold;color:${params.color}">${params.percent}%</span>
+                                    </div>`;
+                        }
                     },
-                    icon: "circle"     // 图例项的 icon
-                    */
-                },
-                //color: ['primary', 'secondary', 'success', 'info', 'warning', 'danger'],
-                color: ['#4e73df', '#858796', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
-                //表格数据
-                series: [{
-                    name: "市值",
-                    type: "pie",
-                    //radius: "55%", //饼图弧度大小
-                    radius: ["60%", "85%"],
-                    //radius: [0, 120],
-                    center: ["40%", "50%"], //饼图位置
-                    data: pie_data,
-                        /*
-                        [
-                            { value: 335, name: "直接访问" },
-                            { value: 310, name: "邮件营销" },
-                            { value: 274, name: "联盟广告" },
-                            { value: 235, name: "视频广告" },
-                            { value: 400, name: "搜索引擎" }
-                        ].sort(function(a, b) {
-                            return a.value - b.value;
-                        }),
-                        */
-                    //roseType: "radius",
-                    //roseType: "area",
-                    // 标注字的的颜色
-
-                    label: {
-                        normal: {
+                    legend: {
+                        orient: 'vertical',
+                        right: '5%',
+                        top: 'center',
+                        textStyle: {
+                            fontSize: 12
+                        }
+                    },
+                    series: [{
+                        name: '资产',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['40%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
                             show: false,
-                            textStyle: {
-                                color: "rgba(255, 255, 255, 0.3)"
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: 18,
+                                fontWeight: 'bold'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        data: [
+                            { value: (chartData[0]/10000).toFixed(2), name: '人民币账户', itemStyle: { color: '#4c6ef5' } },
+                            { value: (chartData[1]/10000).toFixed(2), name: '港元账户', itemStyle: { color: '#ff922b' } },
+                            { value: (chartData[2]/10000).toFixed(2), name: '美元账户', itemStyle: { color: '#40c057' } }
+                        ]
+                    }]
+                };
+                chart.setOption(option, true);
+            }
+
+            // 初始加载
+            updateChart();
+            window.addEventListener('resize', () => chart.resize());
+        });
+
+        // 市场分布
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化图表
+            const chart = echarts.init(document.getElementById('marketDistributionChart'));
+            const market_name_array = {{ overview.market_name_array|safe }};
+            const market_value_array = {{ overview.market_value_array|safe }};
+            //const colors = ['#4c6ef5', '#ff922b', '#40c057', '#fab005', '#e64980'];
+            const colors = {{ overview.colors|safe }};
+
+            // 更新图表
+            function updateChart() {
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'shadow'
+                        },
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        borderColor: '#ddd',
+                        borderWidth: 1,
+                        padding: [10, 15],
+                        textStyle: {
+                            color: '#333'
+                        },
+                        formatter: function(params) {
+                            const param = params[0];
+                            const value = (param.value / 10000).toFixed(2);
+                            const type = '市值';
+
+
+                            return `<div style="font-weight:bold;margin-bottom:8px;">${param.name}</div>
+                                    <div style="display:flex;align-items:center;">
+                                        <span style="display:inline-block;width:12px;height:12px;background:${param.color};margin-right:8px;"></span>
+                                        ${type}：<span style="font-weight:bold;color:${param.color}">${value}万</span>
+                                    </div>`;
+                        }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '3%',
+                        bottom: '3%',
+                        top: '15%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        //name: '年份',
+                        //data: years.map(year => year + '年'),
+                        data: market_name_array,
+                        //boundaryGap: true,
+                        axisLabel: {
+                            interval: 0,
+                            rotate: 45,
+                            fontSize: 12
+                        },
+                        axisLine: {
+                            lineStyle: {
+                                color: '#ccc'
+                            }
+                        },
+                        axisTick: {
+                            alignWithLabel: false
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: '金额（万元）',
+                        nameTextStyle: {
+                            padding: [0, 0, 0, 40]
+                        },
+                        axisLabel: {
+                            formatter: function(value) {
+                                return (value / 10000).toLocaleString(); // 千位分隔
+                            },
+                            fontSize: 12
+                        },
+                        splitLine: {
+                            show: true,
+                            lineStyle: {
+                                type: 'dashed',
+                                color: '#eee'
+                            }
+                        },
+                        axisLine: {
+                            show: false,
+                            lineStyle: {
+                                color: '#ccc'
                             }
                         }
                     },
-
-                    // 指示线的颜色
-
-                    labelLine: {
-                        normal: {
-                            show: false,
-                            lineStyle: {
-                                color: "rgba(255, 255, 255, 0.3)"
+                    series: [{
+                        name: '年度出入金',
+                        type: 'bar',
+                        data: market_value_array,
+                        itemStyle: {
+                            color: function(params) {
+                                return colors[params.dataIndex];
                             },
-                            smooth: 0.2,
-                            length: 10,
-                            length2: 20
-                        }
-                    },
-                    /*
-                    itemStyle: {
-                        normal: {
-                            color: "#c23531",
-                            shadowBlur: 200,
-                            shadowColor: "rgba(0, 0, 0, 0.5)"
-                        }
-                    },
-                    */
-                    animationType: "scale",
-                    animationEasing: "elasticOut",
-                    animationDelay: function(idx) {
-                        return Math.random() * 200;
-                    }
-                }]
-            };
-            chart.setOption(option, true);
-        }
-    });
-
-    // 资产币种占比柱图
-    document.addEventListener('DOMContentLoaded', function() {
-        const chart = echarts.init(document.getElementById('bar_funds'));
-        const funds_value_array = {{ overview.funds_value_array|safe }};
-        const funds_principal_array = {{ overview.funds_principal_array|safe }};
-        const funds_currency_array = {{ overview.funds_currency_array|safe }};
-
-        // 初始加载
-        updateChart();
-        window.addEventListener('resize', () => chart.resize());
-
-        // 更新图表
-        function updateChart() {
-            const option = {
-                title: {
-                    text: ''
-                },
-                legend: {
-                    //data:bar_data['name_array']
-                },
-                grid: {
-                    top: '10%',
-                    left: '3%',
-                    right: '5%',
-                    bottom: '0%',
-                    containLabel: true
-                },
-                tooltip: {
-                },
-                xAxis: {
-                    //name: '年份',
-                    data: funds_currency_array,
-                    axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
-                        show: true,
-                        interval: 'auto',
-                        rotate: 45,
-                        margin: 15,
-                        // formatter: null,
-                        textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            borderRadius: [4, 4, 0, 0]
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowColor: function(params) {
+                                    return params.color + '66';
+                                },
+                                borderRadius: [2, 2, 2, 2]
+                            }
+                        },
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: function(params) {
+                                const numValue = Number((params.value / 10000).toFixed(2));
+                                return numValue.toLocaleString(); // 千位分隔
+                            },
+                            fontSize: 12,
+                            fontWeight: 'bold',
                             color: '#333'
                         }
-                    }
-                },
-                //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-                yAxis: {
-                    axisLabel: {
-                        formatter: function (value) {
-                            return `${Math.round(value / 10000).toLocaleString('en-US')}`;
-                        },
-                    }
-                },
-                series: [
-                    {
-                        name: '资产',
-                        type: 'bar',
-                        //data: funds_principal_array.map(v => Math.round(v / 10000)), // 数据转换
-                        data: funds_value_array,
-                        //stack: '总量', //堆叠柱图
-                        tooltip: {
-                            trigger: "item",
-                            //formatter: "{a} <br/>{b} : {c}",
-                            formatter: function(params) {
-                                const val = Math.round(params.value / 10000); // 动态计算
-                                // 使用toLocaleString添加千位分隔符
-                                return `${params.seriesName} <br/>${params.name} : ${val.toLocaleString('en-US')}万`;
-                            },
-                            //backgroundColor: '#ffffff',   // 白色背景
-                            borderColor: 'transparent',
-                            borderWidth: 0
-                        },
-                        //color: ['#1890ff']
-                        color: ['#4e73df']
-                    },
-                    {
-                        name:  '本金',
-                        type: 'bar',
-                        //data: funds_principal_array.map(v => Math.round(v / 10000)), // 数据转换
-                        data: funds_principal_array,
-                        //stack: '总量',
-                        tooltip: {
-                            trigger: "item",
-                            //formatter: "{a} <br/>{b} : {c}",
-                            formatter: function(params) {
-                                const val = Math.round(params.value / 10000); // 动态计算
-                                // 使用toLocaleString添加千位分隔符
-                                return `${params.seriesName} <br/>${params.name} : ${val.toLocaleString('en-US')}万`;
-                            },
+                    }],
+                    dataZoom: [{
+                        type: 'inside',
+                        start: 0,
+                        end: 100,
+                        zoomLock: true
+                    }]
+                };
 
-                            //backgroundColor: '#ffffff',   // 白色背景
-                            borderColor: 'transparent',
-                            borderWidth: 0
-                        },
-                        //color: ['#ee9945']
-                        //color: ['#4e73df', '#858796', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
-                        color: ['#36b9cc']
-                    }
-                ]
-            };
-            chart.setOption(option, true);
-        }
-    });
+                chart.setOption(option, true);
+            }
 
-	// 生成持仓市场占比饼图数据
-    function get_pie_data(name_array, value_array) {
-		var pie_data = [];
-		for(i = 0; i < name_array.length; i++){
-			pie_data.push(
-				{
-				   value: value_array[i],
-				   name: name_array[i]
-				}
-			);
-		}
-		return pie_data;
-	}
+            // 初始加载
+            updateChart();
 
-    // 初始化所有图表
-    document.addEventListener('DOMContentLoaded', function() {
-        // 基金资产分布图
-        const fundChart = echarts.init(document.getElementById('fundDistributionChart'));
-        const funds_value_array = {{ overview.funds_value_array|safe }};
-        fundChart.setOption({
-            tooltip: {
-                trigger: 'item',
-                formatter: '{b}: {c}万 ({d}%)'
-            },
-            legend: {
-                orient: 'vertical',
-                right: "10%",
-                top: 'center',
-                textStyle: {
-                    fontSize: 12
-                }
-            },
-            series: [{
-                name: '基金资产分布',
-                type: 'pie',
-                radius: ['40%', '70%'],
-                center: ['40%', '50%'],
-                avoidLabelOverlap: false,
-                itemStyle: {
-                    borderRadius: 10,
-                    borderColor: '#fff',
-                    borderWidth: 2
-                },
-                label: {
-                    show: false,
-                    position: 'center'
-                },
-                emphasis: {
-                    label: {
-                        show: true,
-                        fontSize: 18,
-                        fontWeight: 'bold'
-                    }
-                },
-                labelLine: {
-                    show: false
-                },
-                data: [
-                    { value: (funds_value_array[0]/10000).toFixed(2), name: '人民币', itemStyle: { color: '#4c6ef5' } },
-                    { value: (funds_value_array[1]/10000).toFixed(2), name: '港元', itemStyle: { color: '#ff922b' } },
-                    { value: (funds_value_array[2]/10000).toFixed(2), name: '美元', itemStyle: { color: '#40c057' } }
-                ]
-            }]
+            // 响应式调整
+            window.addEventListener('resize', function() {
+                chart.resize();
+            });
         });
 
-        // 持仓股票市值占比
-        const holdingChart = echarts.init(document.getElementById('holdingChart'));
-        holdingChart.setOption({
-            tooltip: {
-                trigger: 'item',
-                formatter: '{b}: {c}万 ({d}%)'
-            },
-            legend: {
-                bottom: 10,
-                left: 'center',
-                textStyle: {
-                    fontSize: 11
-                }
-            },
-            series: [{
-                name: '持仓市值占比',
-                type: 'pie',
-                radius: '65%',
-                center: ['50%', '45%'],
-                itemStyle: {
-                    borderRadius: 5,
-                    borderColor: '#fff',
-                    borderWidth: 2
-                },
-                label: {
-                    formatter: '{b|{b}}\n{c}万',
-                    rich: {
-                        b: {
-                            fontSize: 12,
-                            lineHeight: 20
+        // 分红分布
+        document.addEventListener('DOMContentLoaded', function() {
+            const chart = echarts.init(document.getElementById('dividendDistributionChart'));
+            const chartData = {{ overview.total_dividend|safe }};
+
+            function updateChart() {
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        borderColor: 'transparent', // 设置边框颜色为透明
+                        formatter: function (params) { // params 是一个对象，包含了当前数据项的所有信息
+                            return `<div style="font-weight:bold;margin-bottom:8px;">${params.name}</div>
+                                    <div style="display:flex;align-items:center;">
+                                        <span style="display:inline-block;width:12px;height:12px;background:${params.color};margin-right:8px;"></span>
+                                        ${params.seriesName}：<span style="font-weight:bold;color:${params.color}">￥${params.data.value}万</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;">
+                                        <span style="display:inline-block;width:12px;height:12px;background:${params.color};margin-right:8px;"></span>
+                                        百分比：<span style="font-weight:bold;color:${params.color}">${params.percent}%</span>
+                                    </div>`;
                         }
-                    }
-                },
-                emphasis: {
-                    itemStyle: {
-                        shadowBlur: 10,
-                        shadowOffsetX: 0,
-                        shadowColor: 'rgba(0, 0, 0, 0.5)'
-                    }
-                },
-                data: [
-                    { value: (18445234.08/10000).toFixed(2), name: '腾讯控股（00700）', itemStyle: { color: '#4c6ef5' } },
-                    { value: (9954560/10000).toFixed(2), name: '贵州茅台（600519）', itemStyle: { color: '#ff922b' } },
-                    { value: (3175231.5/10000).toFixed(2), name: '银华日利ETF（511880）', itemStyle: { color: '#40c057' } },
-                    { value: (652828/10000).toFixed(2), name: '分众传媒（002027）', itemStyle: { color: '#fab005' } },
-                    { value: (305412.656/10000).toFixed(2), name: '大全新能源（DQ）', itemStyle: { color: '#e64980' } },
-                    { value: (138.75), name: '其他持仓', itemStyle: { color: '#adb5bd' } }
-                ]
-            }]
+                    },
+                    legend: {
+                        orient: 'vertical',
+                        right: '5%',
+                        top: 'center',
+                        textStyle: {
+                            fontSize: 12
+                        }
+                    },
+                    series: [{
+                        name: '分红',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['40%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: 18,
+                                fontWeight: 'bold'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        {#data: [#}
+                        {#    { value: (chartData[0]['value']/10000).toFixed(2), name: chartData[0]['name'], itemStyle: { color: chartData[0]['color'] } },#}
+                        {#    { value: (chartData[1]['value']/10000).toFixed(2), name: chartData[1]['name'], itemStyle: { color: chartData[1]['color'] } },#}
+                        {#    { value: (chartData[2]['value']/10000).toFixed(2), name: chartData[2]['name'], itemStyle: { color: chartData[2]['color'] } }#}
+                        {#]#}
+                        data: chartData.map(item => ({
+                            value: (item.value / 10000).toFixed(2),
+                            name: item.name,
+                            itemStyle: { color: item.color }
+                        }))
+                    }]
+                };
+                chart.setOption(option, true);
+            }
+
+            // 初始加载
+            updateChart();
+            window.addEventListener('resize', () => chart.resize());
         });
 
-        // 响应式调整
-        window.addEventListener('resize', function() {
-            fundChart.resize();
-            holdingChart.resize();
+        // 持仓股票占比
+        document.addEventListener('DOMContentLoaded', function() {
+            const chart = echarts.init(document.getElementById('holdingChart'));
+            const holding_stock_array = {{ overview.holding_stock_array|safe }};
+            const colors_array = {{ overview.colors|safe }}
+
+            // 步骤1：提取前5只股票
+            const topStocks = holding_stock_array.slice(0, 5).map((stock, index) => {
+              // const customColors = ['#4c6ef5', '#ff922b', '#40c057', '#fab005', '#e64980'];
+              const customColors = colors_array.slice(0, 5)
+              return {
+                value: (stock[5] / 10000).toFixed(2),
+                name: stock[0],
+                itemStyle: { color: customColors[index] }
+              };
+            });
+
+            // 步骤2：计算其他持仓总和
+            const otherTotal = holding_stock_array.slice(5).reduce((sum, stock) => sum + stock[5], 0);
+            const otherHolding = {
+              value: (otherTotal / 10000).toFixed(2),
+              name: '其他持仓',
+              // itemStyle: { color: '#adb5bd' }
+              itemStyle: { color: colors_array.slice(-1)[0] }
+            };
+
+            // 步骤3：合并结果
+            const chartData = [...topStocks, otherHolding];
+
+            function updateChart() {
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        borderColor: 'transparent', // 设置边框颜色为透明
+                        formatter: function (params) { // params 是一个对象，包含了当前数据项的所有信息
+                            return `<div style="font-weight:bold;margin-bottom:8px;">${params.name}</div>
+                                    <div style="display:flex;align-items:center;">
+                                        <span style="display:inline-block;width:12px;height:12px;background:${params.color};margin-right:8px;"></span>
+                                        ${params.seriesName}：<span style="font-weight:bold;color:${params.color}">￥${params.data.value}万</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;">
+                                        <span style="display:inline-block;width:12px;height:12px;background:${params.color};margin-right:8px;"></span>
+                                        百分比：<span style="font-weight:bold;color:${params.color}">${params.percent}%</span>
+                                    </div>`;
+                        }
+
+                    },
+                    legend: {
+                        bottom: 10,
+                        left: 'center',
+                        textStyle: {
+                            fontSize: 11
+                        }
+                    },
+                    series: [{
+                        name: '持仓市值',
+                        type: 'pie',
+                        radius: '65%',
+                        center: ['50%', '45%'],
+                        itemStyle: {
+                            borderRadius: 5,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            formatter: '{b|{b}}\n{c}万',
+                            rich: {
+                                b: {
+                                    fontSize: 12,
+                                    lineHeight: 20
+                                }
+                            }
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        },
+                        data: chartData
+                    }]
+                };
+                chart.setOption(option, true);
+            }
+
+            // 初始加载
+            updateChart();
+            window.addEventListener('resize', () => chart.resize());
         });
-    });
 
-
-</script>
+    </script>
 
 
 {% endblock %}
