@@ -362,7 +362,107 @@ def get_quote_gtimg(stock_code):
     return price, increase, color
 
 
-# 从akshare或http://qt.gtimg.cn/获取汇率数据
+# 从http://qt.gtimg.cn/获取汇率数据
+def get_rate():
+    # 使用统一路径变量
+    file_path = pathlib.Path("./templates/dashboard/rate.json")
+
+    # 尝试从缓存获取数据
+    if file_path.is_file():
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        # 检查缓存是否过期
+        last_modified = datetime.datetime.strptime(data['modified_time'], "%Y-%m-%d %H:%M:%S")
+        now = datetime.datetime.now()
+
+        # 使用更清晰的时间判断逻辑
+        if last_modified.date() != now.date() or (now - last_modified).total_seconds() >= 60:
+            try:
+                # 封装汇率获取逻辑
+                data.update({
+                    "rate_HKD": fetch_exchange_rate("whHKDCNY"),
+                    "rate_USD": fetch_exchange_rate("whUSDCNY"),
+                    "modified_time": now.strftime("%Y-%m-%d %H:%M:%S")
+                })
+            except Exception as e:
+                print(f"汇率更新失败: {e}")
+                # 失败时保留原值，不更新修改时间
+            else:
+                # 只有成功时才更新文件
+                save_rate_data(file_path, data)
+        return format_rate_data(data)
+
+    # 缓存文件不存在时
+    try:
+        rate_data = {
+            "rate_HKD": fetch_exchange_rate("whHKDCNY"),
+            "rate_USD": fetch_exchange_rate("whUSDCNY"),
+            "modified_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+    except Exception as e:
+        print(f"汇率初始化失败: {e}")
+        rate_data = {"rate_HKD": 1, "rate_USD": 1}
+
+    save_rate_data(file_path, rate_data)
+    return format_rate_data(rate_data)
+
+
+# 辅助函数：获取汇率
+def fetch_exchange_rate(symbol):
+    url = f"http://qt.gtimg.cn/q={symbol}"
+    html = getHTMLText(url)
+    return extract_rate(html)
+
+
+# 辅助函数：保存数据
+def save_rate_data(path, data):
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+# 辅助函数：格式化返回数据
+def format_rate_data(data):
+    return {
+        'CNY': 1,
+        'HKD': data["rate_HKD"],
+        'USD': data["rate_USD"]
+    }
+
+
+def extract_rate(input_str: str) -> float or None:
+    """
+    从输入字符串中提取HKDCNY后的汇率值。
+
+    参数:
+        input_str (str): 格式为 "字段1~字段2~HKDCNY~汇率~...~更新时间~无效内容..."
+
+    返回:
+        float or None: 解析成功的汇率值，失败返回None
+    """
+    # try:
+    # 使用正则表达式匹配双引号之间的内容
+    match = re.search(r'"(.*?)"', input_str).group(1)
+
+    # 按分隔符拆分字符串
+    fields = match.split("~")
+
+    # 找到"HKDCNY"的位置（假设是第三个字段，索引为2）
+    # if len(fields) < 4 or fields[2] != "HKDCNY":
+    #     return None
+
+    # 截断到更新时间字段（第六个字段，索引5），保留前6个字段
+    valid_fields = fields[:6]
+
+    # 提取汇率值（第四个字段，索引3）
+    rate_str = valid_fields[3]
+    return float(rate_str)
+
+    # except (IndexError, ValueError, TypeError):
+    #     return None
+
+
+'''
 def get_rate1():
     path = pathlib.Path("./templates/dashboard/rate.json")
     if path.is_file() == True:  # 若json文件存在
@@ -481,39 +581,15 @@ def get_rate1():
     return rate_HKD, rate_USD
 
 
-def get_rate():
+def get_rate2():
     path = pathlib.Path("./templates/dashboard/rate.json")
     if path.is_file() == True:  # 若json文件存在
-        # 1. 读取JSON文件
         with open('./templates/dashboard/rate.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
         time1 = datetime.datetime.strptime(data['modified_time'], "%Y-%m-%d %H:%M:%S")
         time2 = datetime.datetime.now()
-        # if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 3600):
         if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 60):
-            # df = ak.fx_quote_baidu(symbol="人民币")
-            # try:
-            #     temp_HKD = float(df.query('代码=="CNYHKD"')['最新价'].iloc[0])
-            # except Exception as e:
-            #     temp_HKD = 0
-            #     print(f"查询报错: {e}")
-            # if temp_HKD != 0:
-            #     rate_HKD = 1 / temp_HKD
-            #     data["rate_HKD"] = rate_HKD
-            # else:
-            #     rate_HKD = data["rate_HKD"]
-            # try:
-            #     temp_USD = float(df.query('代码=="CNYUSD"')['最新价'].iloc[0])
-            # except Exception as e:
-            #     temp_USD = 0
-            #     print(f"查询报错: {e}")
-            # if temp_USD != 0:
-            #     rate_USD = 1 / temp_USD
-            #     data["rate_USD"] = rate_USD
-            # else:
-            #     rate_USD = data["rate_USD"]
             try:
-                # http://qt.gtimg.cn/接口
                 url = "http://qt.gtimg.cn/q=whHKDCNY"
                 html = getHTMLText(url)
                 rate_HKD = extract_rate(html)
@@ -522,74 +598,28 @@ def get_rate():
                 html = getHTMLText(url)
                 rate_USD = extract_rate(html)
                 data["rate_USD"] = rate_USD
-
-                # ak.currency_boc_sina接口
-                # current_date = pd.to_datetime(datetime.date.today())
-                # current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
-                # df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
-                # df['日期'] = pd.to_datetime(df['日期'])
-                # rate_HKD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
-                # data["rate_HKD"] = rate_HKD
-                # df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
-                # df['日期'] = pd.to_datetime(df['日期'])
-                # rate_USD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
-                # data["rate_USD"] = rate_USD
-
-                # ak.fx_spot_quote接口
-                # df = ak.fx_spot_quote()
-                # rate_HKD = float(df[df['货币对'] == 'HKD/CNY']['买报价'].iloc[0])
-                # rate_USD = float(df[df['货币对'] == 'USD/CNY']['买报价'].iloc[0])
-                # data["rate_HKD"] = rate_HKD
-                # data["rate_USD"] = rate_USD
-
             except Exception as e:
                 print(f"查询报错: {e}")
                 rate_HKD = data["rate_HKD"]
                 rate_USD = data["rate_USD"]
-
-            # 2. 修改汇率数据
             data["modified_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            # 3. 写回JSON文件（保留原有格式）
             with open('./templates/dashboard/rate.json', 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)  # 保持中文可读性
         else:
             rate_HKD = data["rate_HKD"]
             rate_USD = data["rate_USD"]
     else:
-        # df = ak.fx_quote_baidu(symbol="人民币")
-        # temp_HKD = float(df.query('代码=="CNYHKD"')['最新价'].iloc[0])
-        # temp_USD = float(df.query('代码=="CNYUSD"')['最新价'].iloc[0])
-        # rate_HKD = 1 / temp_HKD if temp_HKD != 0 else 1
-        # rate_USD = 1 / temp_USD if temp_HKD != 0 else 1
         try:
-            # http://qt.gtimg.cn/接口
             url = "http://qt.gtimg.cn/q=whHKDCNY"
             html = getHTMLText(url)
             rate_HKD = extract_rate(html)
             url = "http://qt.gtimg.cn/q=whUSDCNY"
             html = getHTMLText(url)
             rate_USD = extract_rate(html)
-
-            # ak.currency_boc_sina接口
-            # current_date = pd.to_datetime(datetime.date.today())
-            # current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
-            # df = ak.currency_boc_sina(symbol="港币", start_date=current_date_str, end_date=current_date_str)
-            # df['日期'] = pd.to_datetime(df['日期'])
-            # rate_HKD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
-            # df = ak.currency_boc_sina(symbol="美元", start_date=current_date_str, end_date=current_date_str)
-            # df['日期'] = pd.to_datetime(df['日期'])
-            # rate_USD = float(df[df['日期'] == current_date]['中行汇买价'].iloc[0] / 100)
-
-            # ak.fx_spot_quote接口
-            # df = ak.fx_spot_quote()
-            # rate_HKD = float(df[df['货币对'] == 'HKD/CNY']['买报价'].iloc[0])
-            # rate_USD = float(df[df['货币对'] == 'USD/CNY']['买报价'].iloc[0])
-
             rate = {}
             rate.update(rate_HKD=rate_HKD)
             rate.update(rate_USD=rate_USD)
             rate.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            # 写入json文件
             FileOperate(dictData=rate, filepath='./templates/dashboard/',
                         filename='rate.json').operation_file()
         except Exception as e:
@@ -605,39 +635,9 @@ def get_rate():
     return rate
 
 
-def extract_rate(input_str: str) -> float or None:
-    """
-    从输入字符串中提取HKDCNY后的汇率值。
-
-    参数:
-        input_str (str): 格式为 "字段1~字段2~HKDCNY~汇率~...~更新时间~无效内容..."
-
-    返回:
-        float or None: 解析成功的汇率值，失败返回None
-    """
-    # try:
-    # 使用正则表达式匹配双引号之间的内容
-    match = re.search(r'"(.*?)"', input_str).group(1)
-
-    # 按分隔符拆分字符串
-    fields = match.split("~")
-
-    # 找到"HKDCNY"的位置（假设是第三个字段，索引为2）
-    # if len(fields) < 4 or fields[2] != "HKDCNY":
-    #     return None
-
-    # 截断到更新时间字段（第六个字段，索引5），保留前6个字段
-    valid_fields = fields[:6]
-
-    # 提取汇率值（第四个字段，索引3）
-    rate_str = valid_fields[3]
-    return float(rate_str)
-
-    # except (IndexError, ValueError, TypeError):
-    #     return None
 
 
-'''
+
 # 从https://wocha.cn/网站抓取汇率数据
 def get_rate_wocha():
     rate_HKD = 1.0
@@ -739,6 +739,112 @@ def get_rate_ip138():
     print(hkd_rate, usd_rate)
 
     return rate_HKD, rate_USD
+
+def getRate(html):
+    # print(html)
+    soup = BeautifulSoup(html, 'html.parser')
+    mystr = ''
+    for tr in soup.find('table').children:
+        if isinstance(tr, bs4.element.Tag):
+            tds = tr.find_all('td')
+            # print('tds=',tds)
+            mystr = mystr + str(tds)
+            # print('mystr=',mystr)
+    # print('mystr=', mystr)
+    mystr = mystr.split('<td><p>')[5]
+    # print('mystr-5=',mystr)
+    mystr = mystr.split('</p>')[0]
+    # print('mystr-0=',mystr)
+    # 网页爬虫抓取结果是否为‘暂无’？
+    if mystr == '鏆傛棤' or mystr == '暂无':
+        rate = -1
+    else:
+        rate = float(mystr)
+        # 保留7位（小数点后5位）后按保留小数点后4位并四舍五入
+        rate = round(float('%.7f' % rate), 4)
+    # print(rate)
+    return rate
+
+
+def getDateRate_hkd(date):
+    # url = 'https://wocha.cn/huilv/?jinri'
+    # url = 'https://wocha.cn/huilv/?2024-6-1'
+    url = 'https://wocha.cn/huilv/?' + date
+    html = getHTMLText(url)
+
+    # res = r'<table>(.*?)</table>'
+    # n = re.findall(res, html, re.S | re.M)
+    # print('n=', n)
+    # res = r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td>'
+    # m = re.findall(res, html, re.S | re.M)
+    # print('m=', m)
+
+    # res = r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td>'
+    # list = re.findall(res, html, re.S | re.M)
+    # print(list[2][1])
+
+    # 正则表达式'港币</a></td><td>(.*?)</td>'取'港币</a></td><td>'和'</td>'之间的内容
+    res = r'港币</a></td><td>(.*?)</td>'
+    hkd_list = re.findall(res, html, re.S | re.M)
+    hkd_str = ''.join(hkd_list)
+    if hkd_str == '':
+        hkd_rate = -1
+    else:
+        hkd_rate = float(hkd_str) / 100
+        hkd_rate = round(float('%.7f' % hkd_rate), 4)
+
+    # res = r'美元</a></td><td>(.*?)</td>'
+    # usd_list = re.findall(res, html, re.S | re.M)
+    # usd_str = ''.join(usd_list)
+    # if usd_str == '':
+    #    usd_rate = -1
+    # else:
+    #    usd_rate = float(usd_str) / 100
+    #    usd_rate = round(float('%.7f' % usd_rate), 4)
+
+    return hkd_rate
+
+
+def getDateRate_usd(date):
+    # url = 'https://wocha.cn/huilv/?jinri'
+    # url = 'https://wocha.cn/huilv/?2024-6-1'
+    url = 'https://wocha.cn/huilv/?' + date
+    html = getHTMLText(url)
+
+    # res = r'<table>(.*?)</table>'
+    # n = re.findall(res, html, re.S | re.M)
+    # print('n=', n)
+    # res = r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td>'
+    # m = re.findall(res, html, re.S | re.M)
+    # print('m=', m)
+
+    # res = r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td>'
+    # list = re.findall(res, html, re.S | re.M)
+    # print(list[2][1])
+
+    # 正则表达式'港币</a></td><td>(.*?)</td>'取'港币</a></td><td>'和'</td>'之间的内容
+    # res = r'港币</a></td><td>(.*?)</td>'
+    # hkd_list = re.findall(res, html, re.S | re.M)
+    # hkd_str = ''.join(hkd_list)
+    # if hkd_str == '':
+    #    hkd_rate = -1
+    # else:
+    #    hkd_rate = float(hkd_str) / 100
+    #    hkd_rate = round(float('%.7f' % hkd_rate), 4)
+
+    res = r'美元</a></td><td>(.*?)</td>'
+    usd_list = re.findall(res, html, re.S | re.M)
+    usd_str = ''.join(usd_list)
+    if usd_str == '':
+        usd_rate = -1
+    else:
+        usd_rate = float(usd_str) / 100
+        usd_rate = round(float('%.7f' % usd_rate), 4)
+
+    return usd_rate
+
+
+
 '''
 
 
@@ -984,110 +1090,6 @@ def getHTMLText(url):
     except:
         print('获取网页失败')
         return '获取网页失败'
-
-
-def getRate(html):
-    # print(html)
-    soup = BeautifulSoup(html, 'html.parser')
-    mystr = ''
-    for tr in soup.find('table').children:
-        if isinstance(tr, bs4.element.Tag):
-            tds = tr.find_all('td')
-            # print('tds=',tds)
-            mystr = mystr + str(tds)
-            # print('mystr=',mystr)
-    # print('mystr=', mystr)
-    mystr = mystr.split('<td><p>')[5]
-    # print('mystr-5=',mystr)
-    mystr = mystr.split('</p>')[0]
-    # print('mystr-0=',mystr)
-    # 网页爬虫抓取结果是否为‘暂无’？
-    if mystr == '鏆傛棤' or mystr == '暂无':
-        rate = -1
-    else:
-        rate = float(mystr)
-        # 保留7位（小数点后5位）后按保留小数点后4位并四舍五入
-        rate = round(float('%.7f' % rate), 4)
-    # print(rate)
-    return rate
-
-
-def getDateRate_hkd(date):
-    # url = 'https://wocha.cn/huilv/?jinri'
-    # url = 'https://wocha.cn/huilv/?2024-6-1'
-    url = 'https://wocha.cn/huilv/?' + date
-    html = getHTMLText(url)
-
-    # res = r'<table>(.*?)</table>'
-    # n = re.findall(res, html, re.S | re.M)
-    # print('n=', n)
-    # res = r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td>'
-    # m = re.findall(res, html, re.S | re.M)
-    # print('m=', m)
-
-    # res = r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td>'
-    # list = re.findall(res, html, re.S | re.M)
-    # print(list[2][1])
-
-    # 正则表达式'港币</a></td><td>(.*?)</td>'取'港币</a></td><td>'和'</td>'之间的内容
-    res = r'港币</a></td><td>(.*?)</td>'
-    hkd_list = re.findall(res, html, re.S | re.M)
-    hkd_str = ''.join(hkd_list)
-    if hkd_str == '':
-        hkd_rate = -1
-    else:
-        hkd_rate = float(hkd_str) / 100
-        hkd_rate = round(float('%.7f' % hkd_rate), 4)
-
-    # res = r'美元</a></td><td>(.*?)</td>'
-    # usd_list = re.findall(res, html, re.S | re.M)
-    # usd_str = ''.join(usd_list)
-    # if usd_str == '':
-    #    usd_rate = -1
-    # else:
-    #    usd_rate = float(usd_str) / 100
-    #    usd_rate = round(float('%.7f' % usd_rate), 4)
-
-    return hkd_rate
-
-
-def getDateRate_usd(date):
-    # url = 'https://wocha.cn/huilv/?jinri'
-    # url = 'https://wocha.cn/huilv/?2024-6-1'
-    url = 'https://wocha.cn/huilv/?' + date
-    html = getHTMLText(url)
-
-    # res = r'<table>(.*?)</table>'
-    # n = re.findall(res, html, re.S | re.M)
-    # print('n=', n)
-    # res = r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td>'
-    # m = re.findall(res, html, re.S | re.M)
-    # print('m=', m)
-
-    # res = r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td>'
-    # list = re.findall(res, html, re.S | re.M)
-    # print(list[2][1])
-
-    # 正则表达式'港币</a></td><td>(.*?)</td>'取'港币</a></td><td>'和'</td>'之间的内容
-    # res = r'港币</a></td><td>(.*?)</td>'
-    # hkd_list = re.findall(res, html, re.S | re.M)
-    # hkd_str = ''.join(hkd_list)
-    # if hkd_str == '':
-    #    hkd_rate = -1
-    # else:
-    #    hkd_rate = float(hkd_str) / 100
-    #    hkd_rate = round(float('%.7f' % hkd_rate), 4)
-
-    res = r'美元</a></td><td>(.*?)</td>'
-    usd_list = re.findall(res, html, re.S | re.M)
-    usd_str = ''.join(usd_list)
-    if usd_str == '':
-        usd_rate = -1
-    else:
-        usd_rate = float(usd_str) / 100
-        usd_rate = round(float('%.7f' % usd_rate), 4)
-
-    return usd_rate
 
 
 # 从指数历史数据生成json文件

@@ -4112,18 +4112,18 @@ def generate_workdays(start_date, end_date):
 # 关于
 def about(request):
     # 手动执行更新历史持仓功能，用于调试
-    result = HistoricalPosition.objects.aggregate(max_date=Max('date'))
-    start_date = result['max_date'] - datetime.timedelta(days=7)
-    end_date = datetime.date.today()
-
-    generate_historical_positions(start_date, end_date)
-    get_historical_closing_price(start_date, end_date - datetime.timedelta(days=1))
-    fill_missing_closing_price(start_date, end_date - datetime.timedelta(days=1))
-    get_today_price()
-    get_historical_rate(start_date, end_date)
-    fill_missing_historical_rates()
-    calculate_market_value(start_date, end_date)
-    calculate_and_fill_historical_data(start_date, end_date)
+    # result = HistoricalPosition.objects.aggregate(max_date=Max('date'))
+    # start_date = result['max_date'] - datetime.timedelta(days=7)
+    # end_date = datetime.date.today()
+    #
+    # generate_historical_positions(start_date, end_date)
+    # get_historical_closing_price(start_date, end_date - datetime.timedelta(days=1))
+    # fill_missing_closing_price(start_date, end_date - datetime.timedelta(days=1))
+    # get_today_price()
+    # get_historical_rate(start_date, end_date)
+    # fill_missing_historical_rates()
+    # calculate_market_value(start_date, end_date)
+    # calculate_and_fill_historical_data(start_date, end_date)
 
     return render(request, templates_path + 'about.html', locals())
 
