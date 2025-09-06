@@ -1,6 +1,5 @@
 import logging
 import threading
-from collections import defaultdict
 
 from dateutil.relativedelta import relativedelta
 from django.core.cache import cache
@@ -15,6 +14,13 @@ from utils.excel2db import *
 from utils.statistics import *
 from utils.utils import *
 from .models import Industry, DividendHistory, Baseline, HistoricalPosition
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import defaultdict
+import pandas as pd
+import akshare as ak
+import datetime
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -3349,139 +3355,284 @@ def generate_historical_positions(start_date, end_date):
 
 # 从akshare获取股票历史收盘价
 def get_historical_closing_price(start_date, end_date):
-    # while end_date.weekday() >= 5:
-    #     end_date -= datetime.timedelta(days=1)
+    """获取并更新历史收盘价"""
+    print(f"开始获取历史收盘价: {start_date} 至 {end_date}")
+    start_time = time.time()
 
-    # start_date_str = (start_date - datetime.timedelta(days=10)).strftime("%Y%m%d") if start_date else ""
-    start_date_str = start_date.strftime("%Y%m%d") if start_date else ""
-    end_date_str = end_date.strftime("%Y%m%d") if end_date else ""
-    date_list = list(HistoricalPosition.objects.filter(
+    # 获取所有需要更新的日期和股票
+    positions = HistoricalPosition.objects.filter(
         date__gte=start_date,
         date__lte=end_date
-    ).values_list('date', flat=True).distinct())
-    # 获取stock字段的去重值列表
-    stock_list = list(HistoricalPosition.objects.filter(
-        date__gte=start_date,
-        date__lte=end_date
-    ).values_list('stock', flat=True).distinct())
-    for i in stock_list:
-        stock_code = Stock.objects.get(id=i).stock_code
-        market_name = Stock.objects.get(id=i).market.market_name
-        market_abbreviation = Stock.objects.get(id=i).market.market_abbreviation
-        price_dict = {}
-        if market_name == '港股':
-            stock_code_str = stock_code
-            # df = ak.stock_hk_hist(symbol=stock_code_str, period="daily", start_date=start_date_str, end_date=end_date_str, adjust="")
-            # 如果df为空，则把start_date_str往前一天继续获得df，直至df不为空
-            attempts = 0
-            # 将初始日期转为datetime对象以便调整
-            current_start_date = datetime.datetime.strptime(start_date_str, "%Y%m%d")
-            while attempts < 10:
-                df = ak.stock_hk_hist(
-                    symbol=stock_code_str,
-                    period="daily",
-                    start_date=current_start_date.strftime("%Y%m%d"),
-                    end_date=end_date_str,
-                    adjust=""
-                )
-                # 如果数据不为空，退出循环
-                if not df.empty:
-                    break
-                # 否则：将日期提前一天，增加尝试次数
-                current_start_date -= datetime.timedelta(days=1)
-                attempts += 1
-            else:
-                # 循环正常结束（达到最大尝试次数仍无数据）
-                raise ValueError(f"在 30 天内未找到有效数据，请检查股票代码或日期范围")
-            df['日期'] = pd.to_datetime(df['日期'])
-            current_date = pd.to_datetime(start_date)
-            # while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
-            while (not (current_date in df['日期'].values)) and (current_date > pd.to_datetime(start_date)):
-                current_date = current_date - datetime.timedelta(days=1)
-            if current_date in df['日期'].values:
-                current_price = float(df[df['日期'] == current_date]['收盘'].iloc[0])
-            else:
-                current_price = 0
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['日期'].values
-                if date_exists:
-                    current_price = float(df[df['日期'] == item_datetime]['收盘'].iloc[0])
-                price_dict[item] = current_price
-        elif market_name == '美股':
-            stock_code_str = stock_code
-            # 美股历史行情接口
-            df = ak.stock_us_daily(symbol=stock_code_str, adjust="")
-            df['date'] = pd.to_datetime(df['date'])
-            current_date = pd.to_datetime(start_date)
-            # while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
-            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date)):
-                current_date = current_date - datetime.timedelta(days=1)
-            if current_date in df['date'].values:
-                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
-            else:
-                current_price = 0
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['date'].values
-                if date_exists:
-                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
-                price_dict[item] = current_price
-        else:
-            if market_name == '沪市B股' or market_name == '深市B股':
-                stock_code_str = market_abbreviation + stock_code
-                df = ak.stock_zh_b_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str,
-                                         adjust="")
-            elif classify_stock_code(stock_code) == 'ETF':
-                stock_code_str = market_abbreviation + stock_code
-                df = ak.stock_zh_index_daily(symbol=stock_code_str)
-            elif classify_stock_code(stock_code) == '企业债':
-                stock_code_str = market_abbreviation + stock_code
-                df = ak.bond_zh_hs_daily(symbol=stock_code_str)
-            else:
-                stock_code_str = market_abbreviation + stock_code
-                df = ak.stock_zh_a_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str,
-                                         adjust="")
-            df['date'] = pd.to_datetime(df['date'])
-            current_date = pd.to_datetime(start_date)
-            # while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
-            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date)):
-                current_date = current_date - datetime.timedelta(days=1)
-            if current_date in df['date'].values:
-                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
-            else:
-                current_price = 0
-            for item in date_list:
-                item_datetime = pd.to_datetime(item)
-                date_exists = item_datetime in df['date'].values
-                if date_exists:
-                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
-                price_dict[item] = current_price
+    ).select_related('stock', 'stock__market')
 
-        update_closing_prices(stock_code, price_dict)
-    return
+    # 按股票分组
+    stock_groups = defaultdict(list)
+    for position in positions:
+        stock_groups[position.stock].append(position.date)
+
+    # 获取所有唯一股票和日期
+    all_stocks = list(stock_groups.keys())
+    all_dates = set(date for dates in stock_groups.values() for date in dates)
+
+    if not all_stocks:
+        print("没有需要更新的记录")
+        return
+
+    # 按市场分组股票
+    market_groups = defaultdict(list)
+    for stock in all_stocks:
+        market_groups[stock.market.market_name].append(stock)
+
+    # 准备存储所有价格数据
+    all_price_data = {}
+
+    # 处理港股 - 使用多线程
+    if '港股' in market_groups:
+        print(f"处理 {len(market_groups['港股'])} 只港股")
+        hk_stocks = market_groups['港股']
+        hk_price_data = get_hk_historical_prices(hk_stocks, min(all_dates), max(all_dates))
+        all_price_data.update(hk_price_data)
+
+    # 处理美股
+    if '美股' in market_groups:
+        print(f"处理 {len(market_groups['美股'])} 只美股")
+        us_stocks = market_groups['美股']
+        us_price_data = get_us_historical_prices(us_stocks, min(all_dates), max(all_dates))
+        all_price_data.update(us_price_data)
+
+    # 处理其他市场
+    other_markets = [m for m in market_groups.keys() if m not in ['港股', '美股']]
+    for market in other_markets:
+        print(f"处理 {len(market_groups[market])} 只{market}股票")
+        stocks = market_groups[market]
+        other_price_data = get_other_historical_prices(stocks, min(all_dates), max(all_dates))
+        all_price_data.update(other_price_data)
+
+    # 批量更新所有记录
+    update_all_closing_prices(all_price_data)
+
+    end_time = time.time()
+    print(f"历史收盘价更新完成，耗时: {(end_time - start_time):.2f}秒")
 
 
-def update_closing_prices(stock_code, price_dict):
-    # 转换为日期索引的字典
-    # price_dict = {item['date']: item['price'] for item in price_list}
+def get_hk_historical_prices(stocks, start_date, end_date):
+    """获取港股历史价格 - 使用多线程"""
+    price_data = {}
 
-    # 筛选需要更新的记录
-    dates = price_dict.keys()
-    records = HistoricalPosition.objects.filter(date__in=dates, stock__stock_code=stock_code)
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for stock in stocks:
+            futures.append(executor.submit(
+                get_single_hk_stock_price,
+                stock,
+                start_date,
+                end_date
+            ))
 
-    # 批量赋值并更新
-    for record in records:
-        record.closing_price = price_dict[record.date]
+        # 处理完成的任务
+        for future in as_completed(futures):
+            stock_code, prices = future.result()
+            if prices:
+                price_data[stock_code] = prices
+
+    return price_data
+
+
+def get_single_hk_stock_price(stock, start_date, end_date):
+    """获取单只港股历史价格"""
+    prices = {}
+    stock_code = stock.stock_code
 
     try:
-        with transaction.atomic():
-            HistoricalPosition.objects.bulk_update(records, ['closing_price'])
-            print(stock_code)
-            print("历史收盘价格更新成功！")
+        # 港股历史行情接口
+        df = ak.stock_hk_hist(
+            symbol=stock_code,
+            period="daily",
+            start_date=start_date.strftime("%Y%m%d"),
+            end_date=end_date.strftime("%Y%m%d"),
+            adjust=""
+        )
+
+        if not df.empty:
+            df['日期'] = pd.to_datetime(df['日期'])
+            for _, row in df.iterrows():
+                date = row['日期'].date()
+                price = row['收盘']
+                prices[date] = price
+        print(f"获取港股 {stock_code} 价格成功！")
     except Exception as e:
-        print(stock_code)
-        print(f"历史收盘价格更新失败: {str(e)}")
+        print(f"获取港股 {stock_code} 价格失败: {str(e)}")
+
+    return stock_code, prices
+
+
+def get_us_historical_prices(stocks, start_date, end_date):
+    """获取美股历史价格"""
+    price_data = {}
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for stock in stocks:
+            futures.append(executor.submit(
+                get_single_us_stock_price,
+                stock,
+                start_date,
+                end_date
+            ))
+
+        # 处理完成的任务
+        for future in as_completed(futures):
+            stock_code, prices = future.result()
+            if prices:
+                price_data[stock_code] = prices
+
+    return price_data
+
+
+def get_single_us_stock_price(stock, start_date, end_date):
+    """获取单个美股历史价格"""
+    prices = {}
+    stock_code = stock.stock_code
+
+    try:
+        df = ak.stock_us_daily(symbol=stock_code, adjust="")
+        if not df.empty:
+            df['date'] = pd.to_datetime(df['date'])
+
+            # 修复日期比较问题：将日期转换为相同的类型
+            start_date_pd = pd.Timestamp(start_date)
+            end_date_pd = pd.Timestamp(end_date)
+
+            # 过滤日期范围
+            df = df[(df['date'] >= start_date_pd) & (df['date'] <= end_date_pd)]
+
+            for _, row in df.iterrows():
+                date = row['date'].date()
+                price = row['close']
+                prices[date] = price
+        print(f"获取美股 {stock_code} 价格成功！")
+    except Exception as e:
+        print(f"获取美股 {stock_code} 价格失败: {str(e)}")
+
+    return stock_code, prices
+
+
+def get_other_historical_prices(stocks, start_date, end_date):
+    """获取其他市场历史价格"""
+    price_data = {}
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for stock in stocks:
+            futures.append(executor.submit(
+                get_single_other_stock_price,
+                stock,
+                start_date,
+                end_date
+            ))
+
+        # 处理完成的任务
+        for future in as_completed(futures):
+            stock_code, prices = future.result()
+            if prices:
+                price_data[stock_code] = prices
+
+    return price_data
+
+
+def get_single_other_stock_price(stock, start_date, end_date):
+    """获取单个其他市场股票历史价格"""
+    prices = {}
+    market_name = stock.market.market_name
+    market_abbreviation = stock.market.market_abbreviation
+    stock_code = stock.stock_code
+
+    try:
+        if market_name in ['沪市B股', '深市B股']:
+            symbol = market_abbreviation + stock_code
+            df = ak.stock_zh_b_daily(
+                symbol=symbol,
+                start_date=start_date.strftime("%Y%m%d"),
+                end_date=end_date.strftime("%Y%m%d"),
+                adjust=""
+            )
+        elif classify_stock_code(stock_code) == 'ETF':
+            symbol = market_abbreviation + stock_code
+            df = ak.stock_zh_index_daily(symbol=symbol)
+        elif classify_stock_code(stock_code) == '企业债':
+            symbol = market_abbreviation + stock_code
+            df = ak.bond_zh_hs_daily(symbol=symbol)
+        else:
+            symbol = market_abbreviation + stock_code
+            df = ak.stock_zh_a_daily(
+                symbol=symbol,
+                start_date=start_date.strftime("%Y%m%d"),
+                end_date=end_date.strftime("%Y%m%d"),
+                adjust=""
+            )
+
+        if not df.empty:
+            df['date'] = pd.to_datetime(df['date'])
+
+            # 修复日期比较问题：将日期转换为相同的类型
+            start_date_pd = pd.Timestamp(start_date)
+            end_date_pd = pd.Timestamp(end_date)
+
+            # 过滤日期范围
+            df = df[(df['date'] >= start_date_pd) & (df['date'] <= end_date_pd)]
+
+            for _, row in df.iterrows():
+                date = row['date'].date()
+                price = row['close']
+                prices[date] = price
+        print(f"获取股票 {stock_code} 价格成功！")
+    except Exception as e:
+        print(f"获取股票 {stock_code} 价格失败: {str(e)}")
+
+    return stock_code, prices
+
+
+def update_all_closing_prices(price_data):
+    """批量更新所有收盘价"""
+    if not price_data:
+        print("没有获取到价格数据")
+        return
+
+    # 准备所有需要更新的记录
+    records_to_update = []
+    updated_count = 0
+
+    # 按日期和股票分组价格数据
+    date_stock_map = defaultdict(dict)
+    for stock_code, prices in price_data.items():
+        for date, price in prices.items():
+            date_stock_map[date][stock_code] = price
+
+    # 按日期批量查询和更新
+    for date, stock_prices in date_stock_map.items():
+        stock_codes = list(stock_prices.keys())
+        positions = HistoricalPosition.objects.filter(
+            date=date,
+            stock__stock_code__in=stock_codes
+        ).select_related('stock')
+
+        for position in positions:
+            stock_code = position.stock.stock_code
+            if stock_code in stock_prices:
+                position.closing_price = stock_prices[stock_code]
+                records_to_update.append(position)
+                updated_count += 1
+
+    # 批量更新
+    if records_to_update:
+        try:
+            with transaction.atomic():
+                HistoricalPosition.objects.bulk_update(records_to_update, ['closing_price'])
+                print(f"成功更新 {updated_count} 条历史收盘价格记录")
+        except Exception as e:
+            print(f"历史收盘价格更新失败: {str(e)}")
+    else:
+        print("没有需要更新的记录")
 
 
 # 补充akshare数据中缺失的收盘价
@@ -3521,38 +3672,49 @@ def fill_missing_closing_price(start_date, end_date):
 
 def get_today_price():
     current_date = datetime.date.today()
+    # 找到最近的工作日
     while current_date.weekday() >= 5:
         current_date -= datetime.timedelta(days=1)
-    # 获取stock字段的去重值列表
-    stock_list = list(HistoricalPosition.objects.filter(date=current_date).values_list('stock', flat=True).distinct())
-    for i in stock_list:
-        stock_code = Stock.objects.get(id=i).stock_code
-        price_dict = {}
-        current_price, increase, color = get_quote_snowball(stock_code)
-        price_dict[current_date] = current_price
-        update_today_prices(current_date, stock_code, price_dict)
-    return
 
+    # 一次性获取所有需要更新的股票信息
+    positions = HistoricalPosition.objects.filter(date=current_date).select_related('stock')
 
-def update_today_prices(current_date, stock_code, price_dict):
-    # 筛选需要更新的记录
-    # dates = price_dict.keys()
-    # current_date = datetime.date.today()
+    # 按股票分组
+    stock_groups = defaultdict(list)
+    stock_codes = set()
 
-    records = HistoricalPosition.objects.filter(date=current_date, stock__stock_code=stock_code)
+    for position in positions:
+        stock_groups[position.stock.stock_code].append(position)
+        stock_codes.add(position.stock.stock_code)
 
-    # 批量赋值并更新
-    for record in records:
-        record.closing_price = price_dict[record.date]
+    # 批量获取所有股票价格 - 使用批量查询函数
+    stock_code_list = list(stock_codes)
+    quote_results = get_quote_array_snowball(stock_code_list)
 
-    try:
-        with transaction.atomic():
-            HistoricalPosition.objects.bulk_update(records, ['closing_price'])
-            print(stock_code)
-            print("当日价格更新成功！")
-    except Exception as e:
-        print(stock_code)
-        print(f"当日价格更新失败: {str(e)}")
+    # 创建股票代码到价格的映射字典
+    stock_prices = {result[0]: result[1] for result in quote_results}
+
+    # 准备批量更新
+    records_to_update = []
+    for stock_code, positions_list in stock_groups.items():
+        price = stock_prices.get(stock_code)
+        if price is None:
+            continue
+
+        for position in positions_list:
+            position.closing_price = price
+            records_to_update.append(position)
+
+    # 一次性批量更新所有记录
+    if records_to_update:
+        try:
+            with transaction.atomic():
+                HistoricalPosition.objects.bulk_update(records_to_update, ['closing_price'])
+                print(f"成功更新 {len(records_to_update)} 条当日价格数据！")
+        except Exception as e:
+            print(f"当日价格更新失败: {str(e)}")
+    else:
+        print("没有需要更新的记录")
 
 
 # 从akshare获取历史汇率
@@ -3949,7 +4111,6 @@ def generate_workdays(start_date, end_date):
 
 # 关于
 def about(request):
-    """
     # 手动执行更新历史持仓功能，用于调试
     result = HistoricalPosition.objects.aggregate(max_date=Max('date'))
     start_date = result['max_date'] - datetime.timedelta(days=7)
@@ -3963,7 +4124,6 @@ def about(request):
     fill_missing_historical_rates()
     calculate_market_value(start_date, end_date)
     calculate_and_fill_historical_data(start_date, end_date)
-    """
 
     return render(request, templates_path + 'about.html', locals())
 
@@ -5547,3 +5707,227 @@ def calculate_market_value_bak0623(start_date, end_date):
     except Exception as e:
         print(f"历史持仓市值写入失败: {e}")
 '''
+
+"""
+def get_historical_closing_price_bak20250906(start_date, end_date):
+    # while end_date.weekday() >= 5:
+    #     end_date -= datetime.timedelta(days=1)
+
+    # start_date_str = (start_date - datetime.timedelta(days=10)).strftime("%Y%m%d") if start_date else ""
+    start_date_str = start_date.strftime("%Y%m%d") if start_date else ""
+    end_date_str = end_date.strftime("%Y%m%d") if end_date else ""
+    date_list = list(HistoricalPosition.objects.filter(
+        date__gte=start_date,
+        date__lte=end_date
+    ).values_list('date', flat=True).distinct())
+    # 获取stock字段的去重值列表
+    stock_list = list(HistoricalPosition.objects.filter(
+        date__gte=start_date,
+        date__lte=end_date
+    ).values_list('stock', flat=True).distinct())
+    for i in stock_list:
+        stock_code = Stock.objects.get(id=i).stock_code
+        market_name = Stock.objects.get(id=i).market.market_name
+        market_abbreviation = Stock.objects.get(id=i).market.market_abbreviation
+        price_dict = {}
+        if market_name == '港股':
+            stock_code_str = stock_code
+            # df = ak.stock_hk_hist(symbol=stock_code_str, period="daily", start_date=start_date_str, end_date=end_date_str, adjust="")
+            # 如果df为空，则把start_date_str往前一天继续获得df，直至df不为空
+            attempts = 0
+            # 将初始日期转为datetime对象以便调整
+            current_start_date = datetime.datetime.strptime(start_date_str, "%Y%m%d")
+            while attempts < 10:
+                df = ak.stock_hk_hist(
+                    symbol=stock_code_str,
+                    period="daily",
+                    start_date=current_start_date.strftime("%Y%m%d"),
+                    end_date=end_date_str,
+                    adjust=""
+                )
+                # 如果数据不为空，退出循环
+                if not df.empty:
+                    break
+                # 否则：将日期提前一天，增加尝试次数
+                current_start_date -= datetime.timedelta(days=1)
+                attempts += 1
+            else:
+                # 循环正常结束（达到最大尝试次数仍无数据）
+                raise ValueError(f"在 30 天内未找到有效数据，请检查股票代码或日期范围")
+            df['日期'] = pd.to_datetime(df['日期'])
+            current_date = pd.to_datetime(start_date)
+            # while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
+            while (not (current_date in df['日期'].values)) and (current_date > pd.to_datetime(start_date)):
+                current_date = current_date - datetime.timedelta(days=1)
+            if current_date in df['日期'].values:
+                current_price = float(df[df['日期'] == current_date]['收盘'].iloc[0])
+            else:
+                current_price = 0
+            for item in date_list:
+                item_datetime = pd.to_datetime(item)
+                date_exists = item_datetime in df['日期'].values
+                if date_exists:
+                    current_price = float(df[df['日期'] == item_datetime]['收盘'].iloc[0])
+                price_dict[item] = current_price
+        elif market_name == '美股':
+            stock_code_str = stock_code
+            # 美股历史行情接口
+            df = ak.stock_us_daily(symbol=stock_code_str, adjust="")
+            df['date'] = pd.to_datetime(df['date'])
+            current_date = pd.to_datetime(start_date)
+            # while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
+            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date)):
+                current_date = current_date - datetime.timedelta(days=1)
+            if current_date in df['date'].values:
+                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
+            else:
+                current_price = 0
+            for item in date_list:
+                item_datetime = pd.to_datetime(item)
+                date_exists = item_datetime in df['date'].values
+                if date_exists:
+                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
+                price_dict[item] = current_price
+        else:
+            if market_name == '沪市B股' or market_name == '深市B股':
+                stock_code_str = market_abbreviation + stock_code
+                df = ak.stock_zh_b_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str,
+                                         adjust="")
+            elif classify_stock_code(stock_code) == 'ETF':
+                stock_code_str = market_abbreviation + stock_code
+                df = ak.stock_zh_index_daily(symbol=stock_code_str)
+            elif classify_stock_code(stock_code) == '企业债':
+                stock_code_str = market_abbreviation + stock_code
+                df = ak.bond_zh_hs_daily(symbol=stock_code_str)
+            else:
+                stock_code_str = market_abbreviation + stock_code
+                df = ak.stock_zh_a_daily(symbol=stock_code_str, start_date=start_date_str, end_date=end_date_str,
+                                         adjust="")
+            df['date'] = pd.to_datetime(df['date'])
+            current_date = pd.to_datetime(start_date)
+            # while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date - datetime.timedelta(days=10))):
+            while (not (current_date in df['date'].values)) and (current_date > pd.to_datetime(start_date)):
+                current_date = current_date - datetime.timedelta(days=1)
+            if current_date in df['date'].values:
+                current_price = float(df[df['date'] == current_date]['close'].iloc[0])
+            else:
+                current_price = 0
+            for item in date_list:
+                item_datetime = pd.to_datetime(item)
+                date_exists = item_datetime in df['date'].values
+                if date_exists:
+                    current_price = float(df[df['date'] == item_datetime]['close'].iloc[0])
+                price_dict[item] = current_price
+
+        update_closing_prices(stock_code, price_dict)
+    return
+
+
+def update_closing_prices_bak20250906(stock_code, price_dict):
+    # 转换为日期索引的字典
+    # price_dict = {item['date']: item['price'] for item in price_list}
+
+    # 筛选需要更新的记录
+    dates = price_dict.keys()
+    records = HistoricalPosition.objects.filter(date__in=dates, stock__stock_code=stock_code)
+
+    # 批量赋值并更新
+    for record in records:
+        record.closing_price = price_dict[record.date]
+
+    try:
+        with transaction.atomic():
+            HistoricalPosition.objects.bulk_update(records, ['closing_price'])
+            print(stock_code)
+            print("历史收盘价格更新成功！")
+    except Exception as e:
+        print(stock_code)
+        print(f"历史收盘价格更新失败: {str(e)}")
+
+
+"""
+
+"""
+def get_today_price1():
+    current_date = datetime.date.today()
+    while current_date.weekday() >= 5:
+        current_date -= datetime.timedelta(days=1)
+    # 获取stock字段的去重值列表
+    stock_list = list(HistoricalPosition.objects.filter(date=current_date).values_list('stock', flat=True).distinct())
+    for i in stock_list:
+        stock_code = Stock.objects.get(id=i).stock_code
+        price_dict = {}
+        current_price, increase, color = get_quote_snowball(stock_code)
+        price_dict[current_date] = current_price
+        update_today_prices(current_date, stock_code, price_dict)
+    return
+
+
+def get_today_price2():
+    current_date = datetime.date.today()
+    # 找到最近的工作日
+    while current_date.weekday() >= 5:
+        current_date -= datetime.timedelta(days=1)
+
+    # 一次性获取所有需要更新的股票信息
+    positions = HistoricalPosition.objects.filter(date=current_date).select_related('stock')
+
+    # 按股票分组
+    stock_groups = defaultdict(list)
+    stock_codes = set()
+
+    for position in positions:
+        stock_groups[position.stock.stock_code].append(position)
+        stock_codes.add(position.stock.stock_code)
+
+    # 批量获取所有股票价格
+    stock_prices = {}
+    for stock_code in stock_codes:
+        current_price, _, _ = get_quote_snowball(stock_code)
+        stock_prices[stock_code] = current_price
+
+    # 准备批量更新
+    records_to_update = []
+    for stock_code, positions_list in stock_groups.items():
+        price = stock_prices.get(stock_code)
+        if price is None:
+            continue
+
+        for position in positions_list:
+            position.closing_price = price
+            records_to_update.append(position)
+
+    # 一次性批量更新所有记录
+    if records_to_update:
+        try:
+            with transaction.atomic():
+                HistoricalPosition.objects.bulk_update(records_to_update, ['closing_price'])
+                print(f"成功更新 {len(records_to_update)} 条当日价格记录")
+        except Exception as e:
+            print(f"当日价格更新失败: {str(e)}")
+    else:
+        print("没有需要更新的记录")
+        
+        
+def update_today_prices1(current_date, stock_code, price_dict):
+    # 筛选需要更新的记录
+    # dates = price_dict.keys()
+    # current_date = datetime.date.today()
+
+    records = HistoricalPosition.objects.filter(date=current_date, stock__stock_code=stock_code)
+
+    # 批量赋值并更新
+    for record in records:
+        record.closing_price = price_dict[record.date]
+
+    try:
+        with transaction.atomic():
+            HistoricalPosition.objects.bulk_update(records, ['closing_price'])
+            print(stock_code)
+            print("当日价格更新成功！")
+    except Exception as e:
+        print(stock_code)
+        print(f"当日价格更新失败: {str(e)}")
+        
+"""
+
