@@ -1,501 +1,405 @@
 <!DOCTYPE html>
 {% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
 {% load myfilters%}
 {% load humanize %}
 
+{% block extra_css %}
+    <link href="{% static 'stock/css/card.css' %}" rel="stylesheet">
+{% endblock %}
+
+
 {% block page_content %}
-<style>
-</style>
-
-<div class="container-fluid">
-    <!-- Page Heading -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">股票</h1>
-        <div class="col-auto">
-            <div class="h6 mb-0 text-gray-500">
-                <a href="javascript:history.back()" style="color: inherit; text-decoration: none;">返回 ></a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Content Card Row -->
-    <div class="row">
-        <!-- 概要 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card h-100 shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">概要</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body p-2 p-md-3 p-xl-4">
-                    <div class="row no-gutters align-items-center">
-                        <!--
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">名称（代码）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ stock_name }}（{{ stock_code }}）</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">货币（市场）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ currency_name }}（{{ stock_market }}）</div>
-                        </div>
-                        -->
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">名称</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ stock_name }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">代码</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ stock_code }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">价格（{{ currency_unit }}）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ price|floatformat:3 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">涨跌幅（%）</div>
-                            <div class="h4 mb-0 text-gray-800">{{ increase|floatformat:2 }}</div>
-                        </div>
-                    </div>
-                    <h6>&nbsp;</h6>
-                    <h6>&nbsp;</h6>
-                    <!--
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">人民币买入金额（人民币元）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ buy_amount_CNY|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">人民币卖出金额（人民币元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ sell_amount_CNY|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">人民币成本（人民币元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ cost_CNY|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">人民币分红（人民币元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ dividend_CNY|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">人民币持仓</div>
-                            <div class="h4 mb-0  text-gray-800">{{ quantity_CNY|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">人民币市值</div>
-                            <div class="h4 mb-0  text-gray-800">{{ value_CNY|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">人民币盈亏</div>
-                            <div class="h4 mb-0  text-gray-800">{{ profit_CNY|floatformat:0 }}</div>
-                        </div>
-                    </div>
-                    <h6>&nbsp;</h6>
-                    <h6>&nbsp;</h6>
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">港元买入金额（人民币元）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ buy_amount_HKD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">港元卖出金额（人民币元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ sell_amount_HKD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">港元成本（人民币元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ cost_HKD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">港元分红（人民币元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ dividend_HKD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">港元持仓</div>
-                            <div class="h4 mb-0  text-gray-800">{{ quantity_HKD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">港元市值</div>
-                            <div class="h4 mb-0  text-gray-800">{{ value_HKD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">港元盈亏</div>
-                            <div class="h4 mb-0  text-gray-800">{{ profit_HKD|floatformat:0 }}</div>
-                        </div>
-                    </div>
-                    <h6>&nbsp;</h6>
-                    <h6>&nbsp;</h6>
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">美元买入金额（人民币元）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ buy_amount_USD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">美元卖出金额（人民币元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ sell_amount_USD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">美元成本（人民币元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ cost_USD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">美元分红（人民币元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ dividend_USD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">美元持仓</div>
-                            <div class="h4 mb-0  text-gray-800">{{ quantity_USD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">美元市值</div>
-                            <div class="h4 mb-0  text-gray-800">{{ value_USD|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">美元盈亏</div>
-                            <div class="h4 mb-0  text-gray-800">{{ profit_USD|floatformat:0 }}</div>
-                        </div>
-                    </div>
-                    <h6>&nbsp;</h6>
-                    <h6>&nbsp;</h6>
-                    -->
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">投入金额（元）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ buy_amount_total|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">卖出金额（元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ sell_amount_total|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">账面成本（元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ cost_total|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">分红（元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ dividend_total|floatformat:0 }}</div>
-                        </div>
-                        <!--
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计持仓</div>
-                            <div class="h4 mb-0  text-gray-800">{{ quantity_total|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计市值</div>
-                            <div class="h4 mb-0  text-gray-800">{{ value_total|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计盈亏</div>
-                            <div class="h4 mb-0  text-gray-800">{{ profit_total|floatformat:0 }}</div>
-                        </div>
-                        -->
-                    </div>
-                    <h6>&nbsp;</h6>
-                    <h6>&nbsp;</h6>
-                    <div class="row no-gutters align-items-center">
-                        <!--
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计成本（元）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ cost_total|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">累计分红金额（元）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ dividend_total|floatformat:0 }}</div>
-                        </div>
-                        -->
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">持仓数量（股）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ position_quantity }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">持仓市值（元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ market_value|floatformat:0 }}</div>
-                        </div>
-                        <!--
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">盈亏-不含分红（元）</div>
-                            <div class="h4 mb-0 text-gray-800 font">{{ profit|floatformat:0 }}</div>
-                        </div>
-                        -->
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">盈亏（元）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ profit|floatformat:0 }}</div>
-                        </div>
-                        <div class="col mr-2">
-                            <div class="h6 mb-0 text-gray-500">投入回报率（%）</div>
-                            <div class="h4 mb-0  text-gray-800">{{ profit_rate|percent }}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                    <span>注：股票价格单位为报价单位，其他金额单位为人民币元。</span>
+    <div class="container-fluid">
+        <!-- Page Heading -->
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">股票</h1>
+            <div class="col-auto">
+                <div class="h6 mb-0 text-gray-500">
+                    <a href="javascript:history.back()" style="color: inherit; text-decoration: none;">返回 ></a>
                 </div>
             </div>
         </div>
 
-        <!-- 年度分红 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card h-100 shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">年度分红</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div id="bar_yearly_dividend" style="width:100%; height:100%;"></div><!--数据展现的容器1-->
-                </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                    <span>注：分红金额单位已折算为人民币元。</span>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="row">
-        <!-- 交易明细 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <div class="d-sm-flex align-items-center justify-content-between mb-0">
-                        <h6 class="m-0 font-weight-bold text-primary">交易明细</h6>
+        <!-- Content Card Row -->
+        <div class="row">
+            <!-- 概要 -->
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card h-100 shadow mb-4">
+                    <!-- Card Header - Dropdown -->
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">概要</h6>
                     </div>
-                </div>
-                <div class="card-body">
-                    <div style="height:500px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
-                        <div class="table-responsive">
-    {#                        <table id="dataTable_trade" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">#}
-                            <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>日期</th>
-                                        <th>股票/代码</th>
-                                        <th>类型</th>
-                                        <th>价格</th>
-                                        <th>数量</th>
-                                        <th>金额</th>
-                                        <th>货币</th>
-                                        <th>账户</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for trade in trade_list %}
-                                        <tr>
-                                            <td>{{ trade.trade_date|date:'Y-m-d' }}</td>
-                                            <td>{{ trade.stock.stock_name }}({{ trade.stock.stock_code }})</td>
-                                            <td>{{ trade.get_trade_type_display }}</td>
-                                            <td>{{ trade.trade_price }}</td>
-                                            <td>{{ trade.trade_quantity }}</td>
-                                            <!-- 模板变量的乘法需要使用widthratio，将结果存储在变量 ratio 中，并对 ratio增加千位分隔符-->
-                                            <td>{% widthratio trade.trade_price 1 trade.trade_quantity as ratio %}{{ ratio|floatformat:0|add:"" }}</td>
-                                            <td>{{ trade.currency.name }}</td>
-                                            <td>{{ trade.account.account_abbreviation }}</td>
-                                        </tr>
-                                    {% empty %}
-                                        <tr>
-                                            <td colspan="8">无相关记录！</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <div class="metric-group">
+                            <div class="row g-4">
+                                <div class="col-md-3">
+                                    <div class="metric-label">名称</div>
+                                    <div class="metric-value">
+                                        <span>{{ stock_name }}</span>
+                                        <span class="metric-unit"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-label">代码</div>
+                                    <div class="metric-value">
+                                        <span>{{ stock_code }}</span>
+                                        <span class="metric-unit"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-label">价格</div>
+                                    <div class="metric-value">
+                                        <span>{{ price|floatformat:3 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-label">涨跌幅</div>
+                                    <div class="metric-value">
+                                        <span>{{ increase_per|value_display:"percent" }}</span>
+                                        <span class="metric-unit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="metric-group">
+                            <div class="row g-4">
+                                <div class="col-md-3">
+                                    <div class="metric-label">投入金额</div>
+                                    <div class="metric-value">
+                                        <span>{{ buy_amount_total|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-label">卖出金额</div>
+                                    <div class="metric-value">
+                                        <span>{{ sell_amount_total|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-label">账面成本</div>
+                                    <div class="metric-value">
+                                        <span>{{ cost_total|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-label">分红</div>
+                                    <div class="metric-value">
+                                        <span>{{ dividend_total|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="metric-group">
+                            <div class="row g-4">
+                                <div class="col-md-3">
+                                    <div class="metric-label">持仓数量</div>
+                                    <div class="metric-value">
+                                        <span>{{ position_quantity }}</span>
+                                        <span class="metric-unit">股</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-label">持仓市值</div>
+                                    <div class="metric-value">
+                                        <span>{{ market_value|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-label">盈亏</div>
+                                    <div class="metric-value">
+                                        <span>{{ profit|value_display:"number" }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="metric-label">投入回报率</div>
+                                    <div class="metric-value">
+                                        <span>{{ profit_rate|value_display:"percent" }}</span>
+                                        <span class="metric-unit">%</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                    <span>注：交易价格及金额单位为报价单位。</span>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：股票价格单位为报价单位，其他金额单位为人民币元。</span>
+                    </div>
                 </div>
             </div>
+
+            <!-- 年度分红 -->
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card h-100 shadow mb-4">
+                    <!-- Card Header - Dropdown -->
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">年度分红</h6>
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <div id="bar_yearly_dividend" style="width:100%; height:100%;"></div><!--数据展现的容器1-->
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：分红金额单位已折算为人民币万元。</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <!-- 分红明细 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <div class="d-sm-flex align-items-center justify-content-between mb-0">
-                        <h6 class="m-0 font-weight-bold text-primary">分红明细</h6>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div style="height:500px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
-                        <div class="table-responsive">
-    {#                        <table id="dataTable_dividend" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">#}
-                            <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>日期</th>
-                                        <th>股票/代码</th>
-                                        <th>金额</th>
-                                        <th>货币</th>
-                                        <th>账户</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                                    {% for dividend in dividend_list %}
-                                        <tr>
-                                            <td>{{ dividend.dividend_date|date:'Y-m-d' }}</td>
-                                            <td>{{ dividend.stock.stock_name }}（{{ dividend.stock.stock_code }}）</td>
-                                            <td>{{ dividend.dividend_amount|floatformat:0 }}</td>
-                                            <!-- 用get_属性_display来显示包含choice参数的字段值 // -->
-            {#                                <td>{{ dividend.get_dividend_currency_display }}</td>#}
-                                            <td>{{ dividend.currency.name }}</td>
-                                            <td>{{ dividend.account.account_abbreviation }}</td>
-                                        </tr>
-                                    {% empty %}
-                                        <tr>
-                                            <td colspan="5">无相关记录！</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+        <div class="row">
+            <!-- 交易明细 -->
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <div class="d-sm-flex align-items-center justify-content-between mb-0">
+                            <h6 class="m-0 font-weight-bold text-primary">交易明细</h6>
                         </div>
                     </div>
-                </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                    <span>注：港股通分红金额单位为人民币元，其他分红金额单位为报价单位。</span>
+                    <div class="card-body">
+                        <div style="height:500px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                                    <thead class="bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>日期</th>
+                                            <th>股票/代码</th>
+                                            <th>类型</th>
+                                            <th>价格</th>
+                                            <th>数量</th>
+                                            <th>金额</th>
+                                            <th>货币</th>
+                                            <th>账户</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for trade in trade_list %}
+                                            <tr>
+                                                <td>{{ trade.trade_date|date:'Y-m-d' }}</td>
+                                                <td>{{ trade.stock.stock_name }}({{ trade.stock.stock_code }})</td>
+                                                <td>{{ trade.get_trade_type_display }}</td>
+                                                <td>{{ trade.trade_price }}</td>
+                                                <td>{{ trade.trade_quantity }}</td>
+                                                <td>{% widthratio trade.trade_price 1 trade.trade_quantity as ratio %}{{ ratio|floatformat:0|add:"" }}</td>
+                                                <td>{{ trade.currency.name }}</td>
+                                                <td>{{ trade.account.account_abbreviation }}</td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="8">无相关记录！</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：交易价格及金额单位为报价单位。</span>
+                    </div>
                 </div>
             </div>
+
+            <!-- 分红明细 -->
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <div class="d-sm-flex align-items-center justify-content-between mb-0">
+                            <h6 class="m-0 font-weight-bold text-primary">分红明细</h6>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:500px; width:100%; display:block; overflow-y:auto;" class="scrollDiv">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                                    <thead class="bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>日期</th>
+                                            <th>股票/代码</th>
+                                            <th>金额</th>
+                                            <th>货币</th>
+                                            <th>账户</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for dividend in dividend_list %}
+                                            <tr>
+                                                <td>{{ dividend.dividend_date|date:'Y-m-d' }}</td>
+                                                <td>{{ dividend.stock.stock_name }}（{{ dividend.stock.stock_code }}）</td>
+                                                <td>{{ dividend.dividend_amount|floatformat:0 }}</td>
+                                                <td>{{ dividend.currency.name }}</td>
+                                                <td>{{ dividend.account.account_abbreviation }}</td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="5">无相关记录！</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：港股通分红金额单位为人民币元，其他分红金额单位为报价单位。</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </div>
 
-</div>
+    <script>
+    'use strict';
 
-<script>
-'use strict';
+    // 年度分红柱图
+    document.addEventListener('DOMContentLoaded', function() {
+        const chart = echarts.init(document.getElementById('bar_yearly_dividend'));
+        // const year_array = {{ years_complete|safe }};
+        // const dividend_yearly_total_array = {{ dividends_complete|safe }};
+        const year_array = {{ years|safe }};
+        const dividend_yearly_total_array = {{ dividends_rmb|safe }};
 
-// 年度分红柱图
-document.addEventListener('DOMContentLoaded', function() {
-    const chart = echarts.init(document.getElementById('bar_yearly_dividend'));
-    // const year_array = {{ years_complete|safe }};
-    // const dividend_yearly_total_array = {{ dividends_complete|safe }};
-    const year_array = {{ years|safe }};
-    const dividend_yearly_total_array = {{ dividends_rmb|safe }};
-
-    // 更新图表
-    function updateChart() {
-        const option = {
-        title: {
-            text: '',
-            subtext: '',
-            x: 'center'
-        },
-        legend: {
-            //data:bar_data['name_array']
-        },
-        grid: {
-            top: '10%',
-            left: '3%',
-            right: '3%',
-            bottom: '0%',
-            containLabel: true
-        },
-        tooltip: {
-            //trigger: 'axis',      // 默认触发方式（可被系列级配置覆盖）
-            //backgroundColor: '#fff'
-        },
-        xAxis: [
-            // 第一个 X 轴（柱状图使用，boundaryGap: false）
-            {
-                //name: '年份',
-                data: year_array,
-                boundaryGap: true,
-                axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
-                    show: true,
-                    interval: 'auto',
-                    rotate: 45,
-                    margin: 15,
-                    // formatter: null,
-                    textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
-                        color: '#333'
-                    }
-                },
-                show: true
-            }
-        ],
-        //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-        yAxis: [
-            // 左侧 Y 轴（柱状图使用）
-            {
-                type: 'value',
-                //name: ' 收益率',  // 自定义单位名称
-                position: 'left',   // 左侧显示
-                axisLabel: {
-                    formatter: function(value) {
-                        // 转换为整数并添加千位分隔符
-                        return typeof value === 'number'
-                            ? Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                            : value;
-                    }
-                }
-            }
-        ],
-        series: [
-            {
-                name: '分红金额',
-                type: 'bar',
-                data: dividend_yearly_total_array,
-                //color: ['#1890ff'],
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: '#3498db' },
-                    { offset: 1, color: '#2980b9' }
-                ]),
-
-                // xAxisIndex: 0,  // 对应 xAxis[0]
-                yAxisIndex: 0,  // 使用第一个 Y 轴（左侧）
-                tooltip: {
-                    trigger: "item",
-                    // formatter: "{a} <br/>{b} : {c}",
-                    formatter: function(params) {
-                        // 将值转为数值类型
-                        const numberValue = Number(params.value);
-
-                        // 格式化为带千位分隔符的整数
-                        let formattedValue;
-                        if (isNaN(numberValue)) {
-                            formattedValue = params.value;  // 非数值直接显示原内容
-                        } else {
-                            // 转为整数并添加千位分隔符
-                            formattedValue = numberValue.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                        }
-
-                        return `${params.seriesName} <br/>${params.name}: ${formattedValue}`;
-                    },
-                    //backgroundColor: '#ffffff',   // 白色背景
-                    borderColor: 'transparent',
-                    borderWidth: 0
-                }
+        // 更新图表
+        function updateChart() {
+            const option = {
+            title: {
+                text: '',
+                subtext: '',
+                x: 'center'
             },
-        ]
-    };
-        chart.setOption(option, true);
-    }
+            legend: {
+                //data:bar_data['name_array']
+            },
+            grid: {
+                top: '10%',
+                left: '3%',
+                right: '3%',
+                bottom: '0%',
+                containLabel: true
+            },
+            tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#ddd',
+                    borderWidth: 1,
+                    padding: [10, 15],
+                    textStyle: {
+                        color: '#333'
+                    },
+                    formatter: function(params) {
+                        const name = params[0].name;
+                        const color = params[0].color;
+                        const seriesName = params[0].seriesName;
+                        const value = (params[0].value / 10000).toLocaleString('zh-CN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        return `<div style="font-weight:bold;margin-bottom:8px;">${name}年</div>
+                                <div style="display:flex;align-items:center;">
+                                    <span class="icon-rect" style="background:${color};"></span>
+                                    ${seriesName}：<span style="font-weight:bold;color:${color}">${value}万</span>
+                                </div>`;
+                    }
+            },
+            xAxis: [
+                // 第一个 X 轴（柱状图使用，boundaryGap: false）
+                {
+                    //name: '年份',
+                    data: year_array,
+                    boundaryGap: true,
+                    type: 'category',
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 45,
+                        fontSize: 12
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#ccc'
+                        }
+                    },
+                    axisTick: {
+                        alignWithLabel: false
+                    }
+                }
+            ],
+            yAxis: [
+                // 左侧 Y 轴（柱状图使用）
+                {
+                    type: 'value',
+                    name: '金额（万元）',  // 自定义单位名称
+                    nameTextStyle: {
+                        padding: [0, 0, 0, 40]
+                    },
+                    axisLabel: {
+                        formatter: function(value) {
+                            return (value / 10000).toLocaleString(); // 千位分隔
+                        },
+                        fontSize: 12
+                    },
+                    splitLine: {
+                        show: true,
+                        lineStyle: {
+                            type: 'dashed',
+                            color: '#eee'
+                        }
+                    },
+                    axisLine: {
+                        show: false,
+                        lineStyle: {
+                            color: '#ccc'
+                        }
+                    }
+                }
+            ],
+            series: [
+                {
+                    name: '分红金额',
+                    type: 'bar',
+                    color: ['#c84f4f'],
+                    itemStyle: {
+                        borderRadius: [2, 2, 0, 0]
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowColor: function(params) {
+                                return params.color + '66';
+                            },
+                            borderRadius: [2, 2, 0, 0]
+                        }
+                    },
+                    data: dividend_yearly_total_array
+                },
+            ]
+        };
+            chart.setOption(option, true);
+        }
 
-    // 初始加载
-    updateChart();
-    window.addEventListener('resize', () => chart.resize());
-});
+        // 初始加载
+        updateChart();
+        window.addEventListener('resize', () => chart.resize());
+    });
 
-
-/*
-$(document).ready(function() {
-    $('#dataTable_trade').DataTable( {
-        //先按第一列逆序排序，如果有相同，再按第二列顺序排序
-        //order后面就是一个多维数组，可以自由增删
-        "order": [[ 0, "desc" ]]
-    } );
-    $('#dataTable_dividend').DataTable( {
-        //先按第一列逆序排序，如果有相同，再按第二列顺序排序
-        //order后面就是一个多维数组，可以自由增删
-        "order": [[ 0, "desc" ]]
-    } );
-} );
-*/
-
-</script>
+    </script>
 
 {% endblock %}
 

@@ -1,10 +1,12 @@
-import datetime
 import json
 import os
 import pathlib
 import re
 import time
 from decimal import Decimal
+import datetime
+import time
+import threading
 
 # import tushare as ts
 import akshare as ak
@@ -115,7 +117,7 @@ def get_chart_array(content, max_rows, name_col, value_col):
 
 
 # 抓取单一股票实时行情
-def get_stock_price(stock_code):
+def get_stock_price1(stock_code):
     # stock_object = stock.objects.get(stock_code=stock_code)
     path = pathlib.Path("./templates/dashboard/price.json")
     if path.is_file():  # 若json文件存在，从json文件中读取price、increase、color、price_time、index
@@ -169,18 +171,14 @@ def get_stock_price(stock_code):
 
 
 # 抓取股票列表实时行情
-def get_stock_array_price(stock_code_array):
-    # stock_object = stock.objects.get(stock_code=stock_code)
+def get_stock_array_price1(stock_code_array):
     path = pathlib.Path("./templates/dashboard/price.json")
     if path.is_file():  # 若json文件存在，从json文件中读取price、increase、color、price_time、index
-        # 读取price.json
         price_dict = FileOperate(filepath='./templates/dashboard/', filename='price.json').operation_file()
         price_array = price_dict['price_array']
         price_time = datetime.datetime.strptime(price_dict['modified_time'], "%Y-%m-%d %H:%M:%S")
-        # price, increase, color, price_time, index = search_price_array(price_array, stock_code)
     else:  # 若json文件不存在，创建json文件
         price_time = datetime.datetime(1970, 1, 1, 0, 0, 0)
-        # index = -1
         price_array = []
         price_dict = {}
         price_dict.update(price_array=price_array)
@@ -192,16 +190,6 @@ def get_stock_array_price(stock_code_array):
     price_array_current = price_array
     # 当前时间与数据库价格获取时间不是同一天 或 (当前时间与price.json文件价格获取时间间隔大于60秒 且 price.json文件价格获取时间早于当天的16点30分)
     if time1.date() != time2.date() or ((time2 - time1).total_seconds() >= 60 and (time1 - time3).total_seconds() <= 0):
-        # if (time2 - time1).total_seconds() >= 0: # 用于调试
-        # 1.从雪球网抓取实时行情
-        # price, increase, color = get_quote_snowball(stock_code)
-
-        # 2.通过pysnowball API抓取雪球网实时行情
-        # price, increase, color = get_quote_pysnowball(stock_code)
-
-        # 3.从http://qt.gtimg.cn/抓取实时行情
-        # price, increase, color = get_quote_gtimg(stock_code)
-
         price_array_current = get_quote_array_snowball(stock_code_array)
         # 写入json文件
         # 从price_array_current中依次取出每组元素，与price_array对比，不存在则追加，存在则覆盖
@@ -217,15 +205,350 @@ def get_stock_array_price(stock_code_array):
             else:
                 price_array[index] = (stock_code, price, increase, color)
 
-        # if index == -1:
-        #     price_array.append((stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        # else:
-        #     price_array[index] = (stock_code, price, increase, color, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         price_dict.update(price_array=price_array)
         price_dict.update(modified_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         FileOperate(dictData=price_dict, filepath='./templates/dashboard/', filename='price.json').operation_file()
 
     return price_array_current
+
+
+'''
+# 全局内存缓存
+_PRICE_CACHE = {
+    'data': {},  # 股票数据字典 {code: (price, increase, color)}
+    'last_updated': 0,  # 最后更新时间戳
+    'expiry': 0  # 缓存过期时间戳
+}
+CACHE_TTL = 60  # 缓存有效期60秒
+
+
+def get_stock_price(stock_code):
+    """获取单一股票实时行情数据，基于全局内存缓存"""
+    global _PRICE_CACHE
+
+    current_time = time.time()
+    str_code = str(stock_code)
+
+    # 检查是否需要刷新缓存
+    need_refresh = False
+
+    # 情况1：缓存为空（首次运行）
+    if not _PRICE_CACHE['data']:
+        print(f"缓存为空，需要初始化，请求股票: {str_code}")
+        need_refresh = True
+
+    # 情况2：缓存已过期且在交易时间内
+    elif current_time > _PRICE_CACHE['expiry'] and _is_trading_time():
+        print(f"缓存已过期且在交易时间内，需要刷新，请求股票: {str_code}")
+        need_refresh = True
+
+    # 情况3：请求的股票不在缓存中
+    elif str_code not in _PRICE_CACHE['data']:
+        print(f"股票 {str_code} 不在缓存中，需要刷新")
+        need_refresh = True
+
+    # 如果需要刷新，获取最新数据
+    if need_refresh:
+        # 获取所有需要缓存的股票代码（包括请求的股票）
+        # 这里可以根据实际情况扩展，如果需要缓存更多股票
+        stock_codes_to_fetch = [str_code]
+
+        print(f"开始刷新缓存，股票数量: {len(stock_codes_to_fetch)}")
+        _refresh_cache(stock_codes_to_fetch)
+
+    # 从缓存中获取请求的股票数据
+    if str_code in _PRICE_CACHE['data']:
+        price, increase, color = _PRICE_CACHE['data'][str_code]
+        print(f"从缓存返回股票 {str_code}: 价格={price}, 涨幅={increase}, 颜色={color}")
+        return price, increase, color
+    else:
+        # 如果缓存中没有该股票，返回默认值
+        print(f"股票 {str_code} 不在缓存中，返回默认值")
+        return 0.0, 0.0, 'gray'
+
+
+def get_stock_array_price(stock_code_array):
+    """获取股票实时行情数据，完全基于内存缓存"""
+    global _PRICE_CACHE
+
+    current_time = time.time()
+    print(f"当前时间: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+    # 检查是否需要刷新缓存
+    need_refresh = False
+
+    # 情况1：缓存为空（首次运行）
+    if not _PRICE_CACHE['data']:
+        print("缓存为空，需要初始化")
+        need_refresh = True
+
+    # 情况2：缓存已过期且在交易时间内
+    elif current_time > _PRICE_CACHE['expiry'] and _is_trading_time():
+        print("缓存已过期且在交易时间内，需要刷新")
+        need_refresh = True
+
+    # 如果需要刷新，获取最新数据
+    if need_refresh and stock_code_array:
+        print(f"开始刷新缓存，股票数量: {len(stock_code_array)}")
+        _refresh_cache(stock_code_array)
+
+    # 返回请求的股票数据
+    return _get_requested_prices(stock_code_array)
+
+
+def _refresh_cache(stock_codes):
+    """刷新缓存数据"""
+    global _PRICE_CACHE
+
+    print("调用 get_quote_array_snowball...")
+    new_prices = get_quote_array_snowball(stock_codes)
+    print(f"从雪球获取到 {len(new_prices)} 条数据")
+
+    # 清空缓存
+    _PRICE_CACHE['data'] = {}
+
+    # 更新缓存
+    for item in new_prices:
+        try:
+            # 确保数据格式正确
+            if len(item) < 4:
+                print(f"数据格式错误: {item}")
+                continue
+
+            code = str(item[0])
+            price = float(item[1])
+            increase = float(item[2])
+            color = str(item[3])
+
+            _PRICE_CACHE['data'][code] = (price, increase, color)
+            print(f"缓存股票: {code} - 价格: {price}, 涨幅: {increase}, 颜色: {color}")
+        except Exception as e:
+            print(f"处理股票数据错误: {item}, 错误: {e}")
+            _PRICE_CACHE['data'][str(item[0])] = (0.0, 0.0, 'gray')
+
+    # 更新缓存时间
+    current_time = int(time.time())
+    _PRICE_CACHE['last_updated'] = current_time
+    _PRICE_CACHE['expiry'] = current_time + CACHE_TTL
+
+    print(f"缓存更新完成，包含 {len(_PRICE_CACHE['data'])} 只股票")
+    print(f"缓存过期时间: {datetime.datetime.fromtimestamp(_PRICE_CACHE['expiry']).strftime('%Y-%m-%d %H:%M:%S')}")
+
+
+def _get_requested_prices(stock_codes):
+    """从缓存中提取请求的股票数据"""
+    result = []
+
+    for code in stock_codes:
+        str_code = str(code)
+        if str_code in _PRICE_CACHE['data']:
+            price, increase, color = _PRICE_CACHE['data'][str_code]
+            result.append((str_code, price, increase, color))
+        else:
+            # 缓存中没有的股票返回默认值
+            print(f"股票 {str_code} 不在缓存中")
+            result.append((str_code, 0.0, 0.0, 'gray'))
+
+    print(f"返回 {len(result)} 只股票数据")
+    print(f"前3条结果: {result[:3]}")
+    return result
+'''
+
+# 全局内存缓存 - 用于单支股票
+_SINGLE_PRICE_CACHE = {
+    'data': {},  # 股票数据字典 {code: (price, increase, color)}
+    'last_updated': 0,  # 最后更新时间戳
+    'expiry': 0  # 缓存过期时间戳
+}
+
+# 全局内存缓存 - 用于多支股票
+_ARRAY_PRICE_CACHE = {
+    'data': {},  # 股票数据字典 {code: (price, increase, color)}
+    'last_updated': 0,  # 最后更新时间戳
+    'expiry': 0  # 缓存过期时间戳
+}
+
+CACHE_TTL = 60  # 缓存有效期60秒
+
+
+def get_stock_price(stock_code):
+    """获取单一股票实时行情数据，使用独立缓存"""
+    global _SINGLE_PRICE_CACHE
+
+    current_time = time.time()
+    str_code = str(stock_code)
+
+    # 检查是否需要刷新缓存
+    need_refresh = False
+
+    # 情况1：缓存为空（首次运行）
+    if not _SINGLE_PRICE_CACHE['data']:
+        print(f"单支股票缓存为空，需要初始化，请求股票: {str_code}")
+        need_refresh = True
+
+    # 情况2：缓存已过期且在交易时间内
+    elif current_time > _SINGLE_PRICE_CACHE['expiry'] and _is_trading_time():
+        print(f"单支股票缓存已过期且在交易时间内，需要刷新，请求股票: {str_code}")
+        need_refresh = True
+
+    # 情况3：请求的股票不在缓存中
+    elif str_code not in _SINGLE_PRICE_CACHE['data']:
+        print(f"股票 {str_code} 不在单支股票缓存中，需要刷新")
+        need_refresh = True
+
+    # 如果需要刷新，获取最新数据
+    if need_refresh:
+        # 只获取请求的单一股票数据
+        print(f"开始刷新单支股票缓存，股票: {str_code}")
+        _refresh_single_cache(str_code)
+
+    # 从缓存中获取请求的股票数据
+    if str_code in _SINGLE_PRICE_CACHE['data']:
+        price, increase, color = _SINGLE_PRICE_CACHE['data'][str_code]
+        print(f"从单支股票缓存返回股票 {str_code}: 价格={price}, 涨幅={increase}, 颜色={color}")
+        print(f"缓存内容:{_SINGLE_PRICE_CACHE}")
+        return price, increase, color
+    else:
+        # 如果缓存中没有该股票，返回默认值
+        print(f"股票 {str_code} 不在单支股票缓存中，返回默认值")
+        return 0.0, 0.0, 'gray'
+
+
+def _refresh_single_cache(stock_code):
+    """刷新单支股票缓存数据"""
+    global _SINGLE_PRICE_CACHE
+
+    # 从雪球获取单一股票数据
+    price, increase, color = get_quote_snowball(stock_code)
+
+    # 清空缓存
+    _SINGLE_PRICE_CACHE['data'] = {}
+
+    # 更新缓存
+    _SINGLE_PRICE_CACHE['data'][stock_code] = (price, increase, color)
+
+    # 更新缓存时间
+    current_time = int(time.time())
+    _SINGLE_PRICE_CACHE['last_updated'] = current_time
+    _SINGLE_PRICE_CACHE['expiry'] = current_time + CACHE_TTL
+
+    print(f"单支股票缓存更新完成，股票: {stock_code}")
+    print(f"单支股票缓存过期时间: {datetime.datetime.fromtimestamp(_SINGLE_PRICE_CACHE['expiry']).strftime('%Y-%m-%d %H:%M:%S')}")
+
+
+# 保持原有的 get_stock_array_price 函数不变，但使用 _ARRAY_PRICE_CACHE
+def get_stock_array_price(stock_code_array):
+    """获取股票实时行情数据，使用独立的多支股票缓存"""
+    global _ARRAY_PRICE_CACHE
+
+    current_time = time.time()
+    print(f"当前时间: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+    # 检查是否需要刷新缓存
+    need_refresh = False
+
+    # 情况1：缓存为空（首次运行）
+    if not _ARRAY_PRICE_CACHE['data']:
+        print("多支股票缓存为空，需要初始化")
+        need_refresh = True
+
+    # 情况2：缓存已过期且在交易时间内
+    elif current_time > _ARRAY_PRICE_CACHE['expiry'] and _is_trading_time():
+        print("多支股票缓存已过期且在交易时间内，需要刷新")
+        need_refresh = True
+
+    # 如果需要刷新，获取最新数据
+    if need_refresh and stock_code_array:
+        print(f"开始刷新多支股票缓存，股票数量: {len(stock_code_array)}")
+        _refresh_array_cache(stock_code_array)
+
+    # 返回请求的股票数据
+    return _get_requested_prices_from_array_cache(stock_code_array)
+
+
+def _refresh_array_cache(stock_codes):
+    """刷新多支股票缓存数据"""
+    global _ARRAY_PRICE_CACHE
+
+    print("调用 get_quote_array_snowball...")
+    new_prices = get_quote_array_snowball(stock_codes)
+    print(f"从雪球获取到 {len(new_prices)} 条数据")
+
+    # 清空缓存
+    _ARRAY_PRICE_CACHE['data'] = {}
+
+    # 更新缓存
+    for item in new_prices:
+        try:
+            # 确保数据格式正确
+            if len(item) < 4:
+                print(f"数据格式错误: {item}")
+                continue
+
+            code = str(item[0])
+            price = float(item[1])
+            increase = float(item[2])
+            color = str(item[3])
+
+            _ARRAY_PRICE_CACHE['data'][code] = (price, increase, color)
+            print(f"缓存股票: {code} - 价格: {price}, 涨幅: {increase}, 颜色: {color}")
+        except Exception as e:
+            print(f"处理股票数据错误: {item}, 错误: {e}")
+            _ARRAY_PRICE_CACHE['data'][str(item[0])] = (0.0, 0.0, 'gray')
+
+    # 更新缓存时间
+    current_time = int(time.time())
+    _ARRAY_PRICE_CACHE['last_updated'] = current_time
+    _ARRAY_PRICE_CACHE['expiry'] = current_time + CACHE_TTL
+
+    print(f"多支股票缓存更新完成，包含 {len(_ARRAY_PRICE_CACHE['data'])} 只股票")
+    print(f"多支股票缓存过期时间: {datetime.datetime.fromtimestamp(_ARRAY_PRICE_CACHE['expiry']).strftime('%Y-%m-%d %H:%M:%S')}")
+
+
+def _get_requested_prices_from_array_cache(stock_codes):
+    """从多支股票缓存中提取请求的股票数据"""
+    result = []
+
+    for code in stock_codes:
+        str_code = str(code)
+        if str_code in _ARRAY_PRICE_CACHE['data']:
+            price, increase, color = _ARRAY_PRICE_CACHE['data'][str_code]
+            result.append((str_code, price, increase, color))
+        else:
+            # 缓存中没有的股票返回默认值
+            print(f"股票 {str_code} 不在多支股票缓存中")
+            result.append((str_code, 0.0, 0.0, 'gray'))
+
+    print(f"返回 {len(result)} 只股票数据")
+    print(f"前3条结果: {result[:3]}")
+    return result
+
+
+def _is_trading_time():
+    """检查当前是否在交易时间内"""
+    now = datetime.datetime.now()
+
+    # 检查是否为交易日（周一至周五）
+    if now.weekday() > 4:  # 周六日
+        return False
+
+    hour = now.hour
+    minute = now.minute
+
+    # A股、港股交易时段 (9:00-16:15)
+    cn_trading = (9 <= hour <= 15) or (hour == 16 and minute < 15)
+
+    # 美股交易时段 (21:30-5:15)
+    us_trading = (21 <= hour <= 24) or (0 <= hour <= 4) or (hour == 5 and minute < 15)
+
+    return cn_trading or us_trading
+
+
+# 初始化缓存 - 强制首次刷新
+# _PRICE_CACHE['expiry'] = 0
+# print("缓存初始化完成，强制首次刷新")
+
+
 
 
 # 从akshare获取单一股票实时行情
@@ -857,7 +1180,7 @@ def get_stock_dividend_history(stock_code):
     # 使用雪球账号登录后的cookie，只需替换xq_a_token
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
-        "Cookie": "xq_a_token=15155558e5b9d666b3a40dece0b825cf67d20b25"
+        "Cookie": "xq_a_token=8d6d5dcdfd4fa6e92ede143ee82276bc107c9fd4;"
     }
     # headers = {
     #     "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",

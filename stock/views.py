@@ -306,8 +306,6 @@ def view_funds(request):
 
 # 资产详情
 def view_funds_details(request, funds_id):
-    annual_data_group = []
-    name_list = []
     funds_net_value_list = []
     baseline_net_value_list = []
     funds_profit_rate_list = []
@@ -315,13 +313,12 @@ def view_funds_details(request, funds_id):
     funds_annualized_profit_rate_list = []
     baseline_annualized_profit_rate_list = []
     year_end_date_list = []
-    list1 = []
-    list2 = []
 
     funds_details_list = FundsDetails.objects.filter(funds=funds_id).order_by("date")
     funds_name = Funds.objects.get(id=funds_id).funds_name
-    # funds_baseline_name = funds.objects.get(id=funds_id).funds_baseline
     baseline_name = Funds.objects.get(id=funds_id).baseline.name
+    name_list = [funds_name, baseline_name]
+
     max_date = get_max_date(funds_id)
     min_date = get_min_date(funds_id)
     years = max_date.year - min_date.year
@@ -347,9 +344,6 @@ def view_funds_details(request, funds_id):
     else:
         year_change_net_value_rate = 0
 
-    name_list.append(funds_name)
-    name_list.append(baseline_name)
-
     path = pathlib.Path("./templates/dashboard/baseline.json")
     if path.is_file() and request.method != 'POST':  # 若json文件存在and未点击刷新按钮，从json文件中读取需要的数据以提高性能
         pass
@@ -367,98 +361,90 @@ def view_funds_details(request, funds_id):
 
     min_date_baseline_value = get_baseline_closing_price(baseline[baseline_name], int(min_date.year))
 
-    # 按年份分组并计数
-    rs = funds_details_list.annotate(year=ExtractYear('date')).values('year').annotate(count=Count('id')).order_by(
-        'year')
+    # 生成收益率比对数据compare_data_group
+    compare_data_group = []
+    year_list = list(
+        funds_details_list.annotate(year=ExtractYear('date')).values_list('year', flat=True).distinct().order_by('year')
+    )
     pre_funds_net_value = 1
     pre_baseline_net_value = 1
-    for r in rs:
-        year_end_date = get_year_end_date(funds_id, r['year'])
+    funds_temp = []
+    baseline_temp = []
+    for year in year_list:
+        year_end_date = get_year_end_date(funds_id, year)
 
-        funds_value = funds_details_list.get(date=year_end_date).funds_value
-        funds_net_value = funds_details_list.get(date=year_end_date).funds_net_value
-        list1.append(funds_net_value)
-        funds_profit_rate = funds_net_value / pre_funds_net_value - 1
+        funds_value = float(funds_details_list.get(date=year_end_date).funds_value)
+        funds_net_value = float(funds_details_list.get(date=year_end_date).funds_net_value)
+        funds_temp.append(funds_net_value)
+        funds_profit_rate = (funds_net_value / pre_funds_net_value - 1) * 100
         pre_funds_net_value = funds_net_value
 
-        baseline_value = get_baseline_closing_price(baseline[baseline_name], int(r['year']))
-        baseline_net_value = baseline_value / min_date_baseline_value
-        list2.append(baseline_net_value)
-        baseline_profit_rate = baseline_net_value / pre_baseline_net_value - 1
+        baseline_value = float(get_baseline_closing_price(baseline[baseline_name], year))
+        baseline_net_value = float(baseline_value / min_date_baseline_value)
+        baseline_temp.append(baseline_net_value)
+        baseline_profit_rate = (baseline_net_value / pre_baseline_net_value - 1) * 100
         pre_baseline_net_value = baseline_net_value
 
         earliest_date = Funds.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
-        # earliest_date = get_min_date(funds_id)
-        years = float((year_end_date - earliest_date).days / 365)
-        if years == 0:
-            funds_annualized_profit_rate = 0
-            baseline_annualized_profit_rate = 0
-        else:
-            funds_annualized_profit_rate = float(funds_net_value) ** (1 / years) - 1
-            baseline_annualized_profit_rate = float(baseline_net_value) ** (1 / years) - 1
+        years_value = float((year_end_date - earliest_date).days / 365)
+        funds_annualized_profit_rate = 0 if years_value == 0 else (float(funds_net_value) ** (1 / years_value) - 1) *100
+        baseline_annualized_profit_rate = 0 if years_value == 0 else (float(baseline_net_value) **  (1 / years_value) - 1) *100
 
-        if len(list1) <= 3:
-            funds_annualized_profit_rate_3years = 0
-            baseline_annualized_profit_rate_3years = 0
-            funds_annualized_profit_rate_5years = 0
-            baseline_annualized_profit_rate_5years = 0
-        elif len(list1) <= 5:
-            funds_annualized_profit_rate_3years = (float(list1[-1]) / float(list1[-4])) ** (1 / 3) - 1
-            baseline_annualized_profit_rate_3years = (float(list2[-1]) / float(list2[-4])) ** (1 / 3) - 1
-            funds_annualized_profit_rate_5years = 0
-            baseline_annualized_profit_rate_5years = 0
-        else:
-            funds_annualized_profit_rate_3years = (float(list1[-1]) / float(list1[-4])) ** (1 / 3) - 1
-            baseline_annualized_profit_rate_3years = (float(list2[-1]) / float(list2[-4])) ** (1 / 3) - 1
-            funds_annualized_profit_rate_5years = (float(list1[-1]) / float(list1[-6])) ** (1 / 5) - 1
-            baseline_annualized_profit_rate_5years = (float(list2[-1]) / float(list2[-6])) ** (1 / 5) - 1
+        # 初始化默认值
+        funds_annualized_profit_rate_3years = 0
+        baseline_annualized_profit_rate_3years = 0
+        funds_annualized_profit_rate_5years = 0
+        baseline_annualized_profit_rate_5years = 0
 
-        compare_profit_rate = float(funds_profit_rate) - float(baseline_profit_rate)
-        compare_annualized_profit_rate = float(funds_annualized_profit_rate) - float(baseline_annualized_profit_rate)
-        compare_annualized_profit_rate_3years = float(funds_annualized_profit_rate_3years) - float(
-            baseline_annualized_profit_rate_3years)
-        compare_annualized_profit_rate_5years = float(funds_annualized_profit_rate_5years) - float(
-            baseline_annualized_profit_rate_5years)
+        # 计算3年年化收益率（当数据点足够时）
+        if len(funds_temp) > 3:
+            funds_annualized_profit_rate_3years = ((funds_temp[-1] / funds_temp[-4]) ** (1 / 3) - 1) * 100
+            baseline_annualized_profit_rate_3years = ((baseline_temp[-1] / baseline_temp[-4]) ** (1 / 3) - 1) * 100
+
+        # 计算5年年化收益率（当数据点足够时）
+        if len(funds_temp) > 5:
+            funds_annualized_profit_rate_5years = ((funds_temp[-1] / funds_temp[-6]) ** (1 / 5) - 1) * 100
+            baseline_annualized_profit_rate_5years = ((baseline_temp[-1] / baseline_temp[-6]) ** (1 / 5) - 1) * 100
+
+        compare_net_value = (funds_net_value - baseline_net_value) * 100
+        compare_profit_rate = funds_profit_rate - baseline_profit_rate
+        compare_annualized_profit_rate = funds_annualized_profit_rate - baseline_annualized_profit_rate
+        compare_annualized_profit_rate_3years = funds_annualized_profit_rate_3years - baseline_annualized_profit_rate_3years
+        compare_annualized_profit_rate_5years = funds_annualized_profit_rate_5years - baseline_annualized_profit_rate_5years
 
         # 生成收益率对比数据
-        item = []
-        item.append(str(year_end_date.year))  # 年份
-        item.append(Decimal(funds_value).quantize(Decimal('0')))  # 基金价值
-        item.append(Decimal(baseline_value).quantize(Decimal('0.00')))  # 比较基准点数
-        item.append(Decimal(funds_net_value).quantize(Decimal('0.0000')))  # 基金净值
-        item.append(Decimal(baseline_net_value).quantize(Decimal('0.0000')))  # 比较基准净值
-        item.append(Decimal(funds_profit_rate * 100).quantize(Decimal('0.00')))  # 基金收益率
-        item.append(Decimal(baseline_profit_rate * 100).quantize(Decimal('0.00')))  # 比较基准收益率
-        item.append(Decimal(compare_profit_rate * 100).quantize(Decimal('0.00')))  # 收益率对比
-        item.append(Decimal(funds_annualized_profit_rate * 100).quantize(Decimal('0.00')))  # 基金年化
-        item.append(Decimal(baseline_annualized_profit_rate * 100).quantize(Decimal('0.00')))  # 比较基准年化
-        item.append(Decimal(compare_annualized_profit_rate * 100).quantize(Decimal('0.00')))  # 年化对比
-        item.append(Decimal(funds_annualized_profit_rate_3years * 100).quantize(Decimal('0.00')))  # 基金连续3年年化
-        item.append(Decimal(baseline_annualized_profit_rate_3years * 100).quantize(Decimal('0.00')))  # 比较基准连续3年年化
-        item.append(Decimal(compare_annualized_profit_rate_3years * 100).quantize(Decimal('0.00')))  # 连续3年年化对比
-        item.append(Decimal(funds_annualized_profit_rate_5years * 100).quantize(Decimal('0.00')))  # 基金连续5年年化
-        item.append(Decimal(baseline_annualized_profit_rate_5years * 100).quantize(Decimal('0.00')))  # 比较基准连续5年年化
-        item.append(Decimal(compare_annualized_profit_rate_5years * 100).quantize(Decimal('0.00')))  # 连续5年年化对比
-        annual_data_group.append(item)
+        compare_data = [str(year_end_date.year), funds_value, baseline_value, funds_net_value, baseline_net_value,
+                        compare_net_value, funds_profit_rate, baseline_profit_rate, compare_profit_rate,
+                        funds_annualized_profit_rate, baseline_annualized_profit_rate, compare_annualized_profit_rate,
+                        funds_annualized_profit_rate_3years, baseline_annualized_profit_rate_3years,
+                        compare_annualized_profit_rate_3years, funds_annualized_profit_rate_5years,
+                        baseline_annualized_profit_rate_5years, compare_annualized_profit_rate_5years]
+        compare_data_group.append(compare_data)
 
         # 生成年度收益率数据，用于图表
         year_end_date_list.append(float(year_end_date.year))
         funds_net_value_list.append(float(Decimal(funds_net_value).quantize(Decimal('0.0000'))))
         baseline_net_value_list.append(float(Decimal(baseline_net_value).quantize(Decimal('0.0000'))))
-        funds_profit_rate_list.append(float(Decimal(funds_profit_rate * 100).quantize(Decimal('0.00'))))
-        baseline_profit_rate_list.append(float(Decimal(baseline_profit_rate * 100).quantize(Decimal('0.00'))))
+        funds_profit_rate_list.append(float(Decimal(funds_profit_rate).quantize(Decimal('0.00'))))
+        baseline_profit_rate_list.append(float(Decimal(baseline_profit_rate).quantize(Decimal('0.00'))))
+
+
         # 生成年化收益率数据，用于图表
         funds_annualized_profit_rate_list.append(
-            float(Decimal(funds_annualized_profit_rate * 100).quantize(Decimal('0.00'))))
+            float(Decimal(funds_annualized_profit_rate).quantize(Decimal('0.00'))))
         baseline_annualized_profit_rate_list.append(
-            float(Decimal(baseline_annualized_profit_rate * 100).quantize(Decimal('0.00'))))
+            float(Decimal(baseline_annualized_profit_rate).quantize(Decimal('0.00'))))
 
+    # 生成年度收益率柱图和净值折线图数据
     line_year_end_date_list = year_end_date_list
     line_funds_net_value_list = funds_net_value_list
     line_baseline_net_value_list = baseline_net_value_list
-    bar_year_end_date_list = year_end_date_list[1:]  # 柱图第一列去掉
-    bar_funds_profit_rate_list = funds_profit_rate_list[1:]  # 柱图第一列去掉
-    bar_baseline_profit_rate_list = baseline_profit_rate_list[1:]  # 柱图第一列去掉
+    # bar_year_end_date_list = year_end_date_list[1:]  # 柱图第一列去掉
+    # bar_funds_profit_rate_list = funds_profit_rate_list[1:]  # 柱图第一列去掉
+    # bar_baseline_profit_rate_list = baseline_profit_rate_list[1:]  # 柱图第一列去掉
+    bar_year_end_date_list = year_end_date_list  # 柱图第一列去掉
+    bar_funds_profit_rate_list = funds_profit_rate_list # 柱图第一列去掉
+    bar_baseline_profit_rate_list = baseline_profit_rate_list  # 柱图第一列去掉
 
     # 生成资产变化日历字典数据assetChanges
     assetChanges = {}
@@ -972,6 +958,7 @@ def view_stock_details(request, stock_id):
     else:
         price, increase, color = get_quote_snowball(stock_code)
         cache.set(quote_key, (price, increase, color), 300)  # 缓存5分钟
+    increase_per = increase / 100
 
     # 6. 计算市值
     market_value = position_quantity * price * rate_dict[currency_id]
@@ -1476,8 +1463,8 @@ def stats_value(request):
 
 # 账户统计
 def stats_account(request):
-    account_list1 = Account.objects.all().filter(broker__broker_script='境内券商')
-    account_list2 = Account.objects.all().filter(broker__broker_script='境外券商')
+    domestic_accounts = Account.objects.all().filter(broker__broker_script='境内券商', is_active=True)
+    overseas_accounts = Account.objects.all().filter(broker__broker_script='境外券商', is_active=True)
     account_abbreviation = '银河6811'
     # rate_HKD, rate_USD = get_rate()
     rate = get_rate()
@@ -5930,4 +5917,3 @@ def update_today_prices1(current_date, stock_code, price_dict):
         print(f"当日价格更新失败: {str(e)}")
         
 """
-

@@ -46,7 +46,9 @@
                                 <tr>
                                     <td>{{ content|first }}</td>
                                     {% for val in content|slice:"1:-1" %}
-                                    <td style="text-align: right">{{ val|floatformat:0 }}</td>
+                                        <td style="text-align: right;{% if forloop.last %} font-weight:bold;{% endif %}">
+                                            {{ val|floatformat:0 }}
+                                        </td>
                                     {% endfor %}
                                     <td class="d-none">{{ content|last }}</td>
                                 </tr>

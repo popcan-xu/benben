@@ -12,884 +12,898 @@
 
 
 {% block page_content %}
-<div class="container-fluid">
-    <!-- Page Heading -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">{{ currency_name|safe }}持仓</h1>
-        <div class="col-auto">
-            <div class="h6 mb-0 text-gray-500">
-                <a href="javascript:history.back()" style="color: inherit; text-decoration: none;">返回 ></a>
+    <div class="container-fluid">
+        <!-- Page Heading -->
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">{{ currency_name|safe }}持仓</h1>
+            <div class="col-auto">
+                <div class="h6 mb-0 text-gray-500">
+                    <a href="javascript:history.back()" style="color: inherit; text-decoration: none;">返回 ></a>
+                </div>
             </div>
         </div>
+
+        <!-- Content Card Row -->
+        <div class="row">
+            <!-- 概要 -->
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card h-100 shadow mb-4">
+                    <!-- Card Header - Dropdown -->
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">概要</h6>
+                    </div>
+                    <!-- Card Body -->
+    {#                <div class="card-body p-2 p-md-3 p-xl-4">#}
+                    <div class="card-body">
+                        <!-- Card Body - 总资产概览 -->
+                        <div class="metric-group">
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="metric-label">持仓市值</div>
+                                    <div class="metric-value">
+                                        <span>{{ market_value_obj.value|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">变化值</div>
+                                    <div class="metric-value">
+                                        <span>{{ market_value_obj.change_amount|value_display:"number" }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">变化率</div>
+                                    <div class="metric-value">
+                                        <span>{{ market_value_obj.change_rate|value_display:"percent" }}</span>
+                                        <span class="metric-unit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Body - 收益周期对比 -->
+                        <div class="metric-group">
+        {#                    <div class="metric-group-title">本期收益</div>#}
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="metric-label">上月市值</div>
+                                    <div class="metric-value">
+                                        <span>{{ last_month_value|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">月内变化值</div>
+                                    <div class="metric-value">
+                                        <span>{{ month_change_amount|value_display:"number" }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">月内变化率</div>
+                                    <div class="metric-value">
+                                        <span>{{ month_change_rate|value_display:"percent" }}</span>
+                                        <span class="metric-unit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Body - 收益周期对比 -->
+                        <div class="metric-group">
+        {#                    <div class="metric-group-title">本期收益</div>#}
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="metric-label">上年市值</div>
+                                    <div class="metric-value">
+                                        <span>{{ last_year_value|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">年内变化值</div>
+                                    <div class="metric-value">
+                                        <span>{{ year_change_amount|value_display:"number" }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">年内变化率</div>
+                                    <div class="metric-value">
+                                        <span>{{ year_change_rate|value_display:"percent" }}</span>
+                                        <span class="metric-unit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 市值曲线 -->
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card h-100 shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">市值曲线</h6>
+                        <div class="btn-group" id="market_value_viewSwitch">
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary active"
+                                data-range="currentYear"
+                                style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                            >今年</button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-range="month"
+                                style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                            >近一月</button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-range="year"
+                                style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                            >近一年</button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-range="all"
+                                style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                            >全部</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="container mt-4">
+                            <div id="Chart_market_value" style="width:100%; height:300px;"></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：市值单位为万元。</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row">
+            <!-- 市值日历 -->
+            <div class="col-xl-6 col-md-6 mb-4 d-flex">
+                <div class="card h-100 shadow mb-4 w-100 d-flex flex-column">
+                    <!-- Card Header - Dropdown -->
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">市值日历</h6>
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body flex-grow-1">
+                        <!-- 标题和按钮区域 -->
+                        <div class="row align-items-center mb-4">
+                            <div class="col-auto pr-0">
+                                <!-- 年月视图切换按钮 -->
+                                <div class="btn-group" id="viewSwitch">
+                                    <button
+                                        class="btn btn-outline-primary active"
+                                        data-type="month"
+                                        style="font-size: 14px !important; padding: 0.25rem 0.75rem;"
+                                    >月</button>
+                                    <button
+                                        class="btn btn-outline-primary"
+                                        data-type="year"
+                                        style="font-size: 14px !important; padding: 0.25rem 0.75rem;"
+                                    >年</button>
+                                </div>
+                            </div>
+                            <div class="col d-flex justify-content-end">
+                                <!-- 时间显示和按钮 -->
+                                <div class="d-flex align-items-center">
+                                    <button class="btn" id="prevBtn">
+                                        <i class="fas fa-chevron-left"></i> <!-- 字体图标 -->
+                                    </button>
+                                    <div class="flex-grow-1 text-center px-1">
+                                        <span id="timeDisplay"></span>
+                                    </div>
+                                    <button class="btn" id="nextBtn">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 星期头 -->
+                        <div class="week-days" id="weekHeader">
+    {#                        <div class="week-day">日</div>#}
+                            <div class="week-day">一</div>
+                            <div class="week-day">二</div>
+                            <div class="week-day">三</div>
+                            <div class="week-day">四</div>
+                            <div class="week-day">五</div>
+    {#                        <div class="week-day">六</div>#}
+                        </div>
+                        <!-- 日期网格 -->
+                        <div class="date-grid" id="calendarGrid"></div>
+                        <!-- 摘要信息 -->
+                        <div class="summary" id="periodSummary"></div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 近期市值和交易列表 -->
+            <div class="col-xl-6 col-lg-6 d-flex">
+                <div class="card shadow mb-4 w-100 d-flex flex-column">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary" id="recentListTitle">近期市值</h6>
+                        <div class="btn-group" id="recentListSwitch">
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary active"
+                                data-type="marketValue"
+                                style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                            >市值</button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-type="trade"
+                                style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                            >交易</button>
+                        </div>
+                    </div>
+                    <div class="card-body flex-grow-1">
+                        <!-- 近期市值表格 -->
+                        <div id="marketValueTable" class="h-100" style="display:block; overflow-y:auto;">
+    {#                    <div id="marketValueTable" style="height:100%; width:100%; display:block; overflow-y:auto;" class="scrollDiv">#}
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                                    <thead class="bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>日期</th>
+                                            <th>持仓市值</th>
+                                            <th>变化值</th>
+                                            <th>变化率</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for rs in market_value_list_TOP %}
+                                            <tr>
+                                                <td>{{ rs.date|date:'Y-m-d' }}</td>
+                                                <td>{{ rs.value|floatformat:0 }}</td>
+                                                <td style="color: {{ rs.change_amount|text_color }}">{{ rs.change_amount|floatformat:0 }}</td>
+                                                <td style="color: {{ rs.change_rate|text_color }}">{{ rs.change_rate|percent }}%</td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="9">无相关记录！</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 近期交易表格 -->
+                        <div id="tradeTable" class="h-100" style="display:none; overflow-y:auto;">
+    {#                    <div id="tradeTable" style="height:100%; width:100%; display:none; overflow-y:auto;" class="scrollDiv">#}
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                                    <thead class="bg-gradient-secondary text-gray-100">
+                                        <tr>
+                                            <th>日期</th>
+                                            <th>股票/代码</th>
+                                            <th>净交易类型</th>
+                                            <th>净交易量</th>
+                                            <th>净交易价格</th>
+                                            <th>净交易金额</th>
+    {#                                        <th>最新更新时间</th>#}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for trade in trade_list_TOP %}
+                                            <tr>
+                                                <td>{{ trade.trade_date|date:'Y-m-d' }}</td>
+                                                <td><a href="/benben/view_stock_details/{{ trade.stock_id|safe }}" style="color: inherit; text-decoration: none;">{{ trade.stock__stock_name }}({{ trade.stock__stock_code }})</a></td>
+                                                <td>
+                                                    {% if trade.net_quantity > 0 %}
+                                                        <span class="buy-badge">净买入</span>
+                                                    {% elif trade.net_quantity < 0 %}
+                                                        <span class="sell-badge">净卖出</span>
+                                                    {% else %}
+                                                        <span class="neutral-badge">持平</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="{% if trade.net_quantity > 0 %}text-success{% else %}text-danger{% endif %}">
+                                                    {{ trade.net_quantity|default:"0" }}
+                                                </td>
+                                                <td>{{ trade.net_amount|div:trade.net_quantity|absolute|floatformat:3 }}</td>
+                                                <td class="{% if trade.net_amount > 0 %}text-success{% else %}text-danger{% endif %}">
+                                                    {{ trade.net_amount|floatformat:2 }}
+                                                </td>
+    {#                                            <td>{{ trade.latest_modified|date:"Y-m-d H:i" }}</td>#}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
     </div>
 
-    <!-- Content Card Row -->
-    <div class="row">
-        <!-- 概要 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card h-100 shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">概要</h6>
-                </div>
-                <!-- Card Body -->
-{#                <div class="card-body p-2 p-md-3 p-xl-4">#}
-                <div class="card-body">
-                    <!-- Card Body - 总资产概览 -->
-                    <div class="metric-group">
-                        <div class="row g-4">
-                            <div class="col-md-4">
-                                <div class="metric-label">持仓市值</div>
-                                <div class="metric-value">
-                                    <span>{{ market_value_obj.value|floatformat:0 }}</span>
-                                    <span class="metric-unit">元</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">变化值</div>
-                                <div class="metric-value">
-                                    <span>{{ market_value_obj.change_amount|value_display:"number" }}</span>
-                                    <span class="metric-unit">元</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">变化率</div>
-                                <div class="metric-value">
-                                    <span>{{ market_value_obj.change_rate|value_display:"percent" }}</span>
-                                    <span class="metric-unit">%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <script>
+    'use strict';
 
-                    <!-- Card Body - 收益周期对比 -->
-                    <div class="metric-group">
-    {#                    <div class="metric-group-title">本期收益</div>#}
-                        <div class="row g-4">
-                            <div class="col-md-4">
-                                <div class="metric-label">上月市值</div>
-                                <div class="metric-value">
-                                    <span>{{ last_month_value|floatformat:0 }}</span>
-                                    <span class="metric-unit">元</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">月内变化值</div>
-                                <div class="metric-value">
-                                    <span>{{ month_change_amount|value_display:"number" }}</span>
-                                    <span class="metric-unit">元</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">月内变化率</div>
-                                <div class="metric-value">
-                                    <span>{{ month_change_rate|value_display:"percent" }}</span>
-                                    <span class="metric-unit">%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    // 近期市值和交易列表
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取相关元素
+        const titleElement = document.getElementById('recentListTitle');
+        const marketValueTable = document.getElementById('marketValueTable');
+        const tradeTable = document.getElementById('tradeTable');
 
-                    <!-- Card Body - 收益周期对比 -->
-                    <div class="metric-group">
-    {#                    <div class="metric-group-title">本期收益</div>#}
-                        <div class="row g-4">
-                            <div class="col-md-4">
-                                <div class="metric-label">上年市值</div>
-                                <div class="metric-value">
-                                    <span>{{ last_year_value|floatformat:0 }}</span>
-                                    <span class="metric-unit">元</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">年内变化值</div>
-                                <div class="metric-value">
-                                    <span>{{ year_change_amount|value_display:"number" }}</span>
-                                    <span class="metric-unit">元</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">年内变化率</div>
-                                <div class="metric-value">
-                                    <span>{{ year_change_rate|value_display:"percent" }}</span>
-                                    <span class="metric-unit">%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
-                </div>
-            </div>
-        </div>
+        // 初始化状态
+        let currentView = 'marketValue';
 
-        <!-- 市值曲线 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card h-100 shadow mb-4">
-                <div class="card-header d-flex align-items-center justify-content-between" style="height: 55px;">
-                    <h6 class="m-0 font-weight-bold text-primary">市值曲线</h6>
-                    <div class="btn-group" id="market_value_viewSwitch">
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary active"
-                            data-range="currentYear"
-                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
-                        >今年</button>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            data-range="month"
-                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
-                        >近一月</button>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            data-range="year"
-                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
-                        >近一年</button>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            data-range="all"
-                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
-                        >全部</button>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div class="container mt-4">
-                        <div id="Chart_market_value" style="width:100%; height:300px;"></div>
-                    </div>
-                </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                    <span>注：市值单位为万元。</span>
-                </div>
-            </div>
-        </div>
+        // 设置激活按钮样式
+        function setActiveButton() {
+            document.querySelectorAll('#recentListSwitch button').forEach(button => {
+                button.classList.toggle('active', button.dataset.type === currentView);
+            });
 
-    </div>
+            // 更新卡片标题
+            titleElement.textContent = currentView === 'marketValue'
+                ? '近期市值'
+                : '近期交易';
+        }
 
-    <div class="row">
-        <!-- 市值日历 -->
-        <div class="col-xl-6 col-md-6 mb-4 d-flex">
-            <div class="card h-100 shadow mb-4 w-100 d-flex flex-column">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 55px;">
-                    <h6 class="m-0 font-weight-bold text-primary">市值日历</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body flex-grow-1">
-                    <!-- 标题和按钮区域 -->
-                    <div class="row align-items-center mb-4">
-                        <div class="col-auto pr-0">
-                            <!-- 年月视图切换按钮 -->
-                            <div class="btn-group" id="viewSwitch">
-                                <button
-                                    class="btn btn-outline-primary active"
-                                    data-type="month"
-                                    style="font-size: 14px !important; padding: 0.25rem 0.75rem;"
-                                >月</button>
-                                <button
-                                    class="btn btn-outline-primary"
-                                    data-type="year"
-                                    style="font-size: 14px !important; padding: 0.25rem 0.75rem;"
-                                >年</button>
-                            </div>
-                        </div>
-                        <div class="col d-flex justify-content-end">
-                            <!-- 时间显示和按钮 -->
-                            <div class="d-flex align-items-center">
-                                <button class="btn" id="prevBtn">
-                                    <i class="fas fa-chevron-left"></i> <!-- 字体图标 -->
-                                </button>
-                                <div class="flex-grow-1 text-center px-1">
-                                    <span id="timeDisplay"></span>
-                                </div>
-                                <button class="btn" id="nextBtn">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- 星期头 -->
-                    <div class="week-days" id="weekHeader">
-{#                        <div class="week-day">日</div>#}
-                        <div class="week-day">一</div>
-                        <div class="week-day">二</div>
-                        <div class="week-day">三</div>
-                        <div class="week-day">四</div>
-                        <div class="week-day">五</div>
-{#                        <div class="week-day">六</div>#}
-                    </div>
-                    <!-- 日期网格 -->
-                    <div class="date-grid" id="calendarGrid"></div>
-                    <!-- 摘要信息 -->
-                    <div class="summary" id="periodSummary"></div>
-                </div>
-                <div class="card-footer bg-white text-muted small">
-                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
-                </div>
-            </div>
-        </div>
-
-        <!-- 近期市值和交易列表 -->
-        <div class="col-xl-6 col-lg-6 d-flex">
-            <div class="card shadow mb-4 w-100 d-flex flex-column">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 55px;">
-                    <h6 class="m-0 font-weight-bold text-primary" id="recentListTitle">近期市值</h6>
-                    <div class="btn-group" id="recentListSwitch">
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary active"
-                            data-type="marketValue"
-                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
-                        >市值</button>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            data-type="trade"
-                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
-                        >交易</button>
-                    </div>
-                </div>
-                <div class="card-body flex-grow-1">
-                    <!-- 近期市值表格 -->
-                    <div id="marketValueTable" class="h-100" style="display:block; overflow-y:auto;">
-{#                    <div id="marketValueTable" style="height:100%; width:100%; display:block; overflow-y:auto;" class="scrollDiv">#}
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>日期</th>
-                                        <th>持仓市值</th>
-                                        <th>变化值</th>
-                                        <th>变化率</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for rs in market_value_list_TOP %}
-                                        <tr>
-                                            <td>{{ rs.date|date:'Y-m-d' }}</td>
-                                            <td>{{ rs.value|floatformat:0 }}</td>
-                                            <td style="color: {{ rs.change_amount|text_color }}">{{ rs.change_amount|floatformat:0 }}</td>
-                                            <td style="color: {{ rs.change_rate|text_color }}">{{ rs.change_rate|percent }}%</td>
-                                        </tr>
-                                    {% empty %}
-                                        <tr>
-                                            <td colspan="9">无相关记录！</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- 近期交易表格 -->
-                    <div id="tradeTable" class="h-100" style="display:none; overflow-y:auto;">
-{#                    <div id="tradeTable" style="height:100%; width:100%; display:none; overflow-y:auto;" class="scrollDiv">#}
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>日期</th>
-                                        <th>股票/代码</th>
-                                        <th>净交易类型</th>
-                                        <th>净交易量</th>
-                                        <th>净交易价格</th>
-                                        <th>净交易金额</th>
-{#                                        <th>最新更新时间</th>#}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for trade in trade_list_TOP %}
-                                        <tr>
-                                            <td>{{ trade.trade_date|date:'Y-m-d' }}</td>
-                                            <td><a href="/benben/view_stock_details/{{ trade.stock_id|safe }}" style="color: inherit; text-decoration: none;">{{ trade.stock__stock_name }}({{ trade.stock__stock_code }})</a></td>
-                                            <td>
-                                                {% if trade.net_quantity > 0 %}
-                                                    <span class="buy-badge">净买入</span>
-                                                {% elif trade.net_quantity < 0 %}
-                                                    <span class="sell-badge">净卖出</span>
-                                                {% else %}
-                                                    <span class="neutral-badge">持平</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="{% if trade.net_quantity > 0 %}text-success{% else %}text-danger{% endif %}">
-                                                {{ trade.net_quantity|default:"0" }}
-                                            </td>
-                                            <td>{{ trade.net_amount|div:trade.net_quantity|absolute|floatformat:3 }}</td>
-                                            <td class="{% if trade.net_amount > 0 %}text-success{% else %}text-danger{% endif %}">
-                                                {{ trade.net_amount|floatformat:2 }}
-                                            </td>
-{#                                            <td>{{ trade.latest_modified|date:"Y-m-d H:i" }}</td>#}
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-white text-muted small">
-                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-</div>
-
-<script>
-'use strict';
-
-// 近期市值和交易列表
-document.addEventListener('DOMContentLoaded', function() {
-    // 获取相关元素
-    const titleElement = document.getElementById('recentListTitle');
-    const marketValueTable = document.getElementById('marketValueTable');
-    const tradeTable = document.getElementById('tradeTable');
-
-    // 初始化状态
-    let currentView = 'marketValue';
-
-    // 设置激活按钮样式
-    function setActiveButton() {
+        // 添加切换按钮事件
         document.querySelectorAll('#recentListSwitch button').forEach(button => {
-            button.classList.toggle('active', button.dataset.type === currentView);
+            button.addEventListener('click', function() {
+                const viewType = this.dataset.type;
+                currentView = viewType;
+
+                // 切换表格显示
+                marketValueTable.style.display = viewType === 'marketValue' ? 'block' : 'none';
+                tradeTable.style.display = viewType === 'trade' ? 'block' : 'none';
+
+                // 更新按钮状态
+                setActiveButton();
+            });
         });
 
-        // 更新卡片标题
-        titleElement.textContent = currentView === 'marketValue'
-            ? '近期市值'
-            : '近期交易';
-    }
-
-    // 添加切换按钮事件
-    document.querySelectorAll('#recentListSwitch button').forEach(button => {
-        button.addEventListener('click', function() {
-            const viewType = this.dataset.type;
-            currentView = viewType;
-
-            // 切换表格显示
-            marketValueTable.style.display = viewType === 'marketValue' ? 'block' : 'none';
-            tradeTable.style.display = viewType === 'trade' ? 'block' : 'none';
-
-            // 更新按钮状态
-            setActiveButton();
-        });
+        // 初始化按钮状态
+        setActiveButton();
     });
 
-    // 初始化按钮状态
-    setActiveButton();
-});
+    // 市值曲线
+    document.addEventListener('DOMContentLoaded', function() {
+        const chart = echarts.init(document.getElementById('Chart_market_value'));
+        const allData = {{ data_market_value|safe }};
+        let currentRange = 'currentYear';
 
-// 市值曲线
-document.addEventListener('DOMContentLoaded', function() {
-    const chart = echarts.init(document.getElementById('Chart_market_value'));
-    const allData = {{ data_market_value|safe }};
-    let currentRange = 'currentYear';
+        // 时间范围计算
+        function getDateRange(range) {
+            const now = new Date();
+            const ranges = {
+                all: new Date(0),
+                year: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
+                month: (() => {
+                    const currentYear = now.getFullYear();
+                    const currentMonth = now.getMonth();
+                    const currentDay = now.getDate();
 
-    // 时间范围计算
-    function getDateRange(range) {
-        const now = new Date();
-        const ranges = {
-            all: new Date(0),
-            year: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
-            month: (() => {
-                const currentYear = now.getFullYear();
-                const currentMonth = now.getMonth();
-                const currentDay = now.getDate();
+                    // 计算目标月份和年份
+                    let targetYear, targetMonth;
+                    if (currentMonth === 0) {
+                        targetYear = currentYear - 1;
+                        targetMonth = 11; // 12月
+                    } else {
+                        targetYear = currentYear;
+                        targetMonth = currentMonth - 1; // 上月
+                    }
 
-                // 计算目标月份和年份
-                let targetYear, targetMonth;
-                if (currentMonth === 0) {
-                    targetYear = currentYear - 1;
-                    targetMonth = 11; // 12月
-                } else {
-                    targetYear = currentYear;
-                    targetMonth = currentMonth - 1; // 上月
-                }
+                    // 获取目标月份的最后一天
+                    const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
 
-                // 获取目标月份的最后一天
-                const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+                    // 判断是否需要调整日期
+                    if (currentDay > lastDayOfTargetMonth) {
+                        // 超出则设为当前月份的第一天
+                        return new Date(currentYear, currentMonth, 1);
+                    } else {
+                        // 未超出则保持目标月份的对应日期
+                        return new Date(targetYear, targetMonth, currentDay);
+                    }
+                })(),
+                currentYear: new Date(now.getFullYear(), 0, 1)
+            };
+            return ranges[range] || ranges.all;
+        }
 
-                // 判断是否需要调整日期
-                if (currentDay > lastDayOfTargetMonth) {
-                    // 超出则设为当前月份的第一天
-                    return new Date(currentYear, currentMonth, 1);
-                } else {
-                    // 未超出则保持目标月份的对应日期
-                    return new Date(targetYear, targetMonth, currentDay);
-                }
-            })(),
-            currentYear: new Date(now.getFullYear(), 0, 1)
-        };
-        return ranges[range] || ranges.all;
-    }
-
-    // 更新图表
-    function updateChart(range) {
-        const startDate = getDateRange(range);
-        const filteredData = allData.filter(d => new Date(d.date) >= startDate);
-        const option = {
-            grid: {
-                left: '2%',    // 调整为更小的值
-                right: '2%',
-                top: '2%',
-                bottom: '0%',
-                containLabel: true
-            },
-            xAxis: {
-                type: 'time',
-                axisLabel: {
-                    rotate: 45,
-                    margin: 15,
-                    interval: (index, timestamp) => {
-                        const axis = chart.getModel().getComponent('xAxis', 0).axis;
-                        const [min, max] = axis.scale.getExtent();
-                        const totalDays = (max - min) / (1000 * 3600 * 24);
-
-                        if (totalDays <= 7) return index % 1 === 0;
-                        if (totalDays <= 30) return index % 2 === 0;
-                        return index % Math.ceil(totalDays/30) === 0;
-                    },
-                    formatter: function (value) {
-                        const date = new Date(value);
-                        // 处理闰年2月29日
-                        if (date.getMonth() === 1 && date.getDate() === 29) {
-                            return '02-29';
-                        }
-                        const rangeType = range;
-
-                        if (rangeType === 'currentYear' || rangeType === 'month') {
+        // 更新图表
+        function updateChart(range) {
+            const startDate = getDateRange(range);
+            const filteredData = allData.filter(d => new Date(d.date) >= startDate);
+            const option = {
+                grid: {
+                    left: '2%',    // 调整为更小的值
+                    right: '2%',
+                    top: '2%',
+                    bottom: '0%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'time',
+                    axisLabel: {
+                        rotate: 45,
+                        margin: 15,
+                        interval: (index, timestamp) => {
                             const axis = chart.getModel().getComponent('xAxis', 0).axis;
                             const [min, max] = axis.scale.getExtent();
-                            const dayDiff = (max - min) / (1000 * 3600 * 24);
+                            const totalDays = (max - min) / (1000 * 3600 * 24);
 
-                            // 精确判断逻辑
-                            if (dayDiff <= 60) { // 调整为60天阈值
-                                const month = (date.getMonth()+1).toString().padStart(2, '0');
-                                const day = date.getDate().toString().padStart(2, '0');
-                                return `${month}-${day}`;
-                            }
-                            //return `${date.getFullYear().slice(-2)}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
-                            return `${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-                        }
-
-                        if (rangeType === 'all') {
-                            return `${date.getFullYear()}`;
-                        }
-                        return `${date.getFullYear().toString().slice(-2)}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
-                    }
-                },
-                axisTick: {
-                    alignWithLabel: true
-                }
-            },
-            yAxis: {
-                type: 'value',
-                min: 'dataMin',
-                axisLabel: {
-                    formatter: value => value.toFixed(0)
-                }
-            },
-            series: [{
-                data: filteredData.map(d => [
-                    new Date(d.date).getTime(), // 转换为时间戳
-                    d.value
-                ]),
-                markPoint: {
-                     // 根据条件生成数据数组（核心逻辑）
-                    data: (range === 'all' || range === 'year') ? [
-                        { type: 'max', symbol: 'circle', symbolSize: 5, itemStyle: { color: 'orange' }},
-                        { type: 'min', symbol: 'circle', symbolSize: 5, itemStyle: { color: 'orange' } }
-                    ] : [],
-                    //label: { show: false } // 显示标签及数值
-                    label: {
-                        show: false,
-                        position: 'left',
-                        // 使用函数格式化数值（核心改动）
-                        formatter: (params) => {
-                            // 确保数值为 Number 类型
-                            const value = parseFloat(params.value);
-                            return value.toFixed(2); // 保留两位小数
+                            if (totalDays <= 7) return index % 1 === 0;
+                            if (totalDays <= 30) return index % 2 === 0;
+                            return index % Math.ceil(totalDays/30) === 0;
                         },
-                        color: '#ff0000',
-                        fontSize: 14,
-                        //backgroundColor: '#f8f8f8',
-                        backgroundColor: 'transparent',
-                        distance: 15,
-                        rotate: 0,
+                        formatter: function (value) {
+                            const date = new Date(value);
+                            // 处理闰年2月29日
+                            if (date.getMonth() === 1 && date.getDate() === 29) {
+                                return '02-29';
+                            }
+                            const rangeType = range;
+
+                            if (rangeType === 'currentYear' || rangeType === 'month') {
+                                const axis = chart.getModel().getComponent('xAxis', 0).axis;
+                                const [min, max] = axis.scale.getExtent();
+                                const dayDiff = (max - min) / (1000 * 3600 * 24);
+
+                                // 精确判断逻辑
+                                if (dayDiff <= 60) { // 调整为60天阈值
+                                    const month = (date.getMonth()+1).toString().padStart(2, '0');
+                                    const day = date.getDate().toString().padStart(2, '0');
+                                    return `${month}-${day}`;
+                                }
+                                //return `${date.getFullYear().slice(-2)}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
+                                return `${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+                            }
+
+                            if (rangeType === 'all') {
+                                return `${date.getFullYear()}`;
+                            }
+                            return `${date.getFullYear().toString().slice(-2)}-${(date.getMonth()+1).toString().padStart(2, '0')}`;
+                        }
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#ccc'
+                        }
+                    },
+                    axisTick: {
+                        alignWithLabel: true
                     }
                 },
-                type: 'line',
-                showSymbol: (range === 'all' || range === 'year') ? false : true, // 动态控制，默认隐藏，悬停时显示
-                smooth: true,
-                areaStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: 'rgba(24,144,255,0.6)' },
-                        { offset: 1, color: 'rgba(24,144,255,0.01)' }
-                    ])
+                yAxis: {
+                    type: 'value',
+                    min: 'dataMin',
+                    axisLabel: {
+                        formatter: value => value.toFixed(0)
+                    },
+                    splitLine: {
+                        show: true,
+                        lineStyle: {
+                            type: 'dashed',
+                            color: '#eee'
+                        }
+                    },
+                    axisLine: {
+                        show: false,
+                        lineStyle: {
+                            color: '#ccc'
+                        }
+                    }
                 },
-                itemStyle: {
-                    color: '#1890ff'
-                }
-            }],
-            tooltip: {
-                trigger: 'axis',
-                formatter: function (params) {
-                    // 获取原始时间戳（或日期字符串）
-                    const rawDate = params[0].axisValue;
+                series: [
+                    {
+                        name: '市值',
+                        data: filteredData.map(d => [
+                            new Date(d.date).getTime(), // 转换为时间戳
+                            d.value
+                        ]),
+                        yAxisIndex: 0, // 指定使用左侧轴
+                        markPoint: {
+                             // 根据条件生成数据数组（核心逻辑）
+                            data: (range === 'all') ? [
+                                { type: 'max', symbol: 'circle', symbolSize: 5, itemStyle: { color: 'orange' }},
+                                { type: 'min', symbol: 'circle', symbolSize: 5, itemStyle: { color: 'orange' } }
+                            ] : [],
+                            //label: { show: false } // 显示标签及数值
+                            label: {
+                                show: false,
+                                position: 'left',
+                                // 使用函数格式化数值（核心改动）
+                                formatter: (params) => {
+                                    // 确保数值为 Number 类型
+                                    const value = parseFloat(params.value);
+                                    return value.toFixed(2); // 保留两位小数
+                                },
+                                color: '#ff0000',
+                                fontSize: 14,
+                                //backgroundColor: '#f8f8f8',
+                                backgroundColor: 'transparent',
+                                distance: 15,
+                                rotate: 0,
+                            }
+                        },
+                        type: 'line',
+                        showSymbol: range === 'all' ? false : true, // 动态控制，默认隐藏，悬停时显示
+                        smooth: true,
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(24,144,255,0.6)' },
+                                { offset: 1, color: 'rgba(24,144,255,0.01)' }
+                            ])
+                        },
+                        itemStyle: {
+                            color: '#1890ff'
+                        }
+                    }
+                ],
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function (params) {
+                        const rawDate = params[0].axisValue; // 获取原始时间戳（或日期字符串）
+                        const dateObj = new Date(typeof rawDate === 'number' ? rawDate : rawDate); // 创建日期对象（兼容时间戳和字符串）
+                        const formattedDate = echarts.time.format(
+                            dateObj,
+                            '{yyyy}-{MM}-{dd}',
+                            false
+                        );
+                        return `<div style="font-weight:bold;margin-bottom:8px;">${formattedDate}</div>
+                                <div style="display:flex;align-items:center;">
+                                    <span style="display:inline-block;width:12px;height:12px;background:${params[0].color};margin-right:8px;"></span>
+                                    ${params[0].seriesName}：<span style="font-weight:bold;color:${params[0].color}">${params[0].data[1].toFixed(2)}万</span>
+                                </div>`;
+                    }
 
-                    // 创建日期对象（兼容时间戳和字符串）
-                    const dateObj = new Date(typeof rawDate === 'number' ? rawDate : rawDate);
+                },
+            };
+            chart.setOption(option, true);
+        }
 
-                    // 使用echarts内置格式化工具
-                    const formattedDate = echarts.time.format(
-                        dateObj,
-                        '{yyyy}-{MM}-{dd}',
-                        false
-                    );
-
-                    // 使用更友好的中文格式（示例：2024年03月01日）
-                    // const formattedDate = `${dateObj.getFullYear()}年
-                    //                     ${(dateObj.getMonth()+1).toString().padStart(2, '0')}月
-                    //                     ${dateObj.getDate().toString().padStart(2, '0')}日`;
-
-                    return `${formattedDate}<br/>
-                            市值: ${params[0].data[1].toFixed(2)}万`;
-                }
-            }
-        };
-        chart.setOption(option, true);
-        updateTimestamp();
-    }
-
-    // 按钮事件
-    document.querySelectorAll('#market_value_viewSwitch button').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('#market_value_viewSwitch button').forEach(b =>
-                b.classList.remove('active'));
-            this.classList.add('active');
-            updateChart(this.dataset.range);
+        // 按钮事件
+        document.querySelectorAll('#market_value_viewSwitch [data-range]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#market_value_viewSwitch [data-range]').forEach(b =>
+                    b.classList.remove('active'));
+                this.classList.add('active');
+                updateChart(this.dataset.range);
+            });
         });
+
+        // 初始加载
+        updateChart(currentRange);
+        window.addEventListener('resize', () => chart.resize());
     });
 
-    // 初始加载
-    updateChart(currentRange);
-    window.addEventListener('resize', () => chart.resize());
-});
+    // 市值日历
+    document.addEventListener('DOMContentLoaded', function() {
+        const assetChanges = {{ assetChanges|safe }};
 
-// 市值日历
-document.addEventListener('DOMContentLoaded', function() {
-    const assetChanges = {{ assetChanges|safe }};
+        // 初始化当前日期
+        const today = new Date(); // 当前日期
+        let currentYear = today.getFullYear(); // 当前年份
+        let currentMonth = today.getMonth(); // 当前月份（0-11）
+        let currentView = 'month'; // 当前视图（月视图）
 
-    // 初始化当前日期
-    const today = new Date(); // 当前日期
-    let currentYear = today.getFullYear(); // 当前年份
-    let currentMonth = today.getMonth(); // 当前月份（0-11）
-    let currentView = 'month'; // 当前视图（月视图）
-
-    /* 格式化资产值为带万单位或千位分隔的字符串 */
-    function formatAmount(amount) {
-        if (amount === 0) return '0'; // 零值直接返回
-        const isNegative = amount < 0; // 是否为负数
-        const absAmount = Math.abs(amount); // 绝对值
-        let formatted = "";
-        if (absAmount >= 10000) { // 资产大于等于 1 万时，以万为单位显示
-            formatted = `${(absAmount / 10000).toFixed(2)}万`;
-        } else { // 否则，显示千位分隔的整数
-            formatted = absAmount.toFixed(0).toLocaleString();
-        }
-        return `${isNegative ? '-' : '+'}${formatted}`; // 返回带正负号的格式化字符串
-    }
-
-    // 获取指定年份和月份的总资产变化
-    function getMonthlyTotal(year, month) {
-        const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`; // 月份前缀
-        return Object.entries(assetChanges) // 遍历资产数据
-            .filter(([date]) => date.startsWith(monthKey)) // 筛选当前月的数据
-            .reduce((sum, [_, amount]) => sum + amount, 0); // 累加总和
-    }
-
-    // 渲染日历内容
-    function renderCalendar() {
-        const grid = document.getElementById('calendarGrid'); // 获取日期网格
-        grid.innerHTML = ''; // 清空网格内容
-
-        if (currentView === 'month') { // 如果是月视图
-            renderMonthView(); // 渲染月视图
-        } else { // 否则，渲染年视图
-            renderYearView();
+        /* 格式化资产值为带万单位或千位分隔的字符串 */
+        function formatAmount(amount) {
+            if (amount === 0) return '0'; // 零值直接返回
+            const isNegative = amount < 0; // 是否为负数
+            const absAmount = Math.abs(amount); // 绝对值
+            let formatted = "";
+            if (absAmount >= 10000) { // 资产大于等于 1 万时，以万为单位显示
+                formatted = `${(absAmount / 10000).toFixed(2)}万`;
+            } else { // 否则，显示千位分隔的整数
+                formatted = absAmount.toFixed(0).toLocaleString();
+            }
+            return `${isNegative ? '-' : '+'}${formatted}`; // 返回带正负号的格式化字符串
         }
 
-        updateNavigation(); // 更新导航按钮状态
-        updateSummary(); // 更新摘要信息
-    }
+        // 获取指定年份和月份的总资产变化
+        function getMonthlyTotal(year, month) {
+            const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`; // 月份前缀
+            return Object.entries(assetChanges) // 遍历资产数据
+                .filter(([date]) => date.startsWith(monthKey)) // 筛选当前月的数据
+                .reduce((sum, [_, amount]) => sum + amount, 0); // 累加总和
+        }
 
-    // 渲染月视图
-    function renderMonthView() {
-        const grid = document.getElementById('calendarGrid'); // 获取日期网格
-        grid.className = 'date-grid'; // 设置网格样式
-        document.getElementById('weekHeader').style.display = 'grid'; // 显示星期头
+        // 渲染日历内容
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid'); // 获取日期网格
+            grid.innerHTML = ''; // 清空网格内容
 
-        const dates = getDaysOfMonth(currentYear, currentMonth); // 获取本月的所有天数
+            if (currentView === 'month') { // 如果是月视图
+                renderMonthView(); // 渲染月视图
+            } else { // 否则，渲染年视图
+                renderYearView();
+            }
 
-        dates.forEach(date => {
-            const cell = document.createElement('div'); // 创建日期单元格
-            cell.className = 'day-cell'; // 设置默认样式
+            updateNavigation(); // 更新导航按钮状态
+            updateSummary(); // 更新摘要信息
+        }
 
-            if (date.getMonth() === currentMonth) { // 如果日期属于当前月
-                const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; // 日期字符串
-                const dailyChange = assetChanges[dateString] || 0; // 获取资产变化值
+        // 渲染月视图
+        function renderMonthView() {
+            const grid = document.getElementById('calendarGrid'); // 获取日期网格
+            grid.className = 'date-grid'; // 设置网格样式
+            document.getElementById('weekHeader').style.display = 'grid'; // 显示星期头
 
-                // 资产变化值的样式处理
-                if (dailyChange > 0) {
+            const dates = getDaysOfMonth(currentYear, currentMonth); // 获取本月的所有天数
+
+            dates.forEach(date => {
+                const cell = document.createElement('div'); // 创建日期单元格
+                cell.className = 'day-cell'; // 设置默认样式
+
+                if (date.getMonth() === currentMonth) { // 如果日期属于当前月
+                    const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; // 日期字符串
+                    const dailyChange = assetChanges[dateString] || 0; // 获取资产变化值
+
+                    // 资产变化值的样式处理
+                    if (dailyChange > 0) {
+                        cell.classList.add('positive'); // 添加正资产样式
+                    } else if (dailyChange < 0) {
+                        cell.classList.add('negative'); // 添加负资产样式
+                    }
+
+                    cell.textContent = date.getDate(); // 显示日期
+
+                    const valueSpan = document.createElement('span'); // 创建资产值容器
+                    valueSpan.className = 'asset-value'; // 设置样式
+                    valueSpan.textContent = formatAmount(dailyChange); // 显示格式化后的资产值
+                    cell.appendChild(valueSpan); // 将资产值添加到单元格
+
+                    // 当前日期的样式处理
+                    if (date.toDateString() === today.toDateString()) {
+                        cell.classList.add('current-day'); // 添加当前日期样式
+                    }
+                } else { // 如果是前一个月或下一个月的日期
+                    cell.classList.add('bg-light', 'text-muted'); // 添加灰度样式
+                    cell.textContent = ''; // 非当前月日期显示为空
+                }
+
+                grid.appendChild(cell); // 将单元格添加到网格
+            });
+
+            document.getElementById('timeDisplay').textContent = `${currentYear}年 ${currentMonth + 1}月`; // 更新时间显示
+        }
+
+        // 渲染年视图
+        function renderYearView() {
+            const grid = document.getElementById('calendarGrid'); // 获取日期网格
+            grid.className = 'date-grid month-grid'; // 设置网格样式
+            document.getElementById('weekHeader').style.display = 'none'; // 隐藏星期头
+
+            const today = new Date(); // 获取当前日期
+            const currentActualYear = today.getFullYear();
+            const currentActualMonth = today.getMonth();
+
+            for(let month = 0; month < 12; month++) { // 循环 12 个月
+                const cell = document.createElement('div'); // 创建月份单元格
+                cell.className = 'month-cell'; // 设置默认样式
+                cell.dataset.year = currentYear; // 设置年份数据
+                cell.dataset.month = month; // 设置月份数据
+
+                const monthlyTotal = getMonthlyTotal(currentYear, month); // 获取该月的总资产变化
+                // 总资产变化的样式处理
+                if(monthlyTotal > 0) {
                     cell.classList.add('positive'); // 添加正资产样式
-                } else if (dailyChange < 0) {
+                } else if(monthlyTotal < 0) {
                     cell.classList.add('negative'); // 添加负资产样式
                 }
 
-                cell.textContent = date.getDate(); // 显示日期
+                cell.textContent = `${month + 1}月`; // 显示月份
 
                 const valueSpan = document.createElement('span'); // 创建资产值容器
                 valueSpan.className = 'asset-value'; // 设置样式
-                valueSpan.textContent = formatAmount(dailyChange); // 显示格式化后的资产值
+                valueSpan.textContent = formatAmount(monthlyTotal); // 显示格式化后的资产值
                 cell.appendChild(valueSpan); // 将资产值添加到单元格
 
-                // 当前日期的样式处理
-                if (date.toDateString() === today.toDateString()) {
-                    cell.classList.add('current-day'); // 添加当前日期样式
+                // 判断是否为当前年份的未来月份
+                if (currentYear === currentActualYear && month > currentActualMonth) {
+                    // 禁用点击事件
+                    cell.style.cursor = 'not-allowed';
+                    cell.style.opacity = 0.5;
+                    cell.style.userSelect = 'none';
+                    // 移除悬停效果
+                    cell.classList.remove('hover-effect');
+                } else {
+                    // 允许点击
+                    cell.style.cursor = 'pointer';
+                    cell.style.opacity = 1;
+                    cell.style.userSelect = 'text';
+                    // 添加点击事件监听
+                    cell.addEventListener('click', handleMonthClick);
                 }
-            } else { // 如果是前一个月或下一个月的日期
-                cell.classList.add('bg-light', 'text-muted'); // 添加灰度样式
-                cell.textContent = ''; // 非当前月日期显示为空
+
+                grid.appendChild(cell); // 将单元格添加到网格
             }
 
-            grid.appendChild(cell); // 将单元格添加到网格
-        });
-
-        document.getElementById('timeDisplay').textContent = `${currentYear}年 ${currentMonth + 1}月`; // 更新时间显示
-    }
-
-    // 渲染年视图
-    function renderYearView() {
-        const grid = document.getElementById('calendarGrid'); // 获取日期网格
-        grid.className = 'date-grid month-grid'; // 设置网格样式
-        document.getElementById('weekHeader').style.display = 'none'; // 隐藏星期头
-
-        const today = new Date(); // 获取当前日期
-        const currentActualYear = today.getFullYear();
-        const currentActualMonth = today.getMonth();
-
-        for(let month = 0; month < 12; month++) { // 循环 12 个月
-            const cell = document.createElement('div'); // 创建月份单元格
-            cell.className = 'month-cell'; // 设置默认样式
-            cell.dataset.year = currentYear; // 设置年份数据
-            cell.dataset.month = month; // 设置月份数据
-
-            const monthlyTotal = getMonthlyTotal(currentYear, month); // 获取该月的总资产变化
-            // 总资产变化的样式处理
-            if(monthlyTotal > 0) {
-                cell.classList.add('positive'); // 添加正资产样式
-            } else if(monthlyTotal < 0) {
-                cell.classList.add('negative'); // 添加负资产样式
-            }
-
-            cell.textContent = `${month + 1}月`; // 显示月份
-
-            const valueSpan = document.createElement('span'); // 创建资产值容器
-            valueSpan.className = 'asset-value'; // 设置样式
-            valueSpan.textContent = formatAmount(monthlyTotal); // 显示格式化后的资产值
-            cell.appendChild(valueSpan); // 将资产值添加到单元格
-
-            // 判断是否为当前年份的未来月份
-            if (currentYear === currentActualYear && month > currentActualMonth) {
-                // 禁用点击事件
-                cell.style.cursor = 'not-allowed';
-                cell.style.opacity = 0.5;
-                cell.style.userSelect = 'none';
-                // 移除悬停效果
-                cell.classList.remove('hover-effect');
-            } else {
-                // 允许点击
-                cell.style.cursor = 'pointer';
-                cell.style.opacity = 1;
-                cell.style.userSelect = 'text';
-                // 添加点击事件监听
-                cell.addEventListener('click', handleMonthClick);
-            }
-
-            grid.appendChild(cell); // 将单元格添加到网格
+            document.getElementById('timeDisplay').textContent = `${currentYear}年`; // 更新时间显示
         }
 
-        document.getElementById('timeDisplay').textContent = `${currentYear}年`; // 更新时间显示
-    }
+        // 处理月份点击事件
+        function handleMonthClick(event) {
+            const cell = event.currentTarget; // 获取被点击的单元格元素
+            currentYear = parseInt(cell.dataset.year); // 更新当前年份
+            currentMonth = parseInt(cell.dataset.month); // 更新当前月份
+            currentView = 'month'; // 切换到月视图
 
-    // 处理月份点击事件
-    function handleMonthClick(event) {
-        const cell = event.currentTarget; // 获取被点击的单元格元素
-        currentYear = parseInt(cell.dataset.year); // 更新当前年份
-        currentMonth = parseInt(cell.dataset.month); // 更新当前月份
-        currentView = 'month'; // 切换到月视图
+            // 更新视图切换按钮的状态
+            document.querySelectorAll('#viewSwitch button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === 'month'); // 设置按钮的活动状态
+            });
 
-        // 更新视图切换按钮的状态
-        document.querySelectorAll('#viewSwitch button').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.type === 'month'); // 设置按钮的活动状态
-        });
-
-        renderCalendar(); // 重新渲染日历
-    }
-
-    // 更新摘要信息
-    function updateSummary() {
-        let total = 0; // 总资产变化
-
-        if (currentView === 'month') { // 月视图
-            total = getMonthlyTotal(currentYear, currentMonth); // 获取当前月总和
-        } else { // 年视图
-            for (let m = 0; m < 12; m++) { // 遍历 12 个月
-                total += getMonthlyTotal(currentYear, m); // 累加每月总和
-            }
+            renderCalendar(); // 重新渲染日历
         }
 
         // 更新摘要信息
-        document.getElementById('periodSummary').textContent = `${currentView === 'month' ? '本月' : '本年'}市值变化汇总：${formatAmount(total)}`;
-        // 取消加粗
-        document.getElementById('periodSummary').style.fontWeight = "normal";
-    }
+        function updateSummary() {
+            let total = 0; // 总资产变化
 
-    // 更新导航按钮的状态
-    function updateNavigation() {
-        const prevBtn = document.getElementById('prevBtn'); // 上一周期按钮
-        const nextBtn = document.getElementById('nextBtn'); // 下一周期按钮
-
-        if(currentView === 'month') { // 月视图
-            //prevBtn.textContent = '上一月'; // 设置按钮文本
-            //nextBtn.textContent = '下一月';
-            prevBtn.title = '上一月'; // 设置按钮文本
-            nextBtn.title = '下一月';
-            const isCurrentMonth = currentYear === today.getFullYear() &&
-                                currentMonth === today.getMonth(); // 是否为当前月
-            nextBtn.disabled = isCurrentMonth; // 禁用下一月按钮（如果当前月）
-        } else { // 年视图
-            //prevBtn.textContent = '上一年'; // 设置按钮文本
-            //nextBtn.textContent = '下一年';
-            prevBtn.title = '上一年'; // 设置按钮文本
-            nextBtn.title = '下一年';
-            nextBtn.disabled = currentYear >= today.getFullYear(); // 禁用下一年按钮（如果当前年）
-        }
-    }
-
-    // 获取指定年份和月份的所有日期
-    function getDaysOfMonth(year, month) {
-        const firstDay = new Date(year, month, 1);
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const dates = [];
-
-        // 计算需要补全的前置工作日
-        let prependDays = 0;
-        if (firstDay.getDay() !== 0 && firstDay.getDay() !== 6) {
-            prependDays = firstDay.getDay() - 1;
-        }
-
-        // 生成前置日期（上月）
-        for (let i = prependDays; i > 0; i--) {
-            dates.push(new Date(year, month, 1 - i));
-        }
-
-        // 生成当前月工作日
-        for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(year, month, day);
-            if (date.getDay() !== 0 && date.getDay() !== 6) {
-                dates.push(date);
-            }
-        }
-
-        // 补全后续日期（下月）
-        const total = dates.length;
-        const remainder = total % 5;
-        const appendDays = remainder === 0 ? 0 : 5 - remainder;
-
-        let nextMonthDay = 1;
-        let appended = 0;
-        while (appended < appendDays) {
-            const date = new Date(year, month + 1, nextMonthDay);
-            if (date.getDay() !== 0 && date.getDay() !== 6) {
-                dates.push(date);
-                appended++;
-            }
-            nextMonthDay++;
-        }
-
-        return dates;
-    }
-
-    // 上一周期导航
-    function prevPeriod() {
-        if (currentView === 'month') { // 月视图
-            currentMonth--; // 上一月
-            if (currentMonth < 0) {
-                currentMonth = 11; // 跳转到前一年
-                currentYear--;
-            }
-        } else { // 年视图
-            currentYear--; // 上一年
-        }
-        renderCalendar(); // 重新渲染日历
-    }
-
-    // 下一周期导航
-    function nextPeriod() {
-        if (currentView === 'month') { // 月视图
-            const nextDate = new Date(currentYear, currentMonth + 1); // 下一月
-            if (nextDate <= new Date(today.getFullYear(), today.getMonth() + 1)) { // 如果未超过当前日期
-                currentMonth++; // 下一月
-                if (currentMonth > 11) {
-                    currentMonth = 0; // 跳转到下一年
-                    currentYear++;
+            if (currentView === 'month') { // 月视图
+                total = getMonthlyTotal(currentYear, currentMonth); // 获取当前月总和
+            } else { // 年视图
+                for (let m = 0; m < 12; m++) { // 遍历 12 个月
+                    total += getMonthlyTotal(currentYear, m); // 累加每月总和
                 }
             }
-        } else { // 年视图
-            currentYear++; // 下一年
+
+            // 更新摘要信息
+            document.getElementById('periodSummary').textContent = `${currentView === 'month' ? '本月' : '本年'}市值变化汇总：${formatAmount(total)}`;
+            // 取消加粗
+            document.getElementById('periodSummary').style.fontWeight = "normal";
         }
-        renderCalendar(); // 重新渲染日历
-    }
 
-    // 事件监听
-    document.getElementById('prevBtn').addEventListener('click', prevPeriod); // 上一周期按钮点击事件
-    document.getElementById('nextBtn').addEventListener('click', nextPeriod); // 下一周期按钮点击事件
+        // 更新导航按钮的状态
+        function updateNavigation() {
+            const prevBtn = document.getElementById('prevBtn'); // 上一周期按钮
+            const nextBtn = document.getElementById('nextBtn'); // 下一周期按钮
 
-    // 视图切换按钮的点击事件
-    document.querySelectorAll('#viewSwitch button').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const newView = this.dataset.type; // 获取按钮的数据视图类型
-            if (newView !== currentView) { // 如果视图切换
-                currentView = newView; // 更新当前视图
-                document.querySelectorAll('#viewSwitch button').forEach(b =>
-                    b.classList.remove('active')); // 移除所有按钮的活动状态
-                this.classList.add('active'); // 设置当前按钮为活动状态
+            if(currentView === 'month') { // 月视图
+                //prevBtn.textContent = '上一月'; // 设置按钮文本
+                //nextBtn.textContent = '下一月';
+                prevBtn.title = '上一月'; // 设置按钮文本
+                nextBtn.title = '下一月';
+                const isCurrentMonth = currentYear === today.getFullYear() &&
+                                    currentMonth === today.getMonth(); // 是否为当前月
+                nextBtn.disabled = isCurrentMonth; // 禁用下一月按钮（如果当前月）
+            } else { // 年视图
+                //prevBtn.textContent = '上一年'; // 设置按钮文本
+                //nextBtn.textContent = '下一年';
+                prevBtn.title = '上一年'; // 设置按钮文本
+                nextBtn.title = '下一年';
+                nextBtn.disabled = currentYear >= today.getFullYear(); // 禁用下一年按钮（如果当前年）
+            }
+        }
 
-                if (currentView === 'year') { // 如果切换到年视图
-                    // 保留当前年份
-                } else { // 切换到月视图
-                    if (this.dataset.type === 'month') { // 如果是月视图按钮
-                        currentYear = today.getFullYear(); // 重置到当前年份
-                        currentMonth = today.getMonth(); // 重置到当前月份
+        // 获取指定年份和月份的所有日期
+        function getDaysOfMonth(year, month) {
+            const firstDay = new Date(year, month, 1);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const dates = [];
+
+            // 计算需要补全的前置工作日
+            let prependDays = 0;
+            if (firstDay.getDay() !== 0 && firstDay.getDay() !== 6) {
+                prependDays = firstDay.getDay() - 1;
+            }
+
+            // 生成前置日期（上月）
+            for (let i = prependDays; i > 0; i--) {
+                dates.push(new Date(year, month, 1 - i));
+            }
+
+            // 生成当前月工作日
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                if (date.getDay() !== 0 && date.getDay() !== 6) {
+                    dates.push(date);
+                }
+            }
+
+            // 补全后续日期（下月）
+            const total = dates.length;
+            const remainder = total % 5;
+            const appendDays = remainder === 0 ? 0 : 5 - remainder;
+
+            let nextMonthDay = 1;
+            let appended = 0;
+            while (appended < appendDays) {
+                const date = new Date(year, month + 1, nextMonthDay);
+                if (date.getDay() !== 0 && date.getDay() !== 6) {
+                    dates.push(date);
+                    appended++;
+                }
+                nextMonthDay++;
+            }
+
+            return dates;
+        }
+
+        // 上一周期导航
+        function prevPeriod() {
+            if (currentView === 'month') { // 月视图
+                currentMonth--; // 上一月
+                if (currentMonth < 0) {
+                    currentMonth = 11; // 跳转到前一年
+                    currentYear--;
+                }
+            } else { // 年视图
+                currentYear--; // 上一年
+            }
+            renderCalendar(); // 重新渲染日历
+        }
+
+        // 下一周期导航
+        function nextPeriod() {
+            if (currentView === 'month') { // 月视图
+                const nextDate = new Date(currentYear, currentMonth + 1); // 下一月
+                if (nextDate <= new Date(today.getFullYear(), today.getMonth() + 1)) { // 如果未超过当前日期
+                    currentMonth++; // 下一月
+                    if (currentMonth > 11) {
+                        currentMonth = 0; // 跳转到下一年
+                        currentYear++;
                     }
                 }
-                renderCalendar(); // 重新渲染日历
+            } else { // 年视图
+                currentYear++; // 下一年
             }
+            renderCalendar(); // 重新渲染日历
+        }
+
+        // 事件监听
+        document.getElementById('prevBtn').addEventListener('click', prevPeriod); // 上一周期按钮点击事件
+        document.getElementById('nextBtn').addEventListener('click', nextPeriod); // 下一周期按钮点击事件
+
+        // 视图切换按钮的点击事件
+        document.querySelectorAll('#viewSwitch button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const newView = this.dataset.type; // 获取按钮的数据视图类型
+                if (newView !== currentView) { // 如果视图切换
+                    currentView = newView; // 更新当前视图
+                    document.querySelectorAll('#viewSwitch button').forEach(b =>
+                        b.classList.remove('active')); // 移除所有按钮的活动状态
+                    this.classList.add('active'); // 设置当前按钮为活动状态
+
+                    if (currentView === 'year') { // 如果切换到年视图
+                        // 保留当前年份
+                    } else { // 切换到月视图
+                        if (this.dataset.type === 'month') { // 如果是月视图按钮
+                            currentYear = today.getFullYear(); // 重置到当前年份
+                            currentMonth = today.getMonth(); // 重置到当前月份
+                        }
+                    }
+                    renderCalendar(); // 重新渲染日历
+                }
+            });
         });
-    });
 
-    // 初始渲染
-    renderCalendar();
+        // 初始渲染
+        renderCalendar();
 
-})
+    })
 
-</script>
+    </script>
 
 {% endblock %}
 

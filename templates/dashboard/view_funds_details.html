@@ -872,7 +872,7 @@
                                 <tr style="margin-bottom:0;">
                                     <th rowspan="2">年份</th>
                                     <th colspan="2">基金价值</th>
-                                    <th colspan="2">净值</th>
+                                    <th colspan="3">净值</th>
                                     <th colspan="3">当年收益率（%）</th>
                                     <th colspan="3">年化收益率（%）</th>
                                     <th colspan="3">连续三年年化收益率（%）</th>
@@ -883,6 +883,7 @@
                                     <th>{{ baseline_name }}</th>
                                     <th>{{ funds_name }}</th>
                                     <th>{{ baseline_name }}</th>
+                                    <th>对比 （%）</th>
                                     <th>{{ funds_name }}</th>
                                     <th>{{ baseline_name }}</th>
                                     <th>对比</th>
@@ -898,19 +899,25 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in annual_data_group %}
+                                {% for item in compare_data_group %}
                                     <tr>
                                         {% for value in item %}
-                                            {% if value|get_type == "str" or forloop.counter0 < 5 %}
+                                            {% if forloop.counter0 == 0 %}
                                                 <td>{{ value }}</td>
+                                            {% elif forloop.counter0 == 1 %}
+                                                <td>{{ value|floatformat:0 }}</td>
+                                            {% elif forloop.counter0 == 2 %}
+                                                <td>{{ value|floatformat:2 }}</td>
+                                            {% elif forloop.counter0 < 5 %}
+                                                <td>{{ value|floatformat:4 }}</td>
                                             {% else %}
-                                                <td style="color: {{ value|text_color }}">{{ value|intcomma }}</td>
+                                                <td style="color: {{ value|text_color }}">{{ value|intcomma|floatformat:2 }}</td>
                                             {% endif %}
                                         {% endfor %}
                                     </tr>
                                 {% empty %}
                                     <tr>
-                                        <td colspan="9">无相关记录！</td>
+                                        <td colspan="18">无相关记录！</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -1182,7 +1189,7 @@
                     borderColor: '#eee',
                     borderWidth: 1,
                     textStyle: {
-                        fontSize: 12
+                        fontSize: 14
                     },
                     extraCssText: 'box-shadow: 0 0 10px rgba(0,0,0,0.1);',
                     axisPointer: {
@@ -1203,9 +1210,17 @@
                             '{yyyy}-{MM}-{dd}',
                             false
                         );
-                        let tooltip = `${formattedDate}<br/>`;
+                        let tooltip = `<div style="font-weight:bold;margin-bottom:8px;">${formattedDate}</div>`;
                         params.forEach(param => {
-                            tooltip += `${param.marker} ${param.seriesName}: ${param.data[1].toFixed(4)}<br/>`;
+                            const color = param.color;
+                            const seriesName = param.seriesName;
+                            const value = param.data[1].toFixed(4);
+                            //tooltip += `${marker} ${seriesName}: ${value}<br/>`;
+                            tooltip += `<div style="display:flex;align-items:center;">
+                                    <span class="icon-rect" style="background:${color};"></span>
+                                    ${seriesName}：<span style="font-weight:bold;color:${color}">${value}</span>
+                                </div>`;
+
                         });
                         return tooltip;
                     }
@@ -1502,9 +1517,15 @@
 
                         let tooltip = `<div style="font-weight:bold;margin-bottom:8px;">${formattedDate}</div>`;
                         params.forEach(param => {
+                            const color = param.color;
+                            const seriesName = param.seriesName;
+                            const value = param.data[1].toLocaleString('zh-CN', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
                             tooltip += `<div style="display:flex;align-items:center;">
-                                    <span style="display:inline-block;width:12px;height:12px;background:${param.color};margin-right:8px;"></span>
-                                    ${param.seriesName}：<span style="font-weight:bold;color:${param.color}">${param.data[1].toFixed(2)}万</span>
+                                    <span class="icon-rect" style="background:${color};"></span>
+                                    ${seriesName}：<span style="font-weight:bold;color:${color}">${value}万</span>
                                 </div>`;
                         });
                         return tooltip;
@@ -1711,6 +1732,12 @@
                 tooltip: {
                     trigger: 'axis',
                     formatter: function (params) {
+                        const color = params[0].color;
+                        const seriesName = params[0].seriesName;
+                        const value = params[0].data[1].toLocaleString('zh-CN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
                         const rawDate = params[0].axisValue; // 获取原始时间戳（或日期字符串）
                         const dateObj = new Date(typeof rawDate === 'number' ? rawDate : rawDate); // 创建日期对象（兼容时间戳和字符串）
                         const formattedDate = echarts.time.format(
@@ -1720,8 +1747,8 @@
                         );
                         return `<div style="font-weight:bold;margin-bottom:8px;">${formattedDate}</div>
                                 <div style="display:flex;align-items:center;">
-                                    <span style="display:inline-block;width:12px;height:12px;background:${params[0].color};margin-right:8px;"></span>
-                                    ${params[0].seriesName}：<span style="font-weight:bold;color:${params[0].color}">${params[0].data[1].toFixed(2)}万</span>
+                                    <span class="icon-rect" style="background:${color};"></span>
+                                    ${seriesName}：<span style="font-weight:bold;color:${color}">${value}万</span>
                                 </div>`;
                     }
 
@@ -2142,15 +2169,19 @@
                         color: '#333'
                     },
                     formatter: function(params) {
-                        const param = params[0];
-                        const value = param.value;
+                        const name = params[0].name;
+                        const color = params[0].color;
+                        const value = params[0].value;
                         const type = value >= 0 ? '盈利' : '亏损';
-                        const absValue = Math.abs(value).toFixed(2);
+                        const absValue = Math.abs(value).toLocaleString('zh-CN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
 
-                        return `<div style="font-weight:bold;margin-bottom:8px;">${param.name}年</div>
+                        return `<div style="font-weight:bold;margin-bottom:8px;">${name}年</div>
                                 <div style="display:flex;align-items:center;">
-                                    <span style="display:inline-block;width:12px;height:12px;background:${param.color};margin-right:8px;"></span>
-                                    ${type}：<span style="font-weight:bold;color:${param.color}">${absValue}万</span>
+                                    <span class="icon-rect" style="background:${color};"></span>
+                                    ${type}：<span style="font-weight:bold;color:${color}">${absValue}万</span>
                                 </div>`;
                     }
                 },
@@ -2326,15 +2357,19 @@
                         color: '#333'
                     },
                     formatter: function(params) {
-                        const param = params[0];
-                        const value = param.value;
+                        const name = params[0].name
+                        const color = params[0].color;
+                        const value = params[0].value;
                         const type = value >= 0 ? '入金' : '出金';
-                        const absValue = Math.abs(value).toFixed(2);
+                        const absValue = Math.abs(value).toLocaleString('zh-CN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
 
-                        return `<div style="font-weight:bold;margin-bottom:8px;">${param.name}年</div>
+                        return `<div style="font-weight:bold;margin-bottom:8px;">${name}年</div>
                                 <div style="display:flex;align-items:center;">
-                                    <span style="display:inline-block;width:12px;height:12px;background:${param.color};margin-right:8px;"></span>
-                                    ${type}：<span style="font-weight:bold;color:${param.color}">${absValue}万</span>
+                                    <span class="icon-rect" style="background:${color};"></span>
+                                    ${type}：<span style="font-weight:bold;color:${color}">${absValue}万</span>
                                 </div>`;
                     }
                 },
@@ -2471,7 +2506,13 @@
 
     // 年度收益率柱图
     document.addEventListener('DOMContentLoaded', function() {
-        const chart = echarts.init(document.getElementById('bar_net_value'));
+        const chartElement = document.getElementById('bar_net_value');
+        if (!chartElement) {
+            console.error('Element with id "bar_net_value" not found');
+            return;
+        }
+
+        const chart = echarts.init(chartElement);
         const name_list = {{ name_list|safe }};
         const line_year_end_date_list = {{ line_year_end_date_list|safe }};
         const bar_year_end_date_list = {{ bar_year_end_date_list|safe }};
@@ -2498,19 +2539,69 @@
                     containLabel: true
                 },
                 tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#ddd',
+                    borderWidth: 1,
+                    padding: [10, 15],
+                    textStyle: {
+                        color: '#333'
+                    },
+                    formatter: function(params) {
+                        // 按系列类型分组
+                        const barSeries = params.filter(p => p.seriesType === 'bar');
+                        const lineSeries = params.filter(p => p.seriesType === 'line');
+
+                        const year = params[0].name;
+                        let html = `<div style="font-weight:bold;margin-bottom:8px;">${year}年</div>`;
+
+                        // 显示柱状图数据（收益率）
+                        if (barSeries.length > 0) {
+                            barSeries.forEach(param => {
+                                const color = param.color;
+                                const value = param.value;
+                                const seriesName = param.seriesName;
+                                html += `
+                                    <div style="display:flex;align-items:center;">
+                                        <span class="icon-rect" style="background:${color};"></span>
+                                        ${seriesName}：<span style="font-weight:bold;color:${color}">${value}%</span>
+                                    </div>
+                                `;
+                            });
+                        }
+
+                        // 显示折线图数据（净值）
+                        if (lineSeries.length > 0) {
+                            lineSeries.forEach(param => {
+                                const color = param.color;
+                                const value = param.value.toFixed(4);
+                                const seriesName = param.seriesName;
+                                html += `
+                                    <div style="display:flex;align-items:center;">
+                                        <span class="icon-circle" style="border: 2px solid ${color};"></span>
+                                        ${seriesName}：<span style="font-weight:bold;color:${color}">${value}</span>
+                                    </div>
+                                `;
+                            });
+                        }
+
+                        return html;
+                    }
                 },
                 xAxis: [
-                    // 第一个 X 轴（柱状图使用，boundaryGap: false）
+                    // 第一个 X 轴（柱状图使用）
                     {
-                        //name: '年份',
                         data: bar_year_end_date_list,
                         boundaryGap: true,
-                        axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                        axisLabel: {
                             show: true,
                             interval: 'auto',
                             rotate: 45,
                             margin: 15,
-                            textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            textStyle: {
                                 color: '#ccc'
                             }
                         },
@@ -2520,19 +2611,17 @@
                                 color: '#ccc'
                             }
                         }
-
                     },
-                    // 第二个 X 轴（折线图使用，boundaryGap: false）
+                    // 第二个 X 轴（折线图使用）
                     {
-                        //name: '年份',
                         data: line_year_end_date_list,
-                        boundaryGap: false,
-                        axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                        boundaryGap: true,
+                        axisLabel: {
                             show: true,
                             interval: 'auto',
                             rotate: 45,
                             margin: 15,
-                            textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            textStyle: {
                                 color: '#333'
                             }
                         },
@@ -2543,17 +2632,15 @@
                                 color: '#ccc'
                             }
                         }
-
                     },
                 ],
                 yAxis: [
                     // 左侧 Y 轴（柱状图使用）
                     {
                         type: 'value',
-                        //name: ' 收益率',  // 自定义单位名称
-                        position: 'left',   // 左侧显示
+                        position: 'left',
                         axisLabel: {
-                            formatter: '{value}%'  // 标签格式（例如：100 单位）
+                            formatter: '{value}%'  // 收益率显示 % 符号
                         },
                         splitLine: {
                             show: true,
@@ -2568,17 +2655,15 @@
                                 color: '#ccc'
                             }
                         }
-
                     },
                     // 右侧 Y 轴（折线图使用）
                     {
-                        //name: '净值',
                         type: 'value',
-                        position: 'right',   // 右侧显示
-                        alignTicks: true, // 设置为与主坐标轴刻度对齐
+                        position: 'right',
+                        alignTicks: true,
                         axisLabel: {
-                            formatter: value => value.toFixed(2)
-                                },
+                            formatter: value => value.toFixed(2) // 净值不显示 % 符号
+                        },
                         splitLine: {
                             show: true,
                             lineStyle: {
@@ -2591,19 +2676,18 @@
                             lineStyle: {
                                 color: '#ccc'
                             }
-                        }
-
+                        },
+                        //offset: 15 // 将右侧Y轴向右偏移
                     }
-
                 ],
                 series: [
                     {
-                        name: name_list[0] + '（收益率）',
+                        name: '收益率（' + name_list[0]+ '）',
                         type: 'bar',
                         data: bar_funds_profit_rate_list,
                         color: ['#1890ff'],
-                        xAxisIndex: 0,  // 对应 xAxis[0]
-                        yAxisIndex: 0,  // 使用第一个 Y 轴（左侧）
+                        xAxisIndex: 0,
+                        yAxisIndex: 0,
                         itemStyle: {
                             borderRadius: [2, 2, 2, 2]
                         },
@@ -2612,33 +2696,15 @@
                                 shadowBlur: 10,
                                 borderRadius: [2, 2, 2, 2]
                             }
-                        },
-                        tooltip: {
-                            trigger: "item",
-                            formatter: function(params) {
-                                // 确保安全取值
-                                const seriesName = params.seriesName || '';
-                                const name = params.name || '';
-                                const value = params.value !== undefined ? params.value : '';
-                                const color = params.color || '#ccc'; // 默认为灰色
-
-                                return `<div style="font-weight:bold;margin-bottom:8px;">${name}年</div>
-                                        <div style="display:flex;align-items:center;">
-                                            <span style="display:inline-block;width:12px;height:12px;background:${color};margin-right:8px;"></span>
-                                            ${seriesName}：<span style="font-weight:bold;color:${color}">${value}%</span>
-                                        </div>`;
-                            },
-                            borderWidth: 0,
-                            borderColor: '#ddd'
                         }
                     },
                     {
-                        name:  name_list[1] + '（收益率）',
+                        name: '收益率（' + name_list[1]+ '）',
                         type: 'bar',
                         data: bar_baseline_profit_rate_list,
                         color: ['#ee9945'],
-                        xAxisIndex: 0,  // 对应 xAxis[0]
-                        yAxisIndex: 0,  // 使用第一个 Y 轴（左侧）
+                        xAxisIndex: 0,
+                        yAxisIndex: 0,
                         itemStyle: {
                             borderRadius: [2, 2, 2, 2]
                         },
@@ -2647,87 +2713,30 @@
                                 shadowBlur: 10,
                                 borderRadius: [2, 2, 2, 2]
                             }
-                        },
-                        tooltip: {
-                            trigger: "item",
-                            formatter: function(params) {
-                                // 确保安全取值
-                                const seriesName = params.seriesName || '';
-                                const name = params.name || '';
-                                const value = params.value !== undefined ? params.value : '';
-                                const color = params.color || '#ccc'; // 默认为灰色
-
-                                return `<div style="font-weight:bold;margin-bottom:8px;">${name}年</div>
-                                        <div style="display:flex;align-items:center;">
-                                            <span style="display:inline-block;width:12px;height:12px;background:${color};margin-right:8px;"></span>
-                                            ${seriesName}：<span style="font-weight:bold;color:${color}">${value}%</span>
-                                        </div>`;
-                            },
-                            borderWidth: 0,
-                            borderColor: '#ddd'
                         }
                     },
                     {
-                        name: name_list[0] + '（净值）',
+                        name: '净值（' + name_list[0]+ '）',
                         data: line_funds_net_value_list,
                         type: 'line',
                         smooth: false,
                         itemStyle: {
                             color: '#1890ff'
                         },
-                        xAxisIndex: 1,  // 对应 xAxis[1]
-                        yAxisIndex: 1,  // 使用第二个 Y 轴（右侧）
-                        tooltip: {
-                            trigger: "item",
-                            formatter: function(params) {
-                                // 确保安全取值
-                                const seriesName = params.seriesName || '';
-                                const name = params.name || '';
-                                const value = params.value !== undefined ? params.value : '';
-                                const color = params.color || '#ccc'; // 默认为灰色
-
-                                return `<div style="font-weight:bold;margin-bottom:8px;">${name}年</div>
-                                        <div style="display:flex;align-items:center;">
-                                            <span style="display:inline-block;width:12px;height:12px;background:${color};margin-right:8px;"></span>
-                                            ${seriesName}：<span style="font-weight:bold;color:${color}">${value}</span>
-                                        </div>`;
-                            },
-                            borderColor: 'transparent',
-                            borderWidth: 0
-                        }
+                        xAxisIndex: 1,
+                        yAxisIndex: 1
                     },
-
                     {
-                        name: name_list[1] + '（净值）',
+                        name: '净值（' + name_list[1]+ '）',
                         data: line_baseline_net_value_list,
                         type: 'line',
                         smooth: false,
                         itemStyle: {
                             color: '#ee9945'
                         },
-                        xAxisIndex: 1,  // 对应 xAxis[1]
-                        yAxisIndex: 1,  // 使用第二个 Y 轴（右侧）
-                        tooltip: {
-                            trigger: "item",
-                            formatter: function(params) {
-                                // 确保安全取值
-                                const seriesName = params.seriesName || '';
-                                const name = params.name || '';
-                                const value = params.value !== undefined ? params.value : '';
-                                const color = params.color || '#ccc'; // 默认为灰色
-
-                                return `<div style="font-weight:bold;margin-bottom:8px;">${name}年</div>
-                                        <div style="display:flex;align-items:center;">
-                                            <span style="display:inline-block;width:12px;height:12px;background:${color};margin-right:8px;"></span>
-                                            ${seriesName}：<span style="font-weight:bold;color:${color}">${value}</span>
-                                        </div>`;
-                            },
-                            borderColor: 'transparent',
-                            borderWidth: 0
-                        }
-                    },
-
-
+                        xAxisIndex: 1,
+                        yAxisIndex: 1
+                    }
                 ]
             };
             chart.setOption(option, true);
@@ -2760,11 +2769,15 @@
                 trigger: 'axis',
 
                 formatter: function (params) {
-                    let tooltip = `<div style="font-weight:bold;margin-bottom:8px;">${params[0].name}年</div>`;
+                    const name = params[0].name;
+                    let tooltip = `<div style="font-weight:bold;margin-bottom:8px;">${name}年</div>`;
                     params.forEach(param => {
+                        const color = param.color;
+                        const seriesName = param.seriesName;
+                        const value = param.value.toFixed(2);
                         tooltip += `<div style="display:flex;align-items:center;">
-                                <span style="display:inline-block;width:12px;height:12px;background:${param.color};margin-right:8px;"></span>
-                                ${param.seriesName}：<span style="font-weight:bold;color:${param.color}">${param.value.toFixed(2)}%</span>
+                                <span class="icon-rect" style="background:${color};"></span>
+                                ${seriesName}：<span style="font-weight:bold;color:${color}">${value}%</span>
                             </div>`;
                     });
                     return tooltip;
@@ -2855,8 +2868,6 @@
         updateChart();
         window.addEventListener('resize', () => chart.resize());
     });
-
-
 
     </script>
 

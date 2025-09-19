@@ -18,7 +18,7 @@
                                     <label class="control-label">境内券商：</label>
                                 </div>
                                 <div class="col-md-11">
-                                    {% for account in account_list1 %}
+                                    {% for account in domestic_accounts %}
                                     <div class="custom-control custom-radio custom-control-inline">
                                         {% if account.account_abbreviation == account_abbreviation %}
                                             <input type="radio" class="custom-control-input" name="account" id="{{ account.account_abbreviation }}" value="{{ account.account_abbreviation }}" checked />
@@ -36,7 +36,7 @@
                                     <label class="control-label">境外券商：</label>
                                 </div>
                                 <div class="col-md-11">
-                                    {% for account in account_list2 %}
+                                    {% for account in overseas_accounts %}
                                     <div class="custom-control custom-radio custom-control-inline">
                                         {% if account.account_abbreviation == account_abbreviation %}
                                             <input type="radio" class="custom-control-input" name="account" id="{{ account.account_abbreviation }}" value="{{ account.account_abbreviation }}" checked />

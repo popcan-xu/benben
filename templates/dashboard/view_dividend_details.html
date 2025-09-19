@@ -10,786 +10,699 @@
 {% endblock %}
 
 {% block page_content %}
-<style>
-    /* 资产变化日历 */
-    @media (max-width: 768px) {
-        #viewSwitch .btn {
-            padding: 0.25rem 0.5rem; /* 减小按钮内边距 */
-            font-size: 0.875rem; /* 减小字体大小 */
-        }
-        #prevBtn,
-        #nextBtn {
-            background-color: transparent; /* 透明背景 */
-            border: none; /* 移除边框 */
-            padding: 5px; /* 调整内边距 */
-        }
-
-        #prevBtn:hover,
-        #nextBtn:hover {
-            background-color: transparent; /* 保持透明背景 */
-            box-shadow: none; /* 移除悬停时的阴影 */
-        }
-
-        .text-center {
-            font-size: 0.875rem; /* 减小年月显示的字体大小 */
-        }
-
-        .row.align-items-center {
-            gap: 5px; /* 减小元素之间的间距 */
-        }
-    }
-
-    /* 日期网格布局 */
-    .date-grid {
-        display: grid; /* 使用网格布局 */
-        grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
-        gap: 5px; /* 列间距 */
-        margin-top: 10px; /* 上边距 */
-        /*height: 445px;*/ /* 设置固定高度 */
-    }
-
-    /* 多月视图栅格布局 */
-    .month-grid {
-        grid-template-columns: repeat(4, 1fr); /* 每行 4 列 */
-    }
-
-    /* 日期单元格和月份单元格的共享样式 */
-    .day-cell, .month-cell {
-        padding: 10px; /* 内边距 */
-        text-align: center; /* 文本居中 */
-        border: 1px solid #dee2e6; /* 边框 */
-        display: flex; /* 使用 flex 布局 */
-        flex-direction: column; /* 垂直排列 */
-        align-items: center; /* 水平居中 */
-        justify-content: center; /* 垂直居中 */
-        border-radius: 4px; /* 圆角 */
-        font-size: 14px; /* 字体大小 */
-        min-height: 80px; /* 最小高度 */
-        position: relative; /* 相对定位 */
-        transition: transform 0.2s; /* 添加平滑过渡效果 */
-        cursor: pointer; /* 鼠标指针样式 */
-    }
-
-    /* 资产变化值的样式 */
-    .asset-value {
-        margin-top: 5px; /* 上边距 */
-        font-weight: bold; /* 加粗 */
-        font-size: 12px; /* 字体大小 */
-    }
-
-    /* 星期头的样式 */
-    .week-days {
-        display: grid; /* 网格布局 */
-        grid-template-columns: repeat(5, 1fr); /* 每行 5 列 */
-        gap: 5px; /* 列间距 */
-        margin-bottom: 10px; /* 下边距 */
-    }
-
-    /* 星期天的样式 */
-    .week-day {
-        background-color: #f8f9fa; /* 背景颜色 */
-        padding: 10px; /* 内边距 */
-        text-align: center; /* 文本居中 */
-        border: 1px solid #dee2e6; /* 边框 */
-        border-radius: 4px; /* 圆角 */
-    }
-
-    /* 摘要信息的样式 */
-    .summary {
-        margin-top: 20px; /* 上边距 */
-        text-align: center; /* 文本居中 */
-        font-weight: bold; /* 加粗 */
-        font-size: 16px; /* 字体大小 */
-        color: #333; /* 文字颜色 */
-    }
-
-    /* 当前日期的样式 */
-    .current-day {
-        background-color: #73a3de !important; /* 背景颜色 */
-        color: #333 !important; /* 文字颜色 */
-        font-weight: bold; /* 当前日期字体加粗 */
-    }
-
-    /* 正资产变化的样式 */
-    .positive {
-        background-color: #ffe5e5 !important; /* 背景颜色 */
-        color: #b30000 !important; /* 文字颜色 */
-    }
-
-    /* 负资产变化的样式 */
-    .negative {
-        background-color: #e5ffe5 !important; /* 背景颜色 */
-        color: #008000 !important; /* 文字颜色 */
-    }
-
-    /* 按钮禁用样式 */
-    .btn:disabled {
-        cursor: not-allowed; /* 鼠标禁用样式 */
-        opacity: 0.65; /* 透明度 */
-    }
-
-    /* 鼠标悬停效果 */
-    .day-cell:hover, .month-cell:hover {
-        transform: scale(1.05); /* 放大效果 */
-        z-index: 2; /* 提升层级 */
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15); /* 添加阴影 */
-    }
-</style>
-
-<div class="container-fluid">
-    <!-- Page Heading -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">{{ currency_name|safe }}分红</h1>
-        <div class="col-auto">
-            <div class="h6 mb-0 text-gray-500">
-                <a href="javascript:history.back()" style="color: inherit; text-decoration: none;">返回 ></a>
+    <div class="container-fluid">
+        <!-- Page Heading -->
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <h1 class="h3 mb-0 font-weight-bold text-gray-700" style="text-align:center">{{ currency_name|safe }}分红</h1>
+            <div class="col-auto">
+                <div class="h6 mb-0 text-gray-500">
+                    <a href="javascript:history.back()" style="color: inherit; text-decoration: none;">返回 ></a>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Content Card Row -->
-    <div class="row">
-        <!-- 概要 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card h-100 shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">概要</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <!-- Card Body - 分红概览 -->
-                    <div class="metric-group">
-                        <div class="metric-group-title">分红概览</div>
-                        <div class="row g-4">
-                            <div class="col-md-4">
-                                <div class="metric-label">累计分红</div>
-                                <div class="metric-value">
-                                    <span>{{ total_dividends|floatformat:0 }}</span>
-                                    <span class="metric-unit">元</span>
+        <!-- Content Card Row -->
+        <div class="row">
+            <!-- 概要 -->
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card h-100 shadow mb-4">
+                    <!-- Card Header - Dropdown -->
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">概要</h6>
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <!-- Card Body - 分红概览 -->
+                        <div class="metric-group">
+                            <div class="metric-group-title">分红概览</div>
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="metric-label">累计分红</div>
+                                    <div class="metric-value">
+                                        <span>{{ total_dividends|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">年内分红</div>
+                                    <div class="metric-value">
+                                        <span>{{ year_dividends|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">上年分红</div>
+                                    <div class="metric-value">
+                                        <span>{{ dividends_avg_amount_1|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">年内分红</div>
-                                <div class="metric-value">
-                                    <span>{{ year_dividends|floatformat:0 }}</span>
-                                    <span class="metric-unit">元</span>
+                        </div>
+
+                        <!-- Card Body - 平均分红 -->
+                        <div class="metric-group">
+                            <div class="metric-group-title">平均分红</div>
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="metric-label">近三年平均分红</div>
+                                    <div class="metric-value">
+                                        <span>{{ dividends_avg_amount_3|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">近五年平均分红</div>
+                                    <div class="metric-value">
+                                        <span>{{ dividends_avg_amount_5|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">近七年平均分红</div>
+                                    <div class="metric-value">
+                                        <span>{{ dividends_avg_amount_7|floatformat:0 }}</span>
+                                        <span class="metric-unit">元</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">上年分红</div>
-                                <div class="metric-value">
-                                    <span>{{ dividends_avg_amount_1|floatformat:0 }}</span>
-                                    <span class="metric-unit">元</span>
+                        </div>
+
+                        <!-- Card Body - 分红率 -->
+                        <div class="metric-group">
+                            <div class="metric-group-title">分红率</div>
+                            <div class="row g-4">
+    {#                            <div class="col-md-3">#}
+    {#                                <div class="metric-label">总分红率</div>#}
+    {#                                <div class="metric-value">#}
+    {#                                    <span>{{ dividend_rate_total|percent }}</span>#}
+    {#                                    <span class="metric-unit">%</span>#}
+    {#                                </div>#}
+    {#                            </div>#}
+                                <div class="col-md-4">
+                                    <div class="metric-label">平均分红率</div>
+                                    <div class="metric-value">
+                                        <span>{{ result.avg_dividend_rate|percent }}</span>
+                                        <span class="metric-unit">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">年内分红率</div>
+                                    <div class="metric-value">
+                                        <span>{{ dividend_rate_current_year|percent }}</span>
+                                        <span class="metric-unit">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="metric-label">上年分红率</div>
+                                    <div class="metric-value">
+                                        <span>{{ dividend_rate_pre_year|percent }}</span>
+                                        <span class="metric-unit">%</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                    </div>
+                </div>
+            </div>
 
-                    <!-- Card Body - 平均分红 -->
-                    <div class="metric-group">
-                        <div class="metric-group-title">平均分红</div>
-                        <div class="row g-4">
-                            <div class="col-md-4">
-                                <div class="metric-label">近三年平均分红</div>
-                                <div class="metric-value">
-                                    <span>{{ dividends_avg_amount_3|floatformat:0 }}</span>
-                                    <span class="metric-unit">元</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">近五年平均分红</div>
-                                <div class="metric-value">
-                                    <span>{{ dividends_avg_amount_5|floatformat:0 }}</span>
-                                    <span class="metric-unit">元</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">近七年平均分红</div>
-                                <div class="metric-value">
-                                    <span>{{ dividends_avg_amount_7|floatformat:0 }}</span>
-                                    <span class="metric-unit">元</span>
-                                </div>
-                            </div>
+            <!-- 年度分红图表 -->
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card h-100 shadow mb-4">
+                    <!-- Card Header - Dropdown -->
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary">年度分红</h6>
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <div id="bar_yearly_dividend" style="width:100%; height:370px;"></div><!--数据展现的容器1-->
+                    </div>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                        <span>注：分红金额单位为万元。</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row">
+            <!-- 个股分红图表 -->
+            <div class="col-xl-6 col-md-6 mb-4 d-flex">
+                <div class="card h-100 shadow mb-4 w-100 d-flex flex-column">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary" id="chartTitle">个股分红</h6>
+                        <div class="btn-group" id="dividend_viewSwitch">
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary active"
+                                data-range="all"
+                                style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                            >全部</button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-range="currentYear"
+                                style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                            >当年</button>
                         </div>
                     </div>
-
-                    <!-- Card Body - 分红率 -->
-                    <div class="metric-group">
-                        <div class="metric-group-title">分红率</div>
-                        <div class="row g-4">
-{#                            <div class="col-md-3">#}
-{#                                <div class="metric-label">总分红率</div>#}
-{#                                <div class="metric-value">#}
-{#                                    <span>{{ dividend_rate_total|percent }}</span>#}
-{#                                    <span class="metric-unit">%</span>#}
-{#                                </div>#}
-{#                            </div>#}
-                            <div class="col-md-4">
-                                <div class="metric-label">平均分红率</div>
-                                <div class="metric-value">
-                                    <span>{{ result.avg_dividend_rate|percent }}</span>
-                                    <span class="metric-unit">%</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">年内分红率</div>
-                                <div class="metric-value">
-                                    <span>{{ dividend_rate_current_year|percent }}</span>
-                                    <span class="metric-unit">%</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="metric-label">上年分红率</div>
-                                <div class="metric-value">
-                                    <span>{{ dividend_rate_pre_year|percent }}</span>
-                                    <span class="metric-unit">%</span>
-                                </div>
-                            </div>
+                    <div class="card-body p-0 flex-grow-1">
+                        <div class="container mt-4">
+                            <div id="bar_dividend" style="width:100%; height:500px;"></div>
                         </div>
                     </div>
-                </div>
-                <div class="card-footer">
-                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
-                </div>
-            </div>
-        </div>
-
-        <!-- 年度分红图表 -->
-        <div class="col-xl-6 col-md-6 mb-4">
-            <div class="card h-100 shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 55px;">
-                    <h6 class="m-0 font-weight-bold text-primary">年度分红</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div id="bar_yearly_dividend" style="width:100%; height:370px;"></div><!--数据展现的容器1-->
-                </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
-                    <span>注：分红金额单位为元。</span>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="row">
-        <!-- 个股分红图表 -->
-        <div class="col-xl-6 col-md-6 mb-4 d-flex">
-            <div class="card h-100 shadow mb-4 w-100 d-flex flex-column">
-                <div class="card-header d-flex align-items-center justify-content-between" style="height: 55px;">
-                    <h6 class="m-0 font-weight-bold text-primary" id="chartTitle">个股分红</h6>
-                    <div class="btn-group" id="dividend_viewSwitch">
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary active"
-                            data-range="all"
-                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
-                        >全部</button>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            data-range="currentYear"
-                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
-                        >当年</button>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                        <span>注：AH同时上市的同一企业，分红金额合并处理。</span>
                     </div>
                 </div>
-                <div class="card-body p-0 flex-grow-1">
-                    <div class="container mt-4">
-                        <div id="bar_dividend" style="width:100%; height:500px;"></div>
-                    </div>
-                </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
-                    <span>注：AH同时上市的同一企业，分红金额合并处理。</span>
-                </div>
             </div>
-        </div>
 
-        <!-- 分红列表 -->
-        <div class="col-xl-6 col-lg-6 d-flex">
-            <div class="card shadow mb-4 w-100 d-flex flex-column">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 55px;">
-                    <h6 class="m-0 font-weight-bold text-primary" id="dividendListTitle">近期分红</h6>
-                    <div class="btn-group" id="dividendListSwitch">
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary active"
-                            data-range="recent"
-                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
-                        >近期</button>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            data-range="currentYear"
-                            style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
-                        >当年</button>
+            <!-- 分红列表 -->
+            <div class="col-xl-6 col-lg-6 d-flex">
+                <div class="card shadow mb-4 w-100 d-flex flex-column">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
+                        <h6 class="m-0 font-weight-bold text-primary" id="dividendListTitle">近期分红</h6>
+                        <div class="btn-group" id="dividendListSwitch">
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary active"
+                                data-range="recent"
+                                style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                            >近期</button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-range="currentYear"
+                                style="font-size: 12px !important; padding: 0.25rem 0.75rem;"
+                            >当年</button>
+                        </div>
                     </div>
-                </div>
-                <div class="card-body flex-grow-1">
-                    <!-- 近期分红表格 -->
-                    <div id="recentDividendTable" class="h-100" style="display:block; overflow-y:auto;">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>分红日期</th>
-                                        <th>股票/代码</th>
-                                        <th>分红金额</th>
-                                        <th>更新时间</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for dividend in dividend_list_TOP %}
+                    <div class="card-body flex-grow-1">
+                        <!-- 近期分红表格 -->
+                        <div id="recentDividendTable" class="h-100" style="display:block; overflow-y:auto;">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                                    <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
-                                            <td>{{ dividend.dividend_date|date:'Y-m-d' }}</td>
-                                            <td><a href="/benben/view_stock_details/{{ dividend.stock_id|safe }}" style="color: inherit; text-decoration: none;">{{ dividend.stock__stock_name }}（{{ dividend.stock__stock_code }}）</a></td>
-                                            <td class="{% if dividend.total_dividend < 0 %}text-danger{% endif %}">{{ dividend.total_dividend|floatformat:0 }}</td>
-                                            <td>{{ dividend.latest_modified|date:'Y-m-d H:i' }}</td>
+                                            <th>分红日期</th>
+                                            <th>股票/代码</th>
+                                            <th>分红金额</th>
+                                            <th>更新时间</th>
                                         </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {% for dividend in dividend_list_TOP %}
+                                            <tr>
+                                                <td>{{ dividend.dividend_date|date:'Y-m-d' }}</td>
+                                                <td><a href="/benben/view_stock_details/{{ dividend.stock_id|safe }}" style="color: inherit; text-decoration: none;">{{ dividend.stock__stock_name }}（{{ dividend.stock__stock_code }}）</a></td>
+                                                <td class="{% if dividend.total_dividend < 0 %}text-danger{% endif %}">{{ dividend.total_dividend|floatformat:0 }}</td>
+                                                <td>{{ dividend.latest_modified|date:'Y-m-d H:i' }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- 当年分红表格 -->
-                    <div id="currentYearDividendTable" class="h-100" style="display:none; overflow-y:auto;">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
-                                <thead class="bg-gradient-secondary text-gray-100">
-                                    <tr>
-                                        <th>股票</th>
-                                        <th>分红金额</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for qs in dividend_current_year %}
+                        <!-- 当年分红表格 -->
+                        <div id="currentYearDividendTable" class="h-100" style="display:none; overflow-y:auto;">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
+                                    <thead class="bg-gradient-secondary text-gray-100">
                                         <tr>
-                                            <td>{{ qs.stock_name }}</td>
-                                            <td class="{% if qs.total_dividend < 0 %}text-danger{% endif %}">
-                                                {{ qs.total_dividend|default:"0"|floatformat:0 }}
-                                            </td>
+                                            <th>股票</th>
+                                            <th>分红金额</th>
                                         </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {% for qs in dividend_current_year %}
+                                            <tr>
+                                                <td>{{ qs.stock_name }}</td>
+                                                <td class="{% if qs.total_dividend < 0 %}text-danger{% endif %}">
+                                                    {{ qs.total_dividend|default:"0"|floatformat:0 }}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                    数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
-                    <span>注：同一企业不同账户的分红金额合并处理。</span>
+                    <div class="card-footer bg-white text-muted small d-flex justify-content-between">
+                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                        <span>注：同一企业不同账户的分红金额合并处理。</span>
+                    </div>
                 </div>
             </div>
+
         </div>
 
     </div>
 
-</div>
+    <script>
+    'use strict';
 
-<script>
-'use strict';
+    // 分红列表
+    document.addEventListener('DOMContentLoaded', function() {
+        // 分红列表切换功能
+        const titleElement = document.getElementById('dividendListTitle');
+        const recentTable = document.getElementById('recentDividendTable');
+        const currentYearTable = document.getElementById('currentYearDividendTable');
 
-// 分红列表
-document.addEventListener('DOMContentLoaded', function() {
-    // 分红列表切换功能
-    const titleElement = document.getElementById('dividendListTitle');
-    const recentTable = document.getElementById('recentDividendTable');
-    const currentYearTable = document.getElementById('currentYearDividendTable');
+        // 初始化状态
+        let isRecentView = true;
 
-    // 初始化状态
-    let isRecentView = true;
-
-    // 设置激活按钮样式
-    function setActiveButton() {
-        const buttons = document.querySelectorAll('#dividendListSwitch button');
-        buttons.forEach(button => {
-            if (isRecentView && button.dataset.range === 'recent') {
-                button.classList.add('active');
-            } else if (!isRecentView && button.dataset.range === 'currentYear') {
-                button.classList.add('active');
-            } else {
-                button.classList.remove('active');
-            }
-        });
-
-        // 更新卡片标题
-        titleElement.textContent = isRecentView ? '近期分红' : '当年分红';
-    }
-
-    // 添加切换按钮事件
-    document.querySelectorAll('#dividendListSwitch button').forEach(button => {
-        button.addEventListener('click', function() {
-            const range = this.dataset.range;
-            isRecentView = (range === 'recent');
-
-            // 切换表格显示
-            recentTable.style.display = isRecentView ? 'block' : 'none';
-            currentYearTable.style.display = isRecentView ? 'none' : 'block';
-
-            // 更新按钮状态
-            setActiveButton();
-        });
-    });
-
-    // 初始化按钮状态
-    setActiveButton();
-});
-
-// 个股分红图表
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化图表
-    const chart = echarts.init(document.getElementById('bar_dividend'));
-    const name_total_list = {{ name_total_list|safe }};
-    const dividend_total_list = {{ dividend_total_list|safe }};
-    const name_current_year_list = {{ name_current_year_list|safe }};
-    const dividend_current_year_list = {{ dividend_current_year_list|safe }};
-
-    let isTotalMode = true;
-    const updateTimeElement = document.getElementById('updateTime_bar_dividend');
-    const chartTitle = document.getElementById('chartTitle');
-
-    // 设置选中的按钮样式
-    function setActiveButton() {
-        const buttons = document.querySelectorAll('#dividend_viewSwitch button');
-        buttons.forEach(button => {
-            if (isTotalMode && button.dataset.range === 'all') {
-                button.classList.add('active');
-            } else if (!isTotalMode && button.dataset.range === 'currentYear') {
-                button.classList.add('active');
-            } else {
-                button.classList.remove('active');
-            }
-        });
-
-        // 更新图表标题
-        chartTitle.textContent = isTotalMode
-            ? '累计分红金额'
-            : '当年分红金额';
-    }
-
-    // 更新图表
-    function updateChart() {
-        const option = {
-        title: {
-            text: '',
-            subtext: '',
-            x: 'center'
-        },
-        legend: {
-            //data:bar_data['name_array']
-            //data:'分红'
-        },
-        grid: {
-            top: '10%',
-            left: '3%',
-            right: '3%',
-            bottom: '0%',
-            containLabel: true
-        },
-        tooltip: {
-            trigger: 'item',
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            borderWidth: 0,
-            textStyle: {
-                color: '#2c3e50'
-            },
-            formatter: function(params) {
-                const value = typeof params.value === 'number'
-                    ? Math.round(params.value).toLocaleString()
-                    : params.value;
-
-                return `
-                    <div style="font-weight: bold; font-size: 16px; margin-bottom: 5px;">${params.name}</div>
-                    <div>${params.seriesName}: <span style="font-weight: bold; color: #e74c3c;">${value}</span> 元</div>
-                `;
-            }
-        },
-        tooltip1: {  // 修改全局 tooltip 配置
-            trigger: 'item',
-            backgroundColor: '#fff',
-            borderWidth: 0,   // 设置边框宽度为0
-            // padding: 10,      // 可以适当调整内边距，使提示框看起来更舒适
-            formatter: function(params) {
-                // 使用千位分隔符格式化数值
-                const value = typeof params.value === 'number'
-                    ? params.value.toLocaleString()
-                    : params.value;
-
-                return `${params.seriesName}<br/>${params.name}: ${value}`;
-            }
-        },
-        xAxis: [
-            // 第一个 X 轴（柱状图使用，boundaryGap: false）
-            {
-                // name: '股票',
-                // data: name_total_list,
-                data: isTotalMode ? name_total_list : name_current_year_list,
-                boundaryGap: true,
-                axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
-                    show: true,
-                    interval: 'auto',
-                    rotate: 45,
-                    margin: 15,
-                    // formatter: null,
-                    textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
-                        color: '#333'
-                    }
-                },
-                show: true
-            },
-        ],
-        //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-        yAxis: [
-            // 左侧 Y 轴（柱状图使用）
-            {
-              type: 'value',
-              //name: ' 收益率',  // 自定义单位名称
-              position: 'left',   // 左侧显示
-              axisLabel: {
-                formatter: '{value}'  // 标签格式（例如：100 单位）
-              }
-            },
-
-        ],
-        series: [
-            {
-                // name: '分红',
-                name: isTotalMode ? '累计分红' : '当年分红',
-                type: 'bar',
-                // data: dividend_total_list,
-                data: isTotalMode ? dividend_total_list : dividend_current_year_list,
-                //barWidth: '30px',
-                itemStyle: {
-                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                //{ offset: 0, color: isTotalMode ? '#2ecc71' : '#3498db' },
-                                //{ offset: 1, color: isTotalMode ? '#1d976c' : '#2980b9' }
-                                { offset: 0, color: isTotalMode ? '#3498db' : '#3498db' },
-                                { offset: 1, color: isTotalMode ? '#2980b9' : '#2980b9' }
-                            ]),
-                            //borderRadius: [8, 8, 0, 0]
-                        },
-                //color: ['#1890ff'],
-                xAxisIndex: 0,  // 对应 xAxis[0]
-                yAxisIndex: 0,  // 使用第一个 Y 轴（左侧）
-                label: {
-                            show: true,
-                            position: isTotalMode ? 'top' : 'insideTop',
-                            distance: 15,
-                            formatter: function(params) {
-                                return (params.value / 10000).toFixed(1) + '万';
-                            },
-                            color: '#ecf0f1',
-                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                            padding: [3, 5],
-                            borderRadius: 4
-                        }
-            },
-        ]
-    };
-
-        chart.setOption(option, true);
-        updateTimestamp();
-        setActiveButton();
-    }
-
-    // 添加切换按钮事件
-    document.querySelectorAll('#dividend_viewSwitch button').forEach(button => {
-        button.addEventListener('click', function() {
-            const range = this.dataset.range;
-
-            // 更新当前模式
-            isTotalMode = (range === 'all');
-
-            // 设置所有按钮为非激活状态
-            document.querySelectorAll('#dividend_viewSwitch button').forEach(btn => {
-                btn.classList.remove('active');
+        // 设置激活按钮样式
+        function setActiveButton() {
+            const buttons = document.querySelectorAll('#dividendListSwitch button');
+            buttons.forEach(button => {
+                if (isRecentView && button.dataset.range === 'recent') {
+                    button.classList.add('active');
+                } else if (!isRecentView && button.dataset.range === 'currentYear') {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
             });
 
-            // 设置当前按钮为激活状态
-            this.classList.add('active');
+            // 更新卡片标题
+            titleElement.textContent = isRecentView ? '近期分红' : '当年分红';
+        }
 
-            // 更新图表
-            updateChart();
+        // 添加切换按钮事件
+        document.querySelectorAll('#dividendListSwitch button').forEach(button => {
+            button.addEventListener('click', function() {
+                const range = this.dataset.range;
+                isRecentView = (range === 'recent');
+
+                // 切换表格显示
+                recentTable.style.display = isRecentView ? 'block' : 'none';
+                currentYearTable.style.display = isRecentView ? 'none' : 'block';
+
+                // 更新按钮状态
+                setActiveButton();
+            });
         });
+
+        // 初始化按钮状态
+        setActiveButton();
     });
 
-    // 初始加载
-    updateChart();
+    // 个股分红图表
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化图表
+        const chart = echarts.init(document.getElementById('bar_dividend'));
+        const name_total_list = {{ name_total_list|safe }};
+        const dividend_total_list = {{ dividend_total_list|safe }};
+        const name_current_year_list = {{ name_current_year_list|safe }};
+        const dividend_current_year_list = {{ dividend_current_year_list|safe }};
 
-    // 窗口大小变化时调整图表
-    window.addEventListener('resize', function() {
-        chart.resize();
-    });
+        let isTotalMode = true;
+        const updateTimeElement = document.getElementById('updateTime_bar_dividend');
+        const chartTitle = document.getElementById('chartTitle');
 
-    // 初始加载
-    // updateChart();
-    // window.addEventListener('resize', () => chart.resize());
+        // 设置选中的按钮样式
+        function setActiveButton() {
+            const buttons = document.querySelectorAll('#dividend_viewSwitch button');
+            buttons.forEach(button => {
+                if (isTotalMode && button.dataset.range === 'all') {
+                    button.classList.add('active');
+                } else if (!isTotalMode && button.dataset.range === 'currentYear') {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
 
-});
+            // 更新图表标题
+            chartTitle.textContent = isTotalMode
+                ? '累计分红金额'
+                : '当年分红金额';
+        }
 
-// 年度分红图表
-document.addEventListener('DOMContentLoaded', function() {
-    const chart = echarts.init(document.getElementById('bar_yearly_dividend'));
-    const year_array = {{ year_array|safe }};
-    const dividend_yearly_total_array = {{ dividend_yearly_total_array|safe }};
-    const dividend_rate_yearly_array = {{ dividend_rate_yearly_array|safe }};
-
-    // 更新图表
-    function updateChart() {
-        const option = {
-        title: {
-            text: '',
-            subtext: '',
-            x: 'center'
-        },
-        legend: {
-            //data:bar_data['name_array']
-        },
-        grid: {
-            top: '10%',
-            left: '3%',
-            right: '3%',
-            bottom: '0%',
-            containLabel: true
-        },
-        tooltip: {
-            //trigger: 'axis',      // 默认触发方式（可被系列级配置覆盖）
-            //backgroundColor: '#fff'
-        },
-        xAxis: [
-            // 第一个 X 轴（柱状图使用，boundaryGap: false）
-            {
-                //name: '年份',
-                data: year_array,
-                boundaryGap: true,
-                axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
-                    show: true,
-                    interval: 'auto',
-                    rotate: 45,
-                    margin: 15,
-                    // formatter: null,
-                    textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
-                        color: '#333'
-                    }
+        // 更新图表
+        function updateChart() {
+            const option = {
+            title: {
+                text: '',
+                subtext: '',
+                x: 'center'
+            },
+            legend: {
+                //data:bar_data['name_array']
+                //data:'分红'
+            },
+            grid: {
+                top: '10%',
+                left: '3%',
+                right: '3%',
+                bottom: '0%',
+                containLabel: true
+            },
+            tooltip: {
+                trigger: 'item',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                borderWidth: 0,
+                textStyle: {
+                    color: '#2c3e50'
                 },
-                show: true
-            }
-        ],
-        //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-        yAxis: [
-            // 左侧 Y 轴（柱状图使用）
-            {
-                type: 'value',
-                //name: ' 收益率',  // 自定义单位名称
-                position: 'left',   // 左侧显示
-                axisLabel: {
-                    formatter: function(value) {
-                        // 转换为整数并添加千位分隔符
-                        return typeof value === 'number'
-                            ? Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                            : value;
-                    }
+                formatter: function(params) {
+                    const value = typeof params.value === 'number'
+                        ? Math.round(params.value).toLocaleString()
+                        : params.value;
+
+                    return `
+                        <div style="font-weight: bold; font-size: 16px; margin-bottom: 5px;">${params.name}</div>
+                        <div>${params.seriesName}: <span style="font-weight: bold; color: #e74c3c;">${value}</span> 元</div>
+                    `;
                 }
             },
-            // 右侧 Y 轴（折线图使用）
-            {
-                //name: '净值',
-                type: 'value',
-                position: 'right',   // 右侧显示
-                alignTicks: true, // 设置为与主坐标轴刻度对齐
-                // min:0, // 配置 Y 轴刻度最小值
-                // max:12,  // 配置 Y 轴刻度最大值
-                //splitNumber:7,  // 配置 Y 轴数值间隔
-                axisLabel: {
-                    formatter: '{value}%'  // 标签格式（例如：100 单位）
-                },
-            }
-        ],
-        series: [
-            {
-                name: '分红金额',
-                type: 'bar',
-                data: dividend_yearly_total_array,
-                //color: ['#1890ff'],
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: '#3498db' },
-                    { offset: 1, color: '#2980b9' }
-                ]),
+            tooltip1: {  // 修改全局 tooltip 配置
+                trigger: 'item',
+                backgroundColor: '#fff',
+                borderWidth: 0,   // 设置边框宽度为0
+                // padding: 10,      // 可以适当调整内边距，使提示框看起来更舒适
+                formatter: function(params) {
+                    // 使用千位分隔符格式化数值
+                    const value = typeof params.value === 'number'
+                        ? params.value.toLocaleString()
+                        : params.value;
 
-                // xAxisIndex: 0,  // 对应 xAxis[0]
-                yAxisIndex: 0,  // 使用第一个 Y 轴（左侧）
-                tooltip: {
-                    trigger: "item",
-                    // formatter: "{a} <br/>{b} : {c}",
-                    formatter: function(params) {
-                        // 将值转为数值类型
-                        const numberValue = Number(params.value);
-
-                        // 格式化为带千位分隔符的整数
-                        let formattedValue;
-                        if (isNaN(numberValue)) {
-                            formattedValue = params.value;  // 非数值直接显示原内容
-                        } else {
-                            // 转为整数并添加千位分隔符
-                            formattedValue = numberValue.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    return `${params.seriesName}<br/>${params.name}: ${value}`;
+                }
+            },
+            xAxis: [
+                // 第一个 X 轴（柱状图使用，boundaryGap: false）
+                {
+                    // name: '股票',
+                    // data: name_total_list,
+                    data: isTotalMode ? name_total_list : name_current_year_list,
+                    boundaryGap: true,
+                    axisLabel: { // 坐标轴文本标签，详见axis.axisLabel
+                        show: true,
+                        interval: 'auto',
+                        rotate: 45,
+                        margin: 15,
+                        // formatter: null,
+                        textStyle: { // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            color: '#333'
                         }
-
-                        return `${params.seriesName} <br/>${params.name}: ${formattedValue}`;
                     },
-                    //backgroundColor: '#ffffff',   // 白色背景
-                    borderColor: 'transparent',
-                    borderWidth: 0
-                }
-            },
-            {
-                //name: '人民币账户',
-                name: '分红率',
-                //data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
-                data: dividend_rate_yearly_array,
-                type: 'line',
-                color: ['#ee9945'],
-                smooth: false,
-                itemStyle: {
-                    // color: '#1890ff'
+                    show: true
                 },
-                // xAxisIndex: 1,  // 对应 xAxis[1]
-                yAxisIndex: 1,  // 使用第二个 Y 轴（右侧）
-                tooltip: {
-                    trigger: "item",
-                    //formatter: "{a} <br/>{b} : {c}",
-                    formatter: function(params) {
-                        // 强制将值转为数值类型，并格式化为4位小数
-                        const numberValue = Number(params.value);
-                        const formattedValue = isNaN(numberValue)
-                            ? params.value  // 非数值直接显示原内容
-                            : numberValue.toFixed(2); // 数值转为4位小数
-                        return `
-                            ${params.seriesName} <br/>
-                            ${params.name}: ${formattedValue}%
-                        `;
-                    },
-                    //backgroundColor: '#ffffff',   // 白色背景
-                    borderColor: 'transparent',
-                    borderWidth: 0
+            ],
+            //xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
+            yAxis: [
+                // 左侧 Y 轴（柱状图使用）
+                {
+                  type: 'value',
+                  //name: ' 收益率',  // 自定义单位名称
+                  position: 'left',   // 左侧显示
+                  axisLabel: {
+                    formatter: '{value}'  // 标签格式（例如：100 单位）
+                  }
+                },
+
+            ],
+            series: [
+                {
+                    // name: '分红',
+                    name: isTotalMode ? '累计分红' : '当年分红',
+                    type: 'bar',
+                    // data: dividend_total_list,
+                    data: isTotalMode ? dividend_total_list : dividend_current_year_list,
+                    //barWidth: '30px',
+                    itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    //{ offset: 0, color: isTotalMode ? '#2ecc71' : '#3498db' },
+                                    //{ offset: 1, color: isTotalMode ? '#1d976c' : '#2980b9' }
+                                    { offset: 0, color: isTotalMode ? '#3498db' : '#3498db' },
+                                    { offset: 1, color: isTotalMode ? '#2980b9' : '#2980b9' }
+                                ]),
+                                //borderRadius: [8, 8, 0, 0]
+                            },
+                    //color: ['#1890ff'],
+                    xAxisIndex: 0,  // 对应 xAxis[0]
+                    yAxisIndex: 0,  // 使用第一个 Y 轴（左侧）
+                    label: {
+                                show: true,
+                                position: isTotalMode ? 'top' : 'insideTop',
+                                distance: 15,
+                                formatter: function(params) {
+                                    return (params.value / 10000).toFixed(1) + '万';
+                                },
+                                color: '#ecf0f1',
+                                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                padding: [3, 5],
+                                borderRadius: 4
+                            }
+                },
+            ],
+            dataZoom: [{
+                type: 'inside',
+                start: 0,
+                end: 100,
+                zoomLock: true
+            }]
+
+        };
+
+            chart.setOption(option, true);
+            setActiveButton();
+        }
+
+        // 添加切换按钮事件
+        document.querySelectorAll('#dividend_viewSwitch button').forEach(button => {
+            button.addEventListener('click', function() {
+                const range = this.dataset.range;
+
+                // 更新当前模式
+                isTotalMode = (range === 'all');
+
+                // 设置所有按钮为非激活状态
+                document.querySelectorAll('#dividend_viewSwitch button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // 设置当前按钮为激活状态
+                this.classList.add('active');
+
+                // 更新图表
+                updateChart();
+            });
+        });
+
+        // 初始加载
+        updateChart();
+
+        // 窗口大小变化时调整图表
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+
+        // 初始加载
+        // updateChart();
+        // window.addEventListener('resize', () => chart.resize());
+
+    });
+
+    // 年度分红图表
+    document.addEventListener('DOMContentLoaded', function() {
+        const chart = echarts.init(document.getElementById('bar_yearly_dividend'));
+        const year_array = {{ year_array|safe }};
+        const dividend_yearly_total_array = {{ dividend_yearly_total_array|safe }};
+        const dividend_rate_yearly_array = {{ dividend_rate_yearly_array|safe }};
+
+        // 更新图表
+        function updateChart() {
+            const option = {
+            title: {
+                text: '',
+                subtext: '',
+                x: 'center'
+            },
+            legend: {
+                //data:bar_data['name_array']
+            },
+            grid: {
+                top: '10%',
+                left: '3%',
+                right: '3%',
+                bottom: '0%',
+                containLabel: true
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                },
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderColor: '#ddd',
+                borderWidth: 1,
+                padding: [10, 15],
+                textStyle: {
+                    color: '#333'
+                },
+                formatter: function(params) {
+                    return `<div style="font-weight:bold;margin-bottom:8px;">${params[0].name}年</div>
+                            <div style="display:flex;align-items:center;">
+                                <span style="display:inline-block;width:12px;height:12px;background:${params[0].color};margin-right:8px;"></span>
+                                ${params[0].seriesName}：<span style="font-weight:bold;color:${params[0].color}">￥${(params[0].value).toLocaleString()}元</span>
+                            </div>
+                            <div style="display:flex;align-items:center;">
+                                <span style="display:inline-block;width:12px;height:12px;background:${params[1].color};margin-right:8px;"></span>
+                                ${params[1].seriesName}：<span style="font-weight:bold;color:${params[1].color}">￥${(params[1].value).toFixed(2).toLocaleString()}%</span>
+                            </div>
+                            `;
                 }
             },
-        ]
-    };
-        chart.setOption(option, true);
-        updateTimestamp();
-    }
+            xAxis: [
+                // 第一个 X 轴（柱状图使用，boundaryGap: false）
+                {
+                    //name: '年份',
+                    data: year_array,
+                    boundaryGap: true,
+                    show: true,
+                    axisLabel: {
+                        margin: 20,
+                        interval: 0,
+                        rotate: 45,
+                        fontSize: 12
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#ccc'
+                        }
+                    },
+                    axisTick: {
+                        alignWithLabel: false
+                    }
+                }
+            ],
+            yAxis: [
+                // 左侧 Y 轴（柱状图使用）
+                {
+                    type: 'value',
+                    name: '金额（万元）',  // 自定义单位名称
+                    position: 'left',   // 左侧显示
+                    nameTextStyle: {
+                        padding: [0, 0, 0, 40]
+                    },
+                    axisLabel: {
+                        formatter: function(value) {
+                            return (value/10000).toLocaleString(); // 千位分隔
+                        },
+                        fontSize: 12
+                    },
+                    splitLine: {
+                        show: true,
+                        lineStyle: {
+                            type: 'dashed',
+                            color: '#eee'
+                        }
+                    },
+                    axisLine: {
+                        show: false,
+                        lineStyle: {
+                            color: '#ccc'
+                        }
+                    }
+                },
+                // 右侧 Y 轴（折线图使用）
+                {
+                    name: '百分比',
+                    type: 'value',
+                    position: 'right',   // 右侧显示
+                    alignTicks: true, // 设置为与主坐标轴刻度对齐
+                    // min:0, // 配置 Y 轴刻度最小值
+                    // max:12,  // 配置 Y 轴刻度最大值
+                    //splitNumber:7,  // 配置 Y 轴数值间隔
+                    axisLabel: {
+                        formatter: '{value}%'  // 标签格式（例如：100 单位）
+                    },
+                    splitLine: {
+                        show: true,
+                        lineStyle: {
+                            type: 'dashed',
+                            color: '#eee'
+                        }
+                    },
+                    axisLine: {
+                        show: false,
+                        lineStyle: {
+                            color: '#ccc'
+                        }
+                    }
+                }
+            ],
+            series: [
+                {
+                    name: '分红金额',
+                    type: 'bar',
+                    data: dividend_yearly_total_array,
+                    //color: ['#c84f4f'],
+                    itemStyle: {
+                        borderRadius: [2, 2, 0, 0]
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowColor: function(params) {
+                                return params.color + '66';
+                            },
+                            borderRadius: [2, 2, 0, 0]
+                        }
+                    },
+                    label: {
+                        show: true,
+                        position: 'top',
+                        formatter: function(params) {
+                            return (params.value/10000).toFixed(2);
+                        },
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        color: '#333'
+                    },
+                    yAxisIndex: 0
+                },
+                {
+                    //name: '人民币账户',
+                    name: '分红率',
+                    //data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
+                    data: dividend_rate_yearly_array,
+                    type: 'line',
+                    color: ['#ee9945'],
+                    //color: '#4c6ef5',
+                    smooth: false,
+                    itemStyle: {
+                        // color: '#1890ff'
+                    },
+                    yAxisIndex: 1  // 使用第二个 Y 轴（右侧）
+                },
+            ],
+            dataZoom: [{
+                type: 'inside',
+                start: 0,
+                end: 100,
+                zoomLock: true
+            }]
 
-    // 初始加载
-    updateChart();
-    window.addEventListener('resize', () => chart.resize());
-});
+        };
+            chart.setOption(option, true);
+        }
+
+        // 初始加载
+        updateChart();
+        window.addEventListener('resize', () => chart.resize());
+    });
 
 
-</script>
+    </script>
 
 {% endblock %}
 
