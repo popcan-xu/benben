@@ -97,7 +97,7 @@
                     </div>
                     <div class="card-body">
                         <div class="chart-container" id="chart-container-Profit">
-                            <div id="total_dividend_chart" style="width:100%; height:400px;"></div>
+                            <div id="bar_yearly_dividend" style="width:100%; height:400px;"></div>
                         </div>
                     </div>
                     <div class="card-footer bg-white text-muted small d-flex justify-content-between">
@@ -368,6 +368,231 @@
                 chart.resize();
             });
         });
+
+        // 年度分红图表
+        document.addEventListener('DOMContentLoaded', function() {
+            const chart = echarts.init(document.getElementById('bar_yearly_dividend'));
+            const year_array = {{ year_array|safe }};
+            const dividend_yearly_total_array = {{ dividend_yearly_total_array|safe }};
+            const dividend_rate_yearly_array = {{ dividend_rate_yearly_array|safe }};
+
+            // 更新图表
+            function updateChart() {
+                const option = {
+                title: {
+                    text: '',
+                    subtext: '',
+                    x: 'center'
+                },
+                legend: {
+                    //data:bar_data['name_array']
+                },
+                grid: {
+                    top: '10%',
+                    left: '3%',
+                    right: '3%',
+                    bottom: '0%',
+                    containLabel: true
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#ddd',
+                    borderWidth: 1,
+                    padding: [10, 15],
+                    textStyle: {
+                        color: '#333'
+                    },
+                    formatter: function(params) {
+                        // 按系列类型分组
+                        const barSeries = params.filter(p => p.seriesType === 'bar');
+                        const lineSeries = params.filter(p => p.seriesType === 'line');
+
+                        const year = params[0].name;
+                        let html = `<div style="font-weight:bold;margin-bottom:8px;">${year}年</div>`;
+
+                        // 显示柱状图数据（收益率）
+                        if (barSeries.length > 0) {
+                            barSeries.forEach(param => {
+                                const color = param.color;
+                                const value = param.value.toLocaleString('zh-CN', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                });
+                                const seriesName = param.seriesName;
+                                html += `
+                                    <div style="display:flex;align-items:center;">
+                                        <span class="icon-rect" style="background:${color};"></span>
+                                        ${seriesName}：<span style="font-weight:bold;color:${color}">${value}元</span>
+                                    </div>
+                                `;
+                            });
+                        }
+
+                        // 显示折线图数据（净值）
+                        if (lineSeries.length > 0) {
+                            lineSeries.forEach(param => {
+                                const color = param.color;
+                                const value = param.value.toLocaleString('zh-CN', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                });
+                                const seriesName = param.seriesName;
+                                html += `
+                                    <div style="display:flex;align-items:center;">
+                                        <span class="icon-circle" style="border: 2px solid ${color};"></span>
+                                        ${seriesName}：<span style="font-weight:bold;color:${color}">${value}%</span>
+                                    </div>
+                                `;
+                            });
+                        }
+
+                        return html;
+                    }
+                },
+                xAxis: [
+                    // 第一个 X 轴（柱状图使用，boundaryGap: false）
+                    {
+                        //name: '年份',
+                        data: year_array,
+                        boundaryGap: true,
+                        show: true,
+                        axisLabel: {
+                            margin: 20,
+                            interval: 0,
+                            rotate: 45,
+                            fontSize: 12
+                        },
+                        axisLine: {
+                            lineStyle: {
+                                color: '#ccc'
+                            }
+                        },
+                        axisTick: {
+                            alignWithLabel: false
+                        }
+                    }
+                ],
+                yAxis: [
+                    // 左侧 Y 轴（柱状图使用）
+                    {
+                        type: 'value',
+                        name: '金额（万元）',  // 自定义单位名称
+                        position: 'left',   // 左侧显示
+                        nameTextStyle: {
+                            padding: [0, 0, 0, 40]
+                        },
+                        axisLabel: {
+                            formatter: function(value) {
+                                return (value/10000).toLocaleString(); // 千位分隔
+                            },
+                            fontSize: 12
+                        },
+                        splitLine: {
+                            show: true,
+                            lineStyle: {
+                                type: 'dashed',
+                                color: '#eee'
+                            }
+                        },
+                        axisLine: {
+                            show: false,
+                            lineStyle: {
+                                color: '#ccc'
+                            }
+                        }
+                    },
+                    // 右侧 Y 轴（折线图使用）
+                    {
+                        name: '百分比',
+                        type: 'value',
+                        position: 'right',   // 右侧显示
+                        alignTicks: true, // 设置为与主坐标轴刻度对齐
+                        // min:0, // 配置 Y 轴刻度最小值
+                        // max:12,  // 配置 Y 轴刻度最大值
+                        //splitNumber:7,  // 配置 Y 轴数值间隔
+                        axisLabel: {
+                            formatter: '{value}%'  // 标签格式（例如：100 单位）
+                        },
+                        splitLine: {
+                            show: true,
+                            lineStyle: {
+                                type: 'dashed',
+                                color: '#eee'
+                            }
+                        },
+                        axisLine: {
+                            show: false,
+                            lineStyle: {
+                                color: '#ccc'
+                            }
+                        }
+                    }
+                ],
+                series: [
+                    {
+                        name: '分红金额',
+                        type: 'bar',
+                        data: dividend_yearly_total_array,
+                        //color: ['#c84f4f'],
+                        itemStyle: {
+                            borderRadius: [2, 2, 0, 0]
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowColor: function(params) {
+                                    return params.color + '66';
+                                },
+                                borderRadius: [2, 2, 0, 0]
+                            }
+                        },
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: function(params) {
+                                return (params.value/10000).toFixed(2);
+                            },
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            color: '#333'
+                        },
+                        yAxisIndex: 0
+                    },
+                    {
+                        //name: '人民币账户',
+                        name: '分红率',
+                        //data: [454,226,891,978,901,581,400,543,272,955,1294,1581],
+                        data: dividend_rate_yearly_array,
+                        type: 'line',
+                        color: ['#ee9945'],
+                        //color: '#4c6ef5',
+                        smooth: false,
+                        itemStyle: {
+                            // color: '#1890ff'
+                        },
+                        yAxisIndex: 1  // 使用第二个 Y 轴（右侧）
+                    },
+                ],
+                dataZoom: [{
+                    type: 'inside',
+                    start: 0,
+                    end: 100,
+                    zoomLock: true
+                }]
+
+            };
+                chart.setOption(option, true);
+            }
+
+            // 初始加载
+            updateChart();
+            window.addEventListener('resize', () => chart.resize());
+        });
+
 
 
     </script>

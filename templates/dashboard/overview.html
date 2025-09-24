@@ -815,11 +815,11 @@
         // 持仓股票占比
         document.addEventListener('DOMContentLoaded', function() {
             const chart = echarts.init(document.getElementById('holdingChart'));
-            const holding_stock_array = {{ overview.holding_stock_array|safe }};
-            const colors_array = {{ overview.colors|safe }}
+            const holding_stock_json = {{ overview.holding_stock_json|safe }};
+            const colors_array = {{ overview.colors|safe }};
 
             // 步骤1：提取前5只股票
-            const topStocks = holding_stock_array.slice(0, 5).map((stock, index) => {
+            const topStocks = holding_stock_json.slice(0, 5).map((stock, index) => {
               // const customColors = ['#4c6ef5', '#ff922b', '#40c057', '#fab005', '#e64980'];
               const customColors = colors_array.slice(0, 5)
               return {
@@ -830,7 +830,7 @@
             });
 
             // 步骤2：计算其他持仓总和
-            const otherTotal = holding_stock_array.slice(5).reduce((sum, stock) => sum + stock[5], 0);
+            const otherTotal = holding_stock_json.slice(5).reduce((sum, stock) => sum + stock[5], 0);
             const otherHolding = {
               value: otherTotal / 10000,
               name: '其他持仓',
@@ -840,6 +840,7 @@
 
             // 步骤3：合并结果
             const chartData = [...topStocks, otherHolding];
+            console.log(chartData);
 
             function updateChart() {
                 const option = {

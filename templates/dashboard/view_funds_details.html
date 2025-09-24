@@ -189,7 +189,7 @@
             <div class="col-xl-4" style="text-align:left">
                 <h1 class="h3 mb-0 font-weight-bold text-gray-700">{{ funds_name }}</h1>
             </div>
-            <div class="col-xl-4" style="text-align:center">
+            <div class="col-xl-4 d-none" style="text-align:center">
                 <form action="" method="post" class="form-horizontal" role="form">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-sync-alt"></i>&nbsp&nbsp{{ baseline.modified_time }}</button>

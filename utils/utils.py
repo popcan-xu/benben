@@ -17,6 +17,7 @@ import requests
 from bs4 import BeautifulSoup
 from django.db.models import Sum, Avg, Min, Max
 from django.db.models.functions import ExtractYear
+from collections import defaultdict
 
 # import pysnowball as ball
 
@@ -116,6 +117,7 @@ def get_chart_array(content, max_rows, name_col, value_col):
     return names, values
 
 
+'''
 # 抓取单一股票实时行情
 def get_stock_price1(stock_code):
     # stock_object = stock.objects.get(stock_code=stock_code)
@@ -212,7 +214,6 @@ def get_stock_array_price1(stock_code_array):
     return price_array_current
 
 
-'''
 # 全局内存缓存
 _PRICE_CACHE = {
     'data': {},  # 股票数据字典 {code: (price, increase, color)}
@@ -352,6 +353,11 @@ def _get_requested_prices(stock_codes):
     print(f"返回 {len(result)} 只股票数据")
     print(f"前3条结果: {result[:3]}")
     return result
+
+# 初始化缓存 - 强制首次刷新
+# _PRICE_CACHE['expiry'] = 0
+# print("缓存初始化完成，强制首次刷新")
+
 '''
 
 # 全局内存缓存 - 用于单支股票
@@ -436,7 +442,6 @@ def _refresh_single_cache(stock_code):
     print(f"单支股票缓存过期时间: {datetime.datetime.fromtimestamp(_SINGLE_PRICE_CACHE['expiry']).strftime('%Y-%m-%d %H:%M:%S')}")
 
 
-# 保持原有的 get_stock_array_price 函数不变，但使用 _ARRAY_PRICE_CACHE
 def get_stock_array_price(stock_code_array):
     """获取股票实时行情数据，使用独立的多支股票缓存"""
     global _ARRAY_PRICE_CACHE
@@ -542,11 +547,6 @@ def _is_trading_time():
     us_trading = (21 <= hour <= 24) or (0 <= hour <= 4) or (hour == 5 and minute < 15)
 
     return cn_trading or us_trading
-
-
-# 初始化缓存 - 强制首次刷新
-# _PRICE_CACHE['expiry'] = 0
-# print("缓存初始化完成，强制首次刷新")
 
 
 
@@ -1416,7 +1416,7 @@ def getHTMLText(url):
 
 
 # 从指数历史数据生成json文件
-def get_his_index():
+def get_his_index1():
     # 上证指数
     item = []
     data = []
@@ -1535,12 +1535,12 @@ def get_his_index():
             data.append(item)
             item = []
     # 添加akshare缺失年份的新数据
-    new_years_data = [2009, 3739.99]
-    data.append(new_years_data)
-    new_years_data = [2010, 3306.94]
-    data.append(new_years_data)
-    new_years_data = [2011, 2511.63]
-    data.append(new_years_data)
+    data.extend([
+        [2009, 3739.99],
+        [2010, 3306.94],
+        [2011, 2511.63]
+    ])
+
     df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
     dict_data_H00300 = df.to_dict(orient='records')
 
@@ -1614,16 +1614,13 @@ def get_his_index():
             data.append(item)
             item = []
     # 添加akshare缺失年份的新数据
-    new_years_data = [2015, 3309.53]
-    data.append(new_years_data)
-    new_years_data = [2016, 3668.26]
-    data.append(new_years_data)
-    new_years_data = [2017, 5549.89]
-    data.append(new_years_data)
-    new_years_data = [2018, 3460.42]
-    data.append(new_years_data)
-    new_years_data = [2019, 4714.81]
-    data.append(new_years_data)
+    data.extend([
+        [2015, 3309.53],
+        [2016, 3668.26],
+        [2017, 5549.89],
+        [2018, 3460.42],
+        [2019, 4714.81]
+    ])
     df = pd.DataFrame(data, columns=['Year', 'ClosingPrice']).sort_values(by='Year')
     dict_data_HSTECH = df.to_dict(orient='records')
 
@@ -1713,6 +1710,188 @@ def get_his_index():
     return
 
 
+def get_his_index():
+    # 定义指数配置
+    index_configs = [
+        {
+            'name': '上证指数',
+            'symbol': 'sh000001',
+            'func': ak.stock_zh_index_daily,
+            'manual_data': []
+        },
+        {
+            'name': '深证成份指数',
+            'symbol': 'sz399001',
+            'func': ak.stock_zh_index_daily,
+            'manual_data': []
+        },
+        {
+            'name': '创业板指数',
+            'symbol': 'sz399006',
+            'func': ak.stock_zh_index_daily,
+            'manual_data': [[2009, 1000.00]]
+        },
+        {
+            'name': '沪深300指数',
+            'symbol': 'sh000300',
+            'func': ak.stock_zh_index_daily,
+            'manual_data': []
+        },
+        {
+            'name': '沪深300全收益指数',
+            'symbol': 'H00300',
+            'func': ak.stock_zh_index_hist_csindex,
+            'func_kwargs': {
+                'start_date': "20120101",
+                'end_date': datetime.datetime.now().strftime("%Y%m%d")  # 使用当前日期
+            },
+            'date_col': '日期',
+            'close_col': '收盘',
+            'manual_data': [
+                [2009, 3739.99],
+                [2010, 3306.94],
+                [2011, 2511.63]
+            ]
+        },
+        {
+            'name': '恒生指数',
+            'symbol': 'HSI',
+            'func': ak.stock_hk_index_daily_sina,
+            'manual_data': []
+        },
+        {
+            'name': '国企指数',
+            'symbol': 'HSCEI',
+            'func': ak.stock_hk_index_daily_sina,
+            'manual_data': []
+        },
+        {
+            'name': '恒生科技指数',
+            'symbol': 'HSTECH',
+            'func': ak.stock_hk_index_daily_sina,
+            'manual_data': [
+                [2015, 3309.53],
+                [2016, 3668.26],
+                [2017, 5549.89],
+                [2018, 3460.42],
+                [2019, 4714.81]
+            ]
+        },
+        {
+            'name': '标普500指数',
+            'symbol': '.INX',
+            'func': ak.index_us_stock_sina,
+            'manual_data': []
+        },
+        {
+            'name': '道琼斯指数',
+            'symbol': '.DJI',
+            'func': ak.index_us_stock_sina,
+            'manual_data': []
+        },
+        {
+            'name': '纳斯达克指数',
+            'symbol': '.IXIC',
+            'func': ak.index_us_stock_sina,
+            'manual_data': []
+        }
+    ]
+
+    baseline = {}
+
+    for config in index_configs:
+        try:
+            print(f"\nProcessing {config['name']} ({config['symbol']})...")
+
+            # 获取数据
+            func_kwargs = config.get('func_kwargs', {})
+            if not func_kwargs:
+                df = config['func'](symbol=config['symbol'])
+                print(f"Data shape: {df.shape}")
+            else:
+                df = config['func'](symbol=config['symbol'], **func_kwargs)
+                print(f"Data shape: {df.shape}")
+
+            # 检查数据是否为空
+            if df.empty:
+                print(f"Warning: No data for {config['name']}")
+                baseline[config['name']] = []
+                continue
+
+            # 排序数据
+            date_col = config.get('date_col', 'date')
+            close_col = config.get('close_col', 'close')
+
+            print(f"Date column: {date_col}, Close column: {close_col}")
+            print(f"Columns in DataFrame: {list(df.columns)}")
+
+            # 确保日期列是datetime类型
+            df[date_col] = pd.to_datetime(df[date_col])
+            df = df.sort_values(by=date_col, ascending=False)
+
+            # 提取年份和收盘价
+            data = []
+
+            # 添加最新数据
+            current_year = df.iloc[0][date_col].year
+            current_close = float(df.iloc[0][close_col])
+            data.append([current_year, current_close])
+            print(f"Latest data: {current_year}, {current_close}")
+
+            # 提取每年数据
+            for index, row in df.iterrows():
+                year = row[date_col].year
+                if year != current_year:
+                    current_year = year
+                    data.append([year, float(row[close_col])])
+
+            # 添加手动数据
+            data.extend(config['manual_data'])
+
+            # 转换为DataFrame并排序
+            df_result = pd.DataFrame(data, columns=['Year', 'ClosingPrice'])
+            df_result = df_result.drop_duplicates(subset='Year', keep='first')  # 确保每年只有一条记录
+            df_result = df_result.sort_values(by='Year')
+
+            dict_data = df_result.to_dict(orient='records')
+            baseline[config['name']] = dict_data
+
+            print(f"Successfully processed {config['name']} with {len(dict_data)} records")
+
+        except Exception as e:
+            print(f"Error processing {config['name']}: {str(e)}")
+            import traceback
+            traceback.print_exc()  # 打印完整的错误堆栈
+            baseline[config['name']] = []
+
+    # 添加时间戳
+    baseline['modified_time'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # 打印baseline内容以调试
+    print("\nBaseline content:")
+    for key, value in baseline.items():
+        if key != 'modified_time':
+            print(f"{key}: {len(value)} records")
+        else:
+            print(f"{key}: {value}")
+
+    # 写入JSON文件
+    try:
+        FileOperate(dictData=baseline, filepath='./templates/dashboard/', filename='baseline.json').operation_file()
+        print("JSON file written successfully")
+    except Exception as e:
+        print(f"Error writing JSON file: {str(e)}")
+        # 尝试直接使用json模块写入文件
+        try:
+            with open('./templates/dashboard/baseline.json', 'w', encoding='utf-8') as f:
+                json.dump(baseline, f, ensure_ascii=False, indent=4)
+            print("JSON file written using json module")
+        except Exception as e2:
+            print(f"Error writing JSON file with json module: {str(e2)}")
+
+    return
+
+
 # 从指数当年数据更新json文件
 def get_current_index(baseline_name_array):
     # 1. 读取JSON文件
@@ -1785,9 +1964,6 @@ def get_current_index(baseline_name_array):
 
 
 def get_baseline_closing_price(baseline_object, target_year):
-    # min_year_data = min(baseline_object, key=lambda x: x['Year'])
-    # min_year_closing_price = min_year_data['ClosingPrice']
-    # closing_price = min_year_closing_price
     closing_price = 0
     for r in baseline_object:
         if r['Year'] == target_year:
@@ -2299,6 +2475,84 @@ def calculate_overall_average(yearly_results):
 
 
 def calculate_dividend_data(currency_id):
+    # 如果currency_id不为0，按原逻辑处理单个货币
+    if currency_id != 0:
+        return calculate_single_currency_dividend_data(currency_id)
+
+    # 如果currency_id为0，汇总所有货币的数据
+    else:
+        # 获取所有货币
+        currencies = Currency.objects.all()
+        currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in currencies}
+
+        # 获取汇率
+        rate_dict = get_rate()  # 假设返回格式为 {'USD': 6.5, 'EUR': 7.2, 'GBP': 8.5}
+
+        # 获取所有货币的年份范围
+        all_years = set()
+        currency_data = {}
+
+        # 先收集所有货币的数据和年份
+        for currency_id in currency_dict:
+            # 获取单个货币的数据
+            data = calculate_dividend_data(currency_id)
+            currency_data[currency_id] = data
+
+            # 收集所有年份
+            for year in data['year']:
+                all_years.add(year)
+
+        # 如果没有有效数据，返回空结果
+        if not all_years:
+            return {'year': [], 'dividend_yearly_total': [], 'market_value_yearly_avg': [], 'dividend_rate_yearly': []}
+
+        # 排序年份
+        sorted_years = sorted(all_years)
+
+        # 初始化汇总数据
+        dividend_yearly_total = [0.0] * len(sorted_years)
+        market_value_yearly_avg = [0.0] * len(sorted_years)
+        dividend_rate_yearly = [0.0] * len(sorted_years)
+
+        total_dividends = 0.0
+        overall_avg_market_value = 0.0
+
+        # 对每个货币的数据进行汇总（考虑汇率转换）
+        for currency_id, data in currency_data.items():
+            currency_code = currency_dict[currency_id]['code']
+            exchange_rate = rate_dict.get(currency_code, 1.0)  # 如果没有找到汇率，默认使用1.0
+
+            # 累加总分红和总市值
+            total_dividends += data['total_dividends'] * exchange_rate
+            overall_avg_market_value += data['overall_avg_market_value'] * exchange_rate
+
+            # 按年份累加数据
+            for i, year in enumerate(data['year']):
+                year_index = sorted_years.index(year)
+                dividend_yearly_total[year_index] += data['dividend_yearly_total'][i] * exchange_rate
+                market_value_yearly_avg[year_index] += data['market_value_yearly_avg'][i] * exchange_rate
+
+        # 计算每年的分红率
+        for i in range(len(sorted_years)):
+            if market_value_yearly_avg[i] > 0:
+                dividend_rate_yearly[i] = dividend_yearly_total[i] / market_value_yearly_avg[i]
+
+        # 计算平均分红率（只考虑有市值的年份）
+        valid_rates = [rate for rate in dividend_rate_yearly if rate > 0]
+        avg_dividend_rate = sum(valid_rates) / len(valid_rates) if valid_rates else 0
+
+        return {
+            'year': sorted_years,
+            'dividend_yearly_total': dividend_yearly_total,
+            'market_value_yearly_avg': market_value_yearly_avg,
+            'dividend_rate_yearly': dividend_rate_yearly,
+            'total_dividends': total_dividends,
+            'overall_avg_market_value': overall_avg_market_value,
+            'avg_dividend_rate': avg_dividend_rate
+        }
+
+
+def calculate_single_currency_dividend_data(currency_id):
     # 步骤1：获取所有有效日期范围
     date_range = HistoricalMarketValue.objects.filter(currency_id=currency_id, value__gt=0).aggregate(
         min_date=Min('date'),
@@ -2313,7 +2567,6 @@ def calculate_dividend_data(currency_id):
     total_days = (max_date - min_date).days + 1
 
     # 步骤2：计算整体加权平均市值
-    # 使用ORM直接计算所有记录的市值平均值
     overall_avg_value = HistoricalMarketValue.objects.filter(
         currency_id=currency_id,
         value__gt=0
@@ -2332,7 +2585,6 @@ def calculate_dividend_data(currency_id):
         year_data = HistoricalMarketValue.objects.filter(
             currency_id=currency_id,
             date__year=year,
-            # value__gt=0 # 是否剔除max_date、min_date之间的市值为0的年份
         )
         if not year_data.exists():
             continue
@@ -2356,13 +2608,9 @@ def calculate_dividend_data(currency_id):
         else:
             dividend_rate_yearly.append(0)
 
-    # print(years,valid_years)
-    n = len(
-        [x for x in market_value_yearly_avg if x != 0])  # 用于计算avg_dividend_rate的年份数为market_value_yearly_avg列表中的非0元素的个数
-    # n = len(valid_years)
+    n = len([x for x in market_value_yearly_avg if x != 0])
     avg_dividend_rate = 0
     if n > 0:
-        # 方法1：算术平均
         avg_dividend_rate = sum(dividend_rate_yearly) / n
 
     return {
@@ -2370,7 +2618,6 @@ def calculate_dividend_data(currency_id):
         'dividend_yearly_total': dividend_yearly_total,
         'market_value_yearly_avg': market_value_yearly_avg,
         'dividend_rate_yearly': dividend_rate_yearly,
-        # 新增两个关键整体指标
         'total_dividends': float(sum(dividend_yearly_total)) if dividend_yearly_total else 0,
         'overall_avg_market_value': float(overall_avg_value),
         'avg_dividend_rate': float(avg_dividend_rate)

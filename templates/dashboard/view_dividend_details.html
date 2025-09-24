@@ -549,16 +549,50 @@
                     color: '#333'
                 },
                 formatter: function(params) {
-                    return `<div style="font-weight:bold;margin-bottom:8px;">${params[0].name}年</div>
-                            <div style="display:flex;align-items:center;">
-                                <span style="display:inline-block;width:12px;height:12px;background:${params[0].color};margin-right:8px;"></span>
-                                ${params[0].seriesName}：<span style="font-weight:bold;color:${params[0].color}">￥${(params[0].value).toLocaleString()}元</span>
-                            </div>
-                            <div style="display:flex;align-items:center;">
-                                <span style="display:inline-block;width:12px;height:12px;background:${params[1].color};margin-right:8px;"></span>
-                                ${params[1].seriesName}：<span style="font-weight:bold;color:${params[1].color}">￥${(params[1].value).toFixed(2).toLocaleString()}%</span>
-                            </div>
+                    // 按系列类型分组
+                    const barSeries = params.filter(p => p.seriesType === 'bar');
+                    const lineSeries = params.filter(p => p.seriesType === 'line');
+
+                    const year = params[0].name;
+                    let html = `<div style="font-weight:bold;margin-bottom:8px;">${year}年</div>`;
+
+                    // 显示柱状图数据（收益率）
+                    if (barSeries.length > 0) {
+                        barSeries.forEach(param => {
+                            const color = param.color;
+                            const value = param.value.toLocaleString('zh-CN', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                            const seriesName = param.seriesName;
+                            html += `
+                                <div style="display:flex;align-items:center;">
+                                    <span class="icon-rect" style="background:${color};"></span>
+                                    ${seriesName}：<span style="font-weight:bold;color:${color}">${value}元</span>
+                                </div>
                             `;
+                        });
+                    }
+
+                    // 显示折线图数据（净值）
+                    if (lineSeries.length > 0) {
+                        lineSeries.forEach(param => {
+                            const color = param.color;
+                            const value = param.value.toLocaleString('zh-CN', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                            const seriesName = param.seriesName;
+                            html += `
+                                <div style="display:flex;align-items:center;">
+                                    <span class="icon-circle" style="border: 2px solid ${color};"></span>
+                                    ${seriesName}：<span style="font-weight:bold;color:${color}">${value}%</span>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    return html;
                 }
             },
             xAxis: [
