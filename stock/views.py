@@ -63,7 +63,7 @@ def _generate_overview_data1(rate):
 
     # 计算基金价值总和
     funds_value_sum = 0
-    funds_list = Funds.objects.all()
+    funds_list = Fund.objects.all()
     # 获得资产占比数据，用于生成chart图表
     funds_value_array = []
     for rs in funds_list:
@@ -96,9 +96,9 @@ def _generate_overview_data1(rate):
 
     # 获取所有funds同时存在记录的最大有效日期
     # 获取所有不同的基金数量
-    total_funds = FundsDetails.objects.values('funds').distinct().count()
+    total_funds = FundHistory.objects.values('funds').distinct().count()
     # 查找所有日期及其对应的基金数量，并筛选出基金数等于总基金数的日期
-    valid_dates = FundsDetails.objects.values('date').annotate(
+    valid_dates = FundHistory.objects.values('date').annotate(
         funds_count=Count('funds', distinct=True)
     ).filter(funds_count=total_funds).order_by('-date')
     if valid_dates.exists():
@@ -108,8 +108,8 @@ def _generate_overview_data1(rate):
         max_date_funds = None
 
     for key, value in currency_dict.items():
-        funds_id = Funds.objects.get(currency_id=key).id
-        funds_value_dict[key] = FundsDetails.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
+        funds_id = Fund.objects.get(currency_id=key).id
+        funds_value_dict[key] = FundHistory.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
         market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_funds).value
         position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
     # 人民币基金的持仓比例通过511880的市值占比计算
@@ -375,7 +375,7 @@ def _get_currency_dict():
 
 def _calculate_funds_data(rate, currency_dict):
     """计算基金相关数据"""
-    funds_list = Funds.objects.all()
+    funds_list = Fund.objects.all()
     funds_value_array = []
     funds_value_sum = 0
 
@@ -431,8 +431,8 @@ def _calculate_cny_position_data(price_array, rate):
 def _calculate_position_data(currency_dict, amount_sum_CNY):
     """计算仓位数据"""
     # 获取所有funds同时存在记录的最大有效日期
-    total_funds = FundsDetails.objects.values('funds').distinct().count()
-    valid_dates = FundsDetails.objects.values('date').annotate(
+    total_funds = FundHistory.objects.values('funds').distinct().count()
+    valid_dates = FundHistory.objects.values('date').annotate(
         funds_count=Count('funds', distinct=True)
     ).filter(funds_count=total_funds).order_by('-date')
 
@@ -443,8 +443,8 @@ def _calculate_position_data(currency_dict, amount_sum_CNY):
     market_value_dict = {}
 
     for key, value in currency_dict.items():
-        funds_id = Funds.objects.get(currency_id=key).id
-        funds_value_dict[key] = FundsDetails.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
+        funds_id = Fund.objects.get(currency_id=key).id
+        funds_value_dict[key] = FundHistory.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
         market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_funds).value
         position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
 
@@ -728,12 +728,12 @@ def _build_overview_data(funds_data, position_data, dividend_data, subscription_
 
 # 资产概览
 def view_funds(request):
-    funds_list = Funds.objects.all()
+    funds_list = Fund.objects.all()
     rate = get_rate()
     currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in Currency.objects.all()}
     asset_distribution = {}
     for key in currency_dict:
-        asset_distribution[key] = float(Funds.objects.get(currency_id=key).funds_value) * rate[
+        asset_distribution[key] = float(Fund.objects.get(currency_id=key).funds_value) * rate[
             currency_dict[key]['code']]
 
     updating_time = datetime.datetime.now()
@@ -757,9 +757,9 @@ def view_funds_details(request, funds_id):
     baseline_annualized_profit_rate_list = []
     year_end_date_list = []
 
-    funds_details_list = FundsDetails.objects.filter(funds=funds_id).order_by("date")
-    funds_name = Funds.objects.get(id=funds_id).funds_name
-    baseline_name = Funds.objects.get(id=funds_id).baseline.name
+    funds_details_list = FundHistory.objects.filter(funds=funds_id).order_by("date")
+    funds_name = Fund.objects.get(id=funds_id).funds_name
+    baseline_name = Fund.objects.get(id=funds_id).baseline.name
     name_list = [funds_name, baseline_name]
 
     max_date = get_max_date(funds_id)
@@ -769,7 +769,7 @@ def view_funds_details(request, funds_id):
     current_funds_details_object = funds_details_list.get(date=max_date)  # 生成概要数据
     profit_rate = current_funds_details_object.funds_profit / current_funds_details_object.funds_principal
     last_period_value = current_funds_details_object.funds_value - current_funds_details_object.funds_current_profit
-    last_year_max_date = FundsDetails.objects.filter(
+    last_year_max_date = FundHistory.objects.filter(
         date__year=datetime.date.today().year - 1,
         funds=funds_id
     ).aggregate(
@@ -822,7 +822,7 @@ def view_funds_details(request, funds_id):
 
         # 如果需要更新，则执行更新操作
         if need_update:
-            baseline_name_array = [rs.baseline.name for rs in Funds.objects.all()]
+            baseline_name_array = [rs.baseline.name for rs in Fund.objects.all()]
             get_current_index(baseline_name_array)
 
     # 读取baseline.json文件
@@ -855,7 +855,7 @@ def view_funds_details(request, funds_id):
         baseline_profit_rate = (baseline_net_value / pre_baseline_net_value - 1) * 100
         pre_baseline_net_value = baseline_net_value
 
-        earliest_date = Funds.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
+        earliest_date = Fund.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
         years_value = float((year_end_date - earliest_date).days / 365)
         funds_annualized_profit_rate = 0 if years_value == 0 else (float(funds_net_value) ** (1 / years_value) - 1) *100
         baseline_annualized_profit_rate = 0 if years_value == 0 else (float(baseline_net_value) **  (1 / years_value) - 1) *100
@@ -941,8 +941,8 @@ def view_funds_details(request, funds_id):
         })
 
     # 近期资产、收益、年度收益列表
-    funds_details_list_TOP = FundsDetails.objects.filter(funds=funds_id).order_by("-date")[:12]
-    yearly_profit_list = FundsDetails.objects.filter(funds=funds_id).values('date__year').annotate(
+    funds_details_list_TOP = FundHistory.objects.filter(funds=funds_id).order_by("-date")[:12]
+    yearly_profit_list = FundHistory.objects.filter(funds=funds_id).values('date__year').annotate(
         yearly_profit=Sum('funds_current_profit')
     ).order_by('-date__year')
     profit_total = sum(entry['yearly_profit'] for entry in yearly_profit_list)
@@ -957,8 +957,8 @@ def view_funds_details(request, funds_id):
         })
 
     # 近期、年度出入金列表
-    recent_in_out_list = FundsDetails.objects.filter(funds=funds_id).exclude(funds_in_out=0).order_by('-date')[:12]
-    yearly_in_out_list = FundsDetails.objects.filter(funds=funds_id).values('date__year').annotate(
+    recent_in_out_list = FundHistory.objects.filter(funds=funds_id).exclude(funds_in_out=0).order_by('-date')[:12]
+    yearly_in_out_list = FundHistory.objects.filter(funds=funds_id).values('date__year').annotate(
         yearly_in_out=Sum('funds_in_out')
     ).order_by('-date__year')
     in_out_total = sum(entry['yearly_in_out'] for entry in yearly_in_out_list)
@@ -1021,9 +1021,9 @@ def view_market_value(request):
 
     # 获取所有funds同时存在记录的最大有效日期
     # 获取所有不同的基金数量
-    total_funds = FundsDetails.objects.values('funds').distinct().count()
+    total_funds = FundHistory.objects.values('funds').distinct().count()
     # 查找所有日期及其对应的基金数量，并筛选出基金数等于总基金数的日期
-    valid_dates = FundsDetails.objects.values('date').annotate(
+    valid_dates = FundHistory.objects.values('date').annotate(
         funds_count=Count('funds', distinct=True)
     ).filter(funds_count=total_funds).order_by('-date')
     if valid_dates.exists():
@@ -1032,8 +1032,8 @@ def view_market_value(request):
         max_date_funds = None
 
     for key in currency_dict:
-        funds_id = Funds.objects.get(currency_id=key).id
-        funds_value_dict[key] = FundsDetails.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
+        funds_id = Fund.objects.get(currency_id=key).id
+        funds_value_dict[key] = FundHistory.objects.get(funds_id=funds_id, date=max_date_funds).funds_value
         market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_funds).value
         position_percent_dict[key] = market_value_dict[key] / funds_value_dict[key]
 
@@ -2973,7 +2973,7 @@ def add_funds(request):
             error_info = "基金名称不能为空！"
             return render(request, templates_path + 'backstage/add_funds.html', locals())
         try:
-            p = Funds.objects.create(
+            p = Fund.objects.create(
                 funds_name=funds_name,
                 # funds_currency=funds_currency,
                 currency_id=currency_value,
@@ -2995,7 +2995,7 @@ def add_funds(request):
 
 
 def del_funds(request, funds_id):
-    funds_object = Funds.objects.get(id=funds_id)
+    funds_object = Fund.objects.get(id=funds_id)
     funds_object.delete()
     return redirect('/benben/list_funds/')
 
@@ -3021,7 +3021,7 @@ def edit_funds(request, funds_id):
         funds_net_value = request.POST.get('funds_net_value')
         baseline_value = request.POST.get('baseline')
         funds_script = request.POST.get('funds_script')
-        funds_object = Funds.objects.get(id=id)
+        funds_object = Fund.objects.get(id=id)
         try:
             funds_object.funds_name = funds_name
             # funds_object.funds_currency = funds_currency
@@ -3041,18 +3041,18 @@ def edit_funds(request, funds_id):
             pass
         return redirect('/benben/list_funds/')
     else:
-        funds_object = Funds.objects.get(id=funds_id)
+        funds_object = Fund.objects.get(id=funds_id)
         return render(request, templates_path + 'backstage/edit_funds.html', locals())
 
 
 def list_funds(request):
-    funds_list = Funds.objects.all().order_by('id')
+    funds_list = Fund.objects.all().order_by('id')
     return render(request, templates_path + 'backstage/list_funds.html', locals())
 
 
 # 基金明细表增删改查
 def add_funds_details(request, funds_id):
-    funds_list = Funds.objects.all()
+    funds_list = Fund.objects.all()
     if request.method == 'POST':
         funds_id = request.POST.get('funds_id')
         date = datetime.datetime.strptime(request.POST.get('date'), "%Y-%m-%d").date()
@@ -3072,18 +3072,18 @@ def add_funds_details(request, funds_id):
             funds_value = float(funds_value)
             funds_in_out = float(funds_in_out)
             latest_date = get_max_date(funds_id)
-            earliest_date = Funds.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
+            earliest_date = Fund.objects.get(id=funds_id).funds_create_date  # 计算年化收益率的起始日期为基金的创立日期
             # earliest_date = get_min_date(funds_id)
             years = float((latest_date - earliest_date).days / 365)
             # print(latest_date,earliest_date,years)
-            latest_funds_value = float(FundsDetails.objects.get(funds_id=funds_id, date=latest_date).funds_value)
+            latest_funds_value = float(FundHistory.objects.get(funds_id=funds_id, date=latest_date).funds_value)
             latest_funds_principal = float(
-                FundsDetails.objects.get(funds_id=funds_id, date=latest_date).funds_principal)
-            latest_funds_PHR = float(FundsDetails.objects.get(funds_id=funds_id, date=latest_date).funds_PHR)
+                FundHistory.objects.get(funds_id=funds_id, date=latest_date).funds_principal)
+            latest_funds_PHR = float(FundHistory.objects.get(funds_id=funds_id, date=latest_date).funds_PHR)
             latest_funds_net_value = float(
-                FundsDetails.objects.get(funds_id=funds_id, date=latest_date).funds_net_value)
+                FundHistory.objects.get(funds_id=funds_id, date=latest_date).funds_net_value)
             latest_funds_profit_rate = float(
-                FundsDetails.objects.get(funds_id=funds_id, date=latest_date).funds_profit_rate)
+                FundHistory.objects.get(funds_id=funds_id, date=latest_date).funds_profit_rate)
             # print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR)
 
             funds_principal = latest_funds_principal + funds_in_out
@@ -3109,7 +3109,7 @@ def add_funds_details(request, funds_id):
             # funds_annualized_profit_rate = (funds_net_value ** (1 / float(((latest_date - earliest_date).days) / 365)) - 1) * 100
             # print(latest_date,earliest_date,years,latest_funds_principal,latest_funds_PHR,funds_principal,funds_net_value,funds_PHR,funds_profit,funds_profit_rate,funds_annualized_profit_rate)
             # 插入一条基金明细记录
-            p = FundsDetails.objects.create(
+            p = FundHistory.objects.create(
                 funds_id=funds_id,
                 date=date,
                 funds_value=funds_value,
@@ -3125,7 +3125,7 @@ def add_funds_details(request, funds_id):
             )
 
             # 更新一条基金记录
-            funds_object = Funds.objects.get(id=funds_id)
+            funds_object = Fund.objects.get(id=funds_id)
             funds_object.funds_value = funds_value
             funds_object.funds_principal = funds_principal
             funds_object.funds_PHR = funds_PHR
@@ -3143,20 +3143,20 @@ def add_funds_details(request, funds_id):
             pass
     else:
         if funds_id != 0:
-            funds_object = Funds.objects.get(id=funds_id)
+            funds_object = Fund.objects.get(id=funds_id)
         else:
-            funds_object = Funds.objects.all()
+            funds_object = Fund.objects.all()
     return render(request, templates_path + 'backstage/add_funds_details.html', locals())
 
 
 def del_funds_details(request, funds_details_id):
-    funds_details_object = FundsDetails.objects.get(id=funds_details_id)
+    funds_details_object = FundHistory.objects.get(id=funds_details_id)
     funds_details_object.delete()
     return redirect('/benben/list_funds_details/')
 
 
 def edit_funds_details(request, funds_details_id):
-    funds_list = Funds.objects.all()
+    funds_list = Fund.objects.all()
     if request.method == 'POST':
         id = request.POST.get('id')
         date = request.POST.get('date')
@@ -3168,7 +3168,7 @@ def edit_funds_details(request, funds_details_id):
         funds_profit = request.POST.get('funds_profit')
         funds_profit_rate = request.POST.get('funds_profit_rate')
         funds_annualized_profit_rate = request.POST.get('funds_annualized_profit_rate')
-        funds_details_object = FundsDetails.objects.get(id=id)
+        funds_details_object = FundHistory.objects.get(id=id)
         try:
             funds_details_object.date = date
             funds_details_object.funds_value = funds_value
@@ -3187,12 +3187,12 @@ def edit_funds_details(request, funds_details_id):
             pass
         return redirect('/benben/list_funds_details/')
     else:
-        funds_details_object = FundsDetails.objects.get(id=funds_details_id)
+        funds_details_object = FundHistory.objects.get(id=funds_details_id)
         return render(request, templates_path + 'backstage/edit_funds_details.html', locals())
 
 
 def list_funds_details(request):
-    funds_details_list = FundsDetails.objects.all()
+    funds_details_list = FundHistory.objects.all()
     return render(request, templates_path + 'backstage/list_funds_details.html', locals())
 
 
@@ -3340,7 +3340,7 @@ def capture_dividend_history(request):
 
 # 从excel表读取数据导入数据库
 def batch_import(request):
-    funds_list = Funds.objects.all()
+    funds_list = Fund.objects.all()
     if request.method == 'POST':
         form_name = request.POST.get('form_name')
         if form_name == '交易':
@@ -3360,7 +3360,7 @@ def batch_import(request):
             # excel2dividend('D:/gp/GP_操作.xlsm', '分红', -1, -1)
         elif form_name == '基金明细':
             funds_id = request.POST.get('funds_id')
-            funds_name = Funds.objects.get(id=funds_id).funds_name
+            funds_name = Fund.objects.get(id=funds_id).funds_name
             file_name = 'c:/gp/GP（' + funds_name + '）.xls'
             excel2funds(file_name, funds_name, -1, -1)
             print(form_name, funds_id, funds_name)
@@ -4787,7 +4787,7 @@ def migrate_funds_currencies():
     }
 
     # 获取所有未迁移的市场记录
-    funds_to_migrate = funds.objects.filter(currency__isnull=True)
+    funds_to_migrate = Fund.objects.filter(currency__isnull=True)
     total_count = funds_to_migrate.count()
     migrated_count = 0
 
@@ -4821,7 +4821,7 @@ def migrate_funds_currencies():
             continue
 
     # 统计结果
-    remaining = funds.objects.filter(currency__isnull=True).count()
+    remaining = Fund.objects.filter(currency__isnull=True).count()
 
     print(f"\n迁移完成!")
     print(f"成功迁移记录: {migrated_count}")
@@ -4883,7 +4883,7 @@ def migrate_dividend_currencies():
             continue
 
     # 统计结果
-    remaining = funds.objects.filter(currency__isnull=True).count()
+    remaining = Fund.objects.filter(currency__isnull=True).count()
 
     print(f"\n迁移完成!")
     print(f"成功迁移记录: {migrated_count}")
@@ -4945,7 +4945,7 @@ def migrate_trade_currencies():
             continue
 
     # 统计结果
-    remaining = funds.objects.filter(currency__isnull=True).count()
+    remaining = Fund.objects.filter(currency__isnull=True).count()
 
     print(f"\n迁移完成!")
     print(f"成功迁移记录: {migrated_count}")

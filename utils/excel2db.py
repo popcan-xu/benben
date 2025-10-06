@@ -8,7 +8,7 @@ import django
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import Broker, Market, Account, Stock, Trade, Dividend, Subscription, Funds, FundsDetails
+from stock.models import Broker, Market, Account, Stock, Trade, Dividend, Subscription, Fund, FundHistory
 import re
 from django.contrib import messages
 
@@ -194,7 +194,7 @@ def excel2subscription(file_name, sheet_name, start_row, end_row):
 def excel2funds(file_name, sheet_name, start_row, end_row):
     workbook = xlrd.open_workbook(file_name)
     sht = workbook.sheet_by_name(sheet_name)
-    funds_id = Funds.objects.get(funds_name=sheet_name).id
+    funds_id = Fund.objects.get(funds_name=sheet_name).id
     # 获取总行数
     nrows = sht.nrows  # 包括标题
     # 获取总列数
@@ -245,7 +245,7 @@ def excel2funds(file_name, sheet_name, start_row, end_row):
             try:
                 # 更新或新增一条记录
                 print(funds_id,date)
-                rs = FundsDetails.objects.filter(funds_id=funds_id, date=date)
+                rs = FundHistory.objects.filter(funds_id=funds_id, date=date)
                 print(rs)
                 if rs.exists():
                     # 删除一条记录
@@ -271,7 +271,7 @@ def excel2funds(file_name, sheet_name, start_row, end_row):
                     print('更新记录成功！', funds_id, date, funds_value, funds_in_out, funds_principal, funds_PHR, funds_net_value, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
                     '''
                 # 新增一条记录
-                p = FundsDetails.objects.create(
+                p = FundHistory.objects.create(
                     funds_id=funds_id,
                     date=date,
                     funds_value=funds_value,

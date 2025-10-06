@@ -140,7 +140,7 @@ class DividendHistory(models.Model):
 
 
 # 基金数据模型
-class Funds(models.Model):
+class Fund(models.Model):
     funds_name = models.CharField(max_length=32, verbose_name='基金名称', unique=True, db_index=True)
     funds_script = models.CharField(max_length=128, verbose_name='备注', null=True)
     currency = models.ForeignKey(to="stock.Currency", on_delete=models.CASCADE, verbose_name='货币', db_index=True, null=True,
@@ -157,8 +157,8 @@ class Funds(models.Model):
 
 
 # 基金详情数据模型
-class FundsDetails(models.Model):
-    funds = models.ForeignKey(to="stock.Funds", on_delete=models.CASCADE, verbose_name='基金')
+class FundHistory(models.Model):
+    funds = models.ForeignKey(to="stock.Fund", on_delete=models.CASCADE, verbose_name='基金')
     date = models.DateField(verbose_name='记账日期', null=True, blank=True)
     funds_value = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='基金价值')
     funds_in_out = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='出入金')

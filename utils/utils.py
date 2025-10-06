@@ -28,7 +28,7 @@ from collections import defaultdict
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import Stock, Trade, Position, Dividend, FundsDetails, Currency, HistoricalMarketValue, HistoricalRate
+from stock.models import Stock, Trade, Position, Dividend, FundHistory, Currency, HistoricalMarketValue, HistoricalRate
 
 
 # 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
@@ -1974,21 +1974,21 @@ def get_baseline_closing_price(baseline_object, target_year):
 
 # 从基金明细表获取当前基金的最大记账日期
 def get_max_date(funds_id):
-    max_date = FundsDetails.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
+    max_date = FundHistory.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
     return max_date
 
 
 # 从基金明细表获取当前基金的最小记账日期
 def get_min_date(funds_id):
-    min_date = FundsDetails.objects.filter(funds_id=funds_id).aggregate(min_date=Min('date'))['min_date']
+    min_date = FundHistory.objects.filter(funds_id=funds_id).aggregate(min_date=Min('date'))['min_date']
     return min_date
 
 
 # 从基金明细表获取当前基金的第二大记账日期
 def get_second_max_date(funds_id):
-    max_date = FundsDetails.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
+    max_date = FundHistory.objects.filter(funds_id=funds_id).aggregate(max_date=Max('date'))['max_date']
     second_max_date = \
-        FundsDetails.objects.filter(funds_id=funds_id).exclude(date=max_date).order_by('-date').values_list('date',
+        FundHistory.objects.filter(funds_id=funds_id).exclude(date=max_date).order_by('-date').values_list('date',
                                                                                                             flat=True)[
             0]
     # second_max_date = funds_details.objects.filter(funds_id=funds_id).order_by('-date').values_list('date', flat=True)[1]
@@ -1999,7 +1999,7 @@ def get_second_max_date(funds_id):
 # 从基金明细表获取指定年份的年末日期
 def get_year_end_date(funds_id, year):
     year_end_date = None
-    year_end_date = FundsDetails.objects.filter(funds_id=funds_id, date__year=year).aggregate(max_date=Max('date'))[
+    year_end_date = FundHistory.objects.filter(funds_id=funds_id, date__year=year).aggregate(max_date=Max('date'))[
         'max_date']
     return year_end_date
 
