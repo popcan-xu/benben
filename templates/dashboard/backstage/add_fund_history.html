@@ -19,25 +19,25 @@
                     <form action="" method="post" class="form-horizontal" role="form" onsubmit="return sumbit_sure()">
                         {% csrf_token %}
                         <div class="row form-group">
-                            <label for="funds_id" class="col-md-4 control-label text-right">基金：</label>
+                            <label for="fund_id" class="col-md-4 control-label text-right">基金：</label>
                             <div class="col-md-8">
-                                {% if funds_id == 0 %} {# 参数0代表从list_funds_details.html点击增加按钮 #}
-                                    <select class="form-control" name="funds_id" id="funds_id">
-                                    {% for funds in funds_list %}
-                                        {% if funds.id == funds_object.id %}
-                                            <option value="{{ funds.id }}" selected>{{ funds.funds_name }}</option>
+                                {% if fund_id == 0 %} {# 参数0代表从list_fund_history.html点击增加按钮 #}
+                                    <select class="form-control" name="fund_id" id="fund_id">
+                                    {% for fund in fund_list %}
+                                        {% if fund.id == fund_object.id %}
+                                            <option value="{{ fund.id }}" selected>{{ fund.fund_name }}</option>
                                         {% else %}
-                                            <option value="{{ funds.id }}">{{ funds.funds_name }}</option>
+                                            <option value="{{ fund.id }}">{{ fund.fund_name }}</option>
                                         {% endif %}
                                     {% endfor %}
                                     </select>
-                                {% else %} {# 其他参数代表从view_funds_details.html点击记一笔链接 #}
-                                    <select class="form-control" name="funds_id" id="funds_id">
-                                    {% for funds in funds_list %}
-                                        {% if funds.id == funds_object.id %}
-                                            <option value="{{ funds.id }}" selected>{{ funds.funds_name }}</option>
+                                {% else %} {# 其他参数代表从view_fund_details.html点击记一笔链接 #}
+                                    <select class="form-control" name="fund_id" id="fund_id">
+                                    {% for fund in fund_list %}
+                                        {% if fund.id == fund_object.id %}
+                                            <option value="{{ fund.id }}" selected>{{ fund.fund_name }}</option>
                                         {% else %}
-                                            <option value="{{ funds.id }}">{{ funds.funds_name }}</option>
+                                            <option value="{{ fund.id }}">{{ fund.fund_name }}</option>
                                         {% endif %}
                                     {% endfor %}
                                     </select>
@@ -51,52 +51,52 @@
                             </div>
                         </div>
                         <div class="row form-group">
-                            <label for="funds_value" class="col-md-4 control-label text-right">价值：</label>
+                            <label for="fund_value" class="col-md-4 control-label text-right">价值：</label>
                             <div class="col-md-8">
-                                <input type="number" class="form-control"  name="funds_value" id="funds_value" placeholder="请录入基金价值">
+                                <input type="number" class="form-control"  name="fund_value" id="fund_value" placeholder="请录入基金价值">
                             </div>
                         </div>
                         <div class="row form-group">
-                            <label for="funds_in_out" class="col-md-4 control-label text-right">出入金：</label>
+                            <label for="fund_in_out" class="col-md-4 control-label text-right">出入金：</label>
                             <div class="col-md-8">
-                                <input type="number" step="0.01" class="form-control"  name="funds_in_out" id="funds_in_out" placeholder="请录入出入金" value="0">
+                                <input type="number" step="0.01" class="form-control"  name="fund_in_out" id="fund_in_out" placeholder="请录入出入金" value="0">
                             </div>
                         </div>
                         <!--
                         <div class="row form-group">
-                            <label for="funds_principal" class="col-md-4 control-label text-right">本金：</label>
+                            <label for="fund_principal" class="col-md-4 control-label text-right">本金：</label>
                             <div class="col-md-8">
-                                <input type="number" class="form-control"  name="funds_principal" id="funds_principal" placeholder="请录入基金本金">
+                                <input type="number" class="form-control"  name="fund_principal" id="fund_principal" placeholder="请录入基金本金">
                             </div>
                         </div>
                         <div class="row form-group">
-                            <label for="funds_PHR" class="col-md-4 control-label text-right">份数：</label>
+                            <label for="fund_PHR" class="col-md-4 control-label text-right">份数：</label>
                             <div class="col-md-8">
-                                <input type="number" class="form-control"  name="funds_PHR" id="funds_PHR" placeholder="请录入份数">
+                                <input type="number" class="form-control"  name="fund_PHR" id="fund_PHR" placeholder="请录入份数">
                             </div>
                         </div>
                         <div class="row form-group">
-                            <label for="funds_net_value" class="col-md-4 control-label text-right">净值：</label>
+                            <label for="fund_net_value" class="col-md-4 control-label text-right">净值：</label>
                             <div class="col-md-8">
-                                <input type="number" step="0.0001" class="form-control"  name="funds_net_value" id="funds_net_value" placeholder="请录入基金净值">
+                                <input type="number" step="0.0001" class="form-control"  name="fund_net_value" id="fund_net_value" placeholder="请录入基金净值">
                             </div>
                         </div>
                         <div class="row form-group">
-                            <label for="funds_profit" class="col-md-4 control-label text-right">收益：</label>
+                            <label for="fund_profit" class="col-md-4 control-label text-right">收益：</label>
                             <div class="col-md-8">
-                                <input type="number" step="0.01" class="form-control" name="funds_profit" id="funds_profit" placeholder="请录入基金收益">
+                                <input type="number" step="0.01" class="form-control" name="fund_profit" id="fund_profit" placeholder="请录入基金收益">
                             </div>
                         </div>
                         <div class="row form-group">
-                            <label for="funds_profit_rate" class="col-md-4 control-label text-right">收益率：</label>
+                            <label for="fund_profit_rate" class="col-md-4 control-label text-right">收益率：</label>
                             <div class="col-md-8">
-                                <input type="number" step="0.01" class="form-control" name="funds_profit_rate" id="funds_profit_rate" placeholder="请录入基金收益率">
+                                <input type="number" step="0.01" class="form-control" name="fund_profit_rate" id="fund_profit_rate" placeholder="请录入基金收益率">
                             </div>
                         </div>
                         <div class="row form-group">
-                            <label for="funds_annualized_profit_rate" class="col-md-4 control-label text-right">年化收益率：</label>
+                            <label for="fund_annualized_profit_rate" class="col-md-4 control-label text-right">年化收益率：</label>
                             <div class="col-md-8">
-                                <input type="number" step="0.01" class="form-control" name="funds_annualized_profit_rate" id="funds_annualized_profit_rate" placeholder="请录入基金年化收益率">
+                                <input type="number" step="0.01" class="form-control" name="fund_annualized_profit_rate" id="fund_annualized_profit_rate" placeholder="请录入基金年化收益率">
                             </div>
                         </div>
                         -->

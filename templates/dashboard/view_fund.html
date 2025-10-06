@@ -30,19 +30,19 @@
 
         <!-- Content Card Row -->
         <div class="row">
-            {% for funds in funds_list %}
+            {% for fund in fund_list %}
                 <div class="col-xl-4 col-md-6 mb-4">
                     <div class="card shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                        <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">{{ funds.currency.name|safe }}资产</a>
+                                        <a href="/benben/view_fund_details/{{ fund.id|safe }}" style="color: inherit; text-decoration: none;">{{ fund.currency.name|safe }}资产</a>
                                     </div>
                                 </div>
                                 <div class="col-auto">
                                     <div class="metric-label">
-                                        <a href="/benben/view_funds_details/{{ funds.id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>
+                                        <a href="/benben/view_fund_details/{{ fund.id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>
                                     </div>
                                 </div>
                             </div>
@@ -52,14 +52,14 @@
                                 <div class="col mr-2">
                                     <div class="metric-label">总资产</div>
                                     <div class="metric-value">
-                                        <span>{{ funds.funds_value|floatformat:0 }}</span>
+                                        <span>{{ fund.fund_value|floatformat:0 }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
                                 <div class="col mr-2">
                                     <div class="metric-label">净值</div>
                                     <div class="metric-value">
-                                        <span>{{ funds.funds_net_value|floatformat:4 }}</span>
+                                        <span>{{ fund.fund_net_value|floatformat:4 }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
@@ -115,19 +115,19 @@
                                         </thead>
                                         <tbody>
                                             <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                                            {% for funds in funds_list %}
+                                            {% for fund in fund_list %}
                                                 <tr>
-                                                    <td>{{ funds.currency.name }}账户</td>
-                                                    <td>{{ funds.funds_create_date|date:'Y-m-d' }}</td>
-                                                    <td>{{ funds.funds_value|floatformat:0 }}</td>
-                                                    <td>{{ funds.funds_principal|floatformat:0 }}</td>
-                                                    <td>{{ funds.currency.code }}</td>
-                                                    <td>{{ funds.funds_PHR|floatformat:0 }}</td>
-                                                    <td>{{ funds.funds_net_value }}</td>
-                                                    <td>{{ funds.baseline.name }}</td>
-                                                    <td>{{ funds.update_date|date:'Y-m-d' }}</td>
+                                                    <td>{{ fund.currency.name }}账户</td>
+                                                    <td>{{ fund.fund_create_date|date:'Y-m-d' }}</td>
+                                                    <td>{{ fund.fund_value|floatformat:0 }}</td>
+                                                    <td>{{ fund.fund_principal|floatformat:0 }}</td>
+                                                    <td>{{ fund.currency.code }}</td>
+                                                    <td>{{ fund.fund_PHR|floatformat:0 }}</td>
+                                                    <td>{{ fund.fund_net_value }}</td>
+                                                    <td>{{ fund.baseline.name }}</td>
+                                                    <td>{{ fund.update_date|date:'Y-m-d' }}</td>
                                                     <td>
-                                                        <a href="/benben/view_funds_details/{{ funds.id|safe }}" class="btn btn-default btn-sm">
+                                                        <a href="/benben/view_fund_details/{{ fund.id|safe }}" class="btn btn-default btn-sm">
                                                             详情
                                                         </a>
                                                     </td>

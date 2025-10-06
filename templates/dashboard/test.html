@@ -391,8 +391,8 @@
     <script>
         // 基金数据
         const fundData = {
-            funds_value_sum: 33718359,
-            funds_net_value_weighting: 3.7233344477203056,
+            fund_value_sum: 33718359,
+            fund_net_value_weighting: 3.7233344477203056,
             market_value_sum: 33582919.45144001,
             position_percent_weighting: 0.8665471400742888,
             dividend_sum: 9097028.839970998,
@@ -405,9 +405,9 @@
             current_subscription_stock_num: 2,
             current_subscription_band_num: 0,
             holding_stock_number: 18,
-            funds_value_array: [29561213, 2503752, 1653394],
-            funds_principal_array: [20000000, 2196649, 1436560],
-            funds_currency_array: ["人民币", "港元", "美元"],
+            fund_value_array: [29561213, 2503752, 1653394],
+            fund_principal_array: [20000000, 2196649, 1436560],
+            fund_currency_array: ["人民币", "港元", "美元"],
             holding_stock_array: [
                 ["腾讯控股（00700）", 592.0, 0.0034000000000000002, "#ef4444", 33900, 18445234.080000002, "54.92%", 35],
                 ["贵州茅台（600519）", 1422.08, -0.0034000000000000002, "#10b981", 7000, 9954560.0, "29.64%", 26],
@@ -505,9 +505,9 @@
                         show: false
                     },
                     data: [
-                        { value: (fundData.funds_value_array[0]/10000).toFixed(2), name: '人民币', itemStyle: { color: '#4c6ef5' } },
-                        { value: (fundData.funds_value_array[1]/10000).toFixed(2), name: '港元', itemStyle: { color: '#ff922b' } },
-                        { value: (fundData.funds_value_array[2]/10000).toFixed(2), name: '美元', itemStyle: { color: '#40c057' } }
+                        { value: (fundData.fund_value_array[0]/10000).toFixed(2), name: '人民币', itemStyle: { color: '#4c6ef5' } },
+                        { value: (fundData.fund_value_array[1]/10000).toFixed(2), name: '港元', itemStyle: { color: '#ff922b' } },
+                        { value: (fundData.fund_value_array[2]/10000).toFixed(2), name: '美元', itemStyle: { color: '#40c057' } }
                     ]
                 }]
             });

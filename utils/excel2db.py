@@ -191,10 +191,10 @@ def excel2subscription(file_name, sheet_name, start_row, end_row):
     return ()
 
 
-def excel2funds(file_name, sheet_name, start_row, end_row):
+def excel2fund(file_name, sheet_name, start_row, end_row):
     workbook = xlrd.open_workbook(file_name)
     sht = workbook.sheet_by_name(sheet_name)
-    funds_id = Fund.objects.get(funds_name=sheet_name).id
+    fund_id = Fund.objects.get(fund_name=sheet_name).id
     # 获取总行数
     nrows = sht.nrows  # 包括标题
     # 获取总列数
@@ -205,89 +205,89 @@ def excel2funds(file_name, sheet_name, start_row, end_row):
         end_row = nrows
     for i in range(start_row, end_row):
         if sht.cell(i, 0).ctype == 3:  # 判断单元格内容是否为日期类型
-            if funds_id == 3: # 人民币账户
+            if fund_id == 3: # 人民币账户
                 date = xldate_as_datetime(sht.cell(i, 0).value, 0)
-                funds_value = sht.cell(i, 12).value
-                funds_in_out = sht.cell(i, 13).value
-                funds_principal = sht.cell(i, 14).value
-                funds_PHR = sht.cell(i, 15).value
-                funds_net_value = sht.cell(i, 16).value
-                funds_current_profit = sht.cell(i, 17).value
-                funds_current_profit_rate = sht.cell(i, 18).value
-                funds_profit = sht.cell(i, 19).value
-                funds_profit_rate = sht.cell(i, 20).value
-                funds_annualized_profit_rate = sht.cell(i, 21).value
-            elif funds_id == 4: # 港元账户
+                fund_value = sht.cell(i, 12).value
+                fund_in_out = sht.cell(i, 13).value
+                fund_principal = sht.cell(i, 14).value
+                fund_PHR = sht.cell(i, 15).value
+                fund_net_value = sht.cell(i, 16).value
+                fund_current_profit = sht.cell(i, 17).value
+                fund_current_profit_rate = sht.cell(i, 18).value
+                fund_profit = sht.cell(i, 19).value
+                fund_profit_rate = sht.cell(i, 20).value
+                fund_annualized_profit_rate = sht.cell(i, 21).value
+            elif fund_id == 4: # 港元账户
                 date = xldate_as_datetime(sht.cell(i, 0).value, 0)
-                funds_value = sht.cell(i, 6).value
-                funds_in_out = sht.cell(i, 7).value
-                funds_principal = sht.cell(i, 8).value
-                funds_PHR = sht.cell(i, 9).value
-                funds_net_value = sht.cell(i, 10).value
-                funds_current_profit = sht.cell(i, 11).value
-                funds_current_profit_rate = sht.cell(i, 12).value
-                funds_profit = sht.cell(i, 13).value
-                funds_profit_rate = sht.cell(i, 14).value
-                funds_annualized_profit_rate = sht.cell(i, 15).value
-            elif funds_id == 5: # 美元账户
+                fund_value = sht.cell(i, 6).value
+                fund_in_out = sht.cell(i, 7).value
+                fund_principal = sht.cell(i, 8).value
+                fund_PHR = sht.cell(i, 9).value
+                fund_net_value = sht.cell(i, 10).value
+                fund_current_profit = sht.cell(i, 11).value
+                fund_current_profit_rate = sht.cell(i, 12).value
+                fund_profit = sht.cell(i, 13).value
+                fund_profit_rate = sht.cell(i, 14).value
+                fund_annualized_profit_rate = sht.cell(i, 15).value
+            elif fund_id == 5: # 美元账户
                 date = xldate_as_datetime(sht.cell(i, 0).value, 0)
-                funds_value = sht.cell(i, 3).value
-                funds_in_out = sht.cell(i, 4).value
-                funds_principal = sht.cell(i, 5).value
-                funds_PHR = sht.cell(i, 6).value
-                funds_net_value = sht.cell(i, 7).value
-                funds_current_profit = sht.cell(i, 8).value
-                funds_current_profit_rate = sht.cell(i, 9).value
-                funds_profit = sht.cell(i, 10).value
-                funds_profit_rate = sht.cell(i, 11).value
-                funds_annualized_profit_rate = sht.cell(i, 12).value
+                fund_value = sht.cell(i, 3).value
+                fund_in_out = sht.cell(i, 4).value
+                fund_principal = sht.cell(i, 5).value
+                fund_PHR = sht.cell(i, 6).value
+                fund_net_value = sht.cell(i, 7).value
+                fund_current_profit = sht.cell(i, 8).value
+                fund_current_profit_rate = sht.cell(i, 9).value
+                fund_profit = sht.cell(i, 10).value
+                fund_profit_rate = sht.cell(i, 11).value
+                fund_annualized_profit_rate = sht.cell(i, 12).value
 
             try:
                 # 更新或新增一条记录
-                print(funds_id,date)
-                rs = FundHistory.objects.filter(funds_id=funds_id, date=date)
+                print(fund_id,date)
+                rs = FundHistory.objects.filter(fund_id=fund_id, date=date)
                 print(rs)
                 if rs.exists():
                     # 删除一条记录
                     for r in rs:
                         r.delete()
-                        print('删除记录成功！', funds_id, date, funds_value, funds_in_out, funds_principal, funds_PHR, funds_net_value, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
+                        print('删除记录成功！', fund_id, date, fund_value, fund_in_out, fund_principal, fund_PHR, fund_net_value, fund_profit, fund_profit_rate, fund_annualized_profit_rate)
                     '''
                     # 更新一条记录
                     for r in rs:
-                        r.funds_id = funds_id,
+                        r.fund_id = fund_id,
                         r.date = date,
-                        r.funds_value = funds_value,
-                        r.funds_in_out = funds_in_out,
-                        r.funds_principal = funds_principal,
-                        r.funds_PHR = funds_PHR,
-                        r.funds_net_value = funds_net_value,
-                        r.funds_current_profit = funds_current_profit,
-                        r.funds_current_profit_rate = funds_current_profit_rate,
-                        r.funds_profit = funds_profit,
-                        r.funds_profit_rate = funds_profit_rate,
-                        r.funds_annualized_profit_rate = funds_annualized_profit_rate
+                        r.fund_value = fund_value,
+                        r.fund_in_out = fund_in_out,
+                        r.fund_principal = fund_principal,
+                        r.fund_PHR = fund_PHR,
+                        r.fund_net_value = fund_net_value,
+                        r.fund_current_profit = fund_current_profit,
+                        r.fund_current_profit_rate = fund_current_profit_rate,
+                        r.fund_profit = fund_profit,
+                        r.fund_profit_rate = fund_profit_rate,
+                        r.fund_annualized_profit_rate = fund_annualized_profit_rate
                         r.save()
-                    print('更新记录成功！', funds_id, date, funds_value, funds_in_out, funds_principal, funds_PHR, funds_net_value, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
+                    print('更新记录成功！', fund_id, date, fund_value, fund_in_out, fund_principal, fund_PHR, fund_net_value, fund_profit, fund_profit_rate, fund_annualized_profit_rate)
                     '''
                 # 新增一条记录
                 p = FundHistory.objects.create(
-                    funds_id=funds_id,
+                    fund_id=fund_id,
                     date=date,
-                    funds_value=funds_value,
-                    funds_in_out=funds_in_out,
-                    funds_principal=funds_principal,
-                    funds_PHR=funds_PHR,
-                    funds_net_value=funds_net_value,
-                    funds_current_profit=funds_current_profit,
-                    funds_current_profit_rate=funds_current_profit_rate,
-                    funds_profit=funds_profit,
-                    funds_profit_rate=funds_profit_rate,
-                    funds_annualized_profit_rate=funds_annualized_profit_rate
+                    fund_value=fund_value,
+                    fund_in_out=fund_in_out,
+                    fund_principal=fund_principal,
+                    fund_PHR=fund_PHR,
+                    fund_net_value=fund_net_value,
+                    fund_current_profit=fund_current_profit,
+                    fund_current_profit_rate=fund_current_profit_rate,
+                    fund_profit=fund_profit,
+                    fund_profit_rate=fund_profit_rate,
+                    fund_annualized_profit_rate=fund_annualized_profit_rate
                 )
-                print('新增记录成功！', funds_id, date, funds_value, funds_in_out, funds_principal, funds_PHR, funds_net_value, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
+                print('新增记录成功！', fund_id, date, fund_value, fund_in_out, fund_principal, fund_PHR, fund_net_value, fund_profit, fund_profit_rate, fund_annualized_profit_rate)
             except:
-                print('失败！', funds_id, date, funds_value, funds_in_out, funds_principal, funds_PHR, funds_net_value, funds_profit, funds_profit_rate, funds_annualized_profit_rate)
+                print('失败！', fund_id, date, fund_value, fund_in_out, fund_principal, fund_PHR, fund_net_value, fund_profit, fund_profit_rate, fund_annualized_profit_rate)
     return ()
 
 

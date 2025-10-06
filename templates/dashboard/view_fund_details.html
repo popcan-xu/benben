@@ -187,7 +187,7 @@
         <!-- Page Heading -->
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <div class="col-xl-4" style="text-align:left">
-                <h1 class="h3 mb-0 font-weight-bold text-gray-700">{{ funds_name }}</h1>
+                <h1 class="h3 mb-0 font-weight-bold text-gray-700">{{ fund_name }}</h1>
             </div>
             <div class="col-xl-4 d-none" style="text-align:center">
                 <form action="" method="post" class="form-horizontal" role="form">
@@ -212,7 +212,7 @@
                     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
                         <h6 class="m-0 font-weight-bold text-primary">概要</h6>
                         <div class="h6 mb-0 text-gray-500" style="font-size: 1.0em;">
-                            <a href="/benben/add_funds_details/{{ funds_id|safe }}/" style="color: inherit; text-decoration: none;">记一笔 ></a>
+                            <a href="/benben/add_fund_history/{{ fund_id|safe }}/" style="color: inherit; text-decoration: none;">记一笔 ></a>
                         </div>
                     </div>
                     <div class="card-body">
@@ -222,21 +222,21 @@
                                 <div class="col-md-3">
                                     <div class="metric-label">总资产</div>
                                     <div class="metric-value">
-                                        <span>{{ current_funds_details_object.funds_value|floatformat:0 }}</span>
+                                        <span>{{ current_fund_history_object.fund_value|floatformat:0 }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="metric-label">本金</div>
                                     <div class="metric-value">
-                                        <span>{{ current_funds_details_object.funds_principal|floatformat:0 }}</span>
+                                        <span>{{ current_fund_history_object.fund_principal|floatformat:0 }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="metric-label">收益</div>
                                     <div class="metric-value">
-                                        <span>{{ current_funds_details_object.funds_profit|value_display:"number" }}</span>
+                                        <span>{{ current_fund_history_object.fund_profit|value_display:"number" }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
@@ -266,7 +266,7 @@
     {#                                <div class="metric-date">{{ max_date|date:'y/m/d' }}</div>#}
                                     <div class="metric-label">当期资产（<span class="metric-date">{{ max_date|date:'y/m/d' }}</span>）</div>
                                     <div class="metric-value">
-                                        <span>{{ current_funds_details_object.funds_value|floatformat:0 }}</span>
+                                        <span>{{ current_fund_history_object.fund_value|floatformat:0 }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
@@ -274,7 +274,7 @@
     {#                                <div class="metric-date">{{ second_max_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>#}
                                     <div class="metric-label">当期收益</div>
                                     <div class="metric-value">
-                                        <span>{{ current_funds_details_object.funds_current_profit|value_display:"number" }}</span>
+                                        <span>{{ current_fund_history_object.fund_current_profit|value_display:"number" }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
@@ -282,7 +282,7 @@
     {#                                <div class="metric-date">{{ second_max_date|date:'y/m/d' }}~{{ max_date|date:'y/m/d' }}</div>#}
                                     <div class="metric-label">当期收益率</div>
                                     <div class="metric-value">
-                                        <span>{{ current_funds_details_object.funds_current_profit_rate|value_display:"percent" }}</span>
+                                        <span>{{ current_fund_history_object.fund_current_profit_rate|value_display:"percent" }}</span>
                                         <span class="metric-unit">%</span>
                                     </div>
                                 </div>
@@ -303,7 +303,7 @@
                                 <div class="col-md-3">
                                     <div class="metric-label">当年资产</div>
                                     <div class="metric-value">
-                                        <span>{{ current_funds_details_object.funds_value|floatformat:0 }}</span>
+                                        <span>{{ current_fund_history_object.fund_value|floatformat:0 }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
@@ -331,7 +331,7 @@
                                 <div class="col-md-3">
                                     <div class="metric-label">净值</div>
                                     <div class="metric-value">
-                                        <span>{{ current_funds_details_object.funds_net_value|floatformat:4 }}</span>
+                                        <span>{{ current_fund_history_object.fund_net_value|floatformat:4 }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
@@ -352,7 +352,7 @@
                                 <div class="col-md-3">
                                     <div class="metric-label">年化收益率</div>
                                     <div class="metric-value">
-                                        <span>{{ current_funds_details_object.funds_annualized_profit_rate|value_display:"percent" }}</span>
+                                        <span>{{ current_fund_history_object.fund_annualized_profit_rate|value_display:"percent" }}</span>
                                         <span class="metric-unit">%</span>
                                     </div>
                                 </div>
@@ -606,14 +606,14 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {% for funds_details in funds_details_list_TOP %}
+                                            {% for fund_history in fund_history_list_TOP %}
                                                 <tr>
-                                                    <td>{{ funds_details.date|date:'Y-m-d' }}</td>
-                                                    <td>{{ funds_details.funds_value|floatformat:0 }}</td>
-                                                    <td style="color: {{ funds_details.funds_in_out|text_color }}">{{ funds_details.funds_in_out|floatformat:0 }}</td>
-                                                    <td>{{ funds_details.funds_net_value|floatformat:4 }}</td>
-                                                    <td style="color: {{ funds_details.funds_current_profit|text_color }}">{{ funds_details.funds_current_profit|floatformat:0 }}</td>
-                                                    <td style="color: {{ funds_details.funds_current_profit_rate|text_color }}">{{ funds_details.funds_current_profit_rate|percent }}%</td>
+                                                    <td>{{ fund_history.date|date:'Y-m-d' }}</td>
+                                                    <td>{{ fund_history.fund_value|floatformat:0 }}</td>
+                                                    <td style="color: {{ fund_history.fund_in_out|text_color }}">{{ fund_history.fund_in_out|floatformat:0 }}</td>
+                                                    <td>{{ fund_history.fund_net_value|floatformat:4 }}</td>
+                                                    <td style="color: {{ fund_history.fund_current_profit|text_color }}">{{ fund_history.fund_current_profit|floatformat:0 }}</td>
+                                                    <td style="color: {{ fund_history.fund_current_profit_rate|text_color }}">{{ fund_history.fund_current_profit_rate|percent }}%</td>
                                                 </tr>
                                             {% empty %}
                                                 <tr>
@@ -638,12 +638,12 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {% for item in funds_details_list_TOP %}
+                                            {% for item in fund_history_list_TOP %}
                                                 <tr>
                                                     <td>{{ item.date|date:'Y-m-d' }}</td>
-                                                    <td style="color: {{ item.funds_current_profit|text_color }}">{{ item.funds_current_profit|floatformat:0 }}</td>
-                                                    <td style="color: {{ item.funds_current_profit_rate|text_color }}">{{ item.funds_current_profit_rate|percent }}%</td>
-                                                    <td style="color: {{ item.funds_profit|text_color }}">{{ item.funds_profit|floatformat:0 }}</td>
+                                                    <td style="color: {{ item.fund_current_profit|text_color }}">{{ item.fund_current_profit|floatformat:0 }}</td>
+                                                    <td style="color: {{ item.fund_current_profit_rate|text_color }}">{{ item.fund_current_profit_rate|percent }}%</td>
+                                                    <td style="color: {{ item.fund_profit|text_color }}">{{ item.fund_profit|floatformat:0 }}</td>
                                                 </tr>
                                             {% empty %}
                                                 <tr>
@@ -671,8 +671,8 @@
                                             {% for item in recent_in_out_list %}
                                                 <tr>
                                                     <td>{{ item.date|date:'Y-m-d' }}</td>
-                                                    <td style="color: {{ item.funds_in_out|text_color }}">{{ item.funds_in_out|floatformat:0 }}</td>
-                                                    <td>{{ item.funds_net_value|floatformat:4 }}</td>
+                                                    <td style="color: {{ item.fund_in_out|text_color }}">{{ item.fund_in_out|floatformat:0 }}</td>
+                                                    <td>{{ item.fund_net_value|floatformat:4 }}</td>
                                                 </tr>
                                             {% empty %}
                                                 <tr>
@@ -879,21 +879,21 @@
                                     <th colspan="3">连续五年年化收益率（%）</th>
                                 </tr>
                                 <tr class="border border-top-0">
-                                    <th>{{ funds_name }}</th>
+                                    <th>{{ fund_name }}</th>
                                     <th>{{ baseline_name }}</th>
-                                    <th>{{ funds_name }}</th>
+                                    <th>{{ fund_name }}</th>
                                     <th>{{ baseline_name }}</th>
                                     <th>对比 （%）</th>
-                                    <th>{{ funds_name }}</th>
+                                    <th>{{ fund_name }}</th>
                                     <th>{{ baseline_name }}</th>
                                     <th>对比</th>
-                                    <th>{{ funds_name }}</th>
+                                    <th>{{ fund_name }}</th>
                                     <th>{{ baseline_name }}</th>
                                     <th>对比</th>
-                                    <th>{{ funds_name }}</th>
+                                    <th>{{ fund_name }}</th>
                                     <th>{{ baseline_name }}</th>
                                     <th>对比</th>
-                                    <th>{{ funds_name }}</th>
+                                    <th>{{ fund_name }}</th>
                                     <th>{{ baseline_name }}</th>
                                     <th>对比</th>
                                 </tr>
@@ -2516,9 +2516,9 @@
         const name_list = {{ name_list|safe }};
         const line_year_end_date_list = {{ line_year_end_date_list|safe }};
         const bar_year_end_date_list = {{ bar_year_end_date_list|safe }};
-        const line_funds_net_value_list = {{ line_funds_net_value_list|safe }};
+        const line_fund_net_value_list = {{ line_fund_net_value_list|safe }};
         const line_baseline_net_value_list = {{ line_baseline_net_value_list|safe }};
-        const bar_funds_profit_rate_list = {{ bar_funds_profit_rate_list|safe }};
+        const bar_fund_profit_rate_list = {{ bar_fund_profit_rate_list|safe }};
         const bar_baseline_profit_rate_list = {{ bar_baseline_profit_rate_list|safe }};
 
         // 更新图表
@@ -2684,7 +2684,7 @@
                     {
                         name: '收益率（' + name_list[0]+ '）',
                         type: 'bar',
-                        data: bar_funds_profit_rate_list,
+                        data: bar_fund_profit_rate_list,
                         color: ['#1890ff'],
                         xAxisIndex: 0,
                         yAxisIndex: 0,
@@ -2717,7 +2717,7 @@
                     },
                     {
                         name: '净值（' + name_list[0]+ '）',
-                        data: line_funds_net_value_list,
+                        data: line_fund_net_value_list,
                         type: 'line',
                         smooth: false,
                         itemStyle: {
@@ -2752,7 +2752,7 @@
         const chart = echarts.init(document.getElementById('line_annualized_profit_rate'));
         const name_list = {{ name_list|safe }};
         const year_end_date_list = {{ year_end_date_list|safe }};
-        const funds_annualized_profit_rate_list = {{ funds_annualized_profit_rate_list|safe }};
+        const fund_annualized_profit_rate_list = {{ fund_annualized_profit_rate_list|safe }};
         const baseline_annualized_profit_rate_list = {{ baseline_annualized_profit_rate_list|safe }};
 
         //let currentRange = 'currentYear';
@@ -2840,7 +2840,7 @@
                 {
                     //name: '人民币账户',
                     name: name_list[0],
-                    data: funds_annualized_profit_rate_list,
+                    data: fund_annualized_profit_rate_list,
                     type: 'line',
                     smooth: true,
                     itemStyle: {

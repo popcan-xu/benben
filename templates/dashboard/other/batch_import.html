@@ -115,13 +115,13 @@
                                     <label for="account_id" class="control-label">基金明细：</label>
                                 </div>
                                 <div class="col-md-11">
-                                    <select class="form-control" name="funds_id" id="funds_id">
+                                    <select class="form-control" name="fund_id" id="fund_id">
                                         <option disabled selected value="">请选择基金...</option>
-                                        {% for funds in funds_list %}
-                                            {% if funds.funds_name == funds_details.funds.funds_name %}
-                                            <option value="{{ funds.id }}" selected>{{ funds.funds_name }}</option>
+                                        {% for fund in fund_list %}
+                                            {% if fund.fund_name == fund_history.fund.fund_name %}
+                                            <option value="{{ fund.id }}" selected>{{ fund.fund_name }}</option>
                                             {% else %}
-                                            <option value="{{ funds.id }}">{{ funds.funds_name }}</option>
+                                            <option value="{{ fund.id }}">{{ fund.fund_name }}</option>
                                             {% endif %}
                                         {% endfor %}
                                     </select>

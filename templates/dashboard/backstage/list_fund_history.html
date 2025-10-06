@@ -8,7 +8,7 @@
         <div class="card-header py-3">
             <div class="d-sm-flex align-items-center justify-content-between mb-0">
                 <h1 class="h4 mb-0 text-gray-800">基金明细列表</h1>
-                <a href="/benben/add_funds_details/0/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                <a href="/benben/add_fund_history/0/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
                     <i class="fa fa-plus fa-sm text-white-50"></i> 增加
                 </a>
             </div>
@@ -36,27 +36,27 @@
                     </thead>
                     <tbody>
                         <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                        {% for funds_details in funds_details_list %}
+                        {% for fund_history in fund_history_list %}
                             <tr>
-                                <td>{{ funds_details.funds.funds_name }}</td>
-                                <td>{{ funds_details.date|date:'Y-m-d' }}</td>
-                                <td>{{ funds_details.funds_value }}</td>
-                                <td>{{ funds_details.funds_in_out }}</td>
-                                <td>{{ funds_details.funds_principal }}</td>
-                                <td>{{ funds_details.funds_PHR }}</td>
-                                <td>{{ funds_details.funds_net_value }}</td>
-                                <td style="color: {{ funds_details.funds_current_profit|text_color }}">{{ funds_details.funds_current_profit }}</td>
-                                <td style="color: {{ funds_details.funds_current_profit_rate|text_color }}">{{ funds_details.funds_current_profit_rate|percent }}%</td>
-                                <td>{{ funds_details.funds_profit }}</td>
-                                <td>{{ funds_details.funds_profit_rate|percent }}%</td>
-                                <td>{{ funds_details.funds_annualized_profit_rate|percent }}%</td>
+                                <td>{{ fund_history.fund.fund_name }}</td>
+                                <td>{{ fund_history.date|date:'Y-m-d' }}</td>
+                                <td>{{ fund_history.fund_value }}</td>
+                                <td>{{ fund_history.fund_in_out }}</td>
+                                <td>{{ fund_history.fund_principal }}</td>
+                                <td>{{ fund_history.fund_PHR }}</td>
+                                <td>{{ fund_history.fund_net_value }}</td>
+                                <td style="color: {{ fund_history.fund_current_profit|text_color }}">{{ fund_history.fund_current_profit }}</td>
+                                <td style="color: {{ fund_history.fund_current_profit_rate|text_color }}">{{ fund_history.fund_current_profit_rate|percent }}%</td>
+                                <td>{{ fund_history.fund_profit }}</td>
+                                <td>{{ fund_history.fund_profit_rate|percent }}%</td>
+                                <td>{{ fund_history.fund_annualized_profit_rate|percent }}%</td>
                                 <td>
-                                    <a href="/benben/del_funds_details/{{ funds_details.id|safe }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/del_fund_history/{{ fund_history.id|safe }}/" class="btn btn-default btn-sm">
                                         删除
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/benben/edit_funds_details/{{ funds_details.id|safe }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/edit_fund_history/{{ fund_history.id|safe }}/" class="btn btn-default btn-sm">
                                         修改
                                     </a>
                                 </td>
