@@ -28,7 +28,7 @@ from collections import defaultdict
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import Stock, Trade, Position, Dividend, FundHistory, Currency, HistoricalMarketValue, HistoricalRate
+from stock.models import Stock, Trade, Position, Dividend, PortfolioHistory, Currency, HistoricalMarketValue, HistoricalRate
 
 
 # 将字典类型数据写入json文件或读取json文件并转为字典格式输出，若json文件不存在则创建文件再写入
@@ -567,7 +567,7 @@ def get_quote_akshare(stock_code):
         price = float(df.query('代码=="' + stock_code + '"')['最新价'].iloc[0])
         increase = float(df.query('代码=="' + stock_code + '"')['涨跌幅'].iloc[0])
     elif classify_stock_code(stock_code) == 'ETF':
-        df = ak.fund_etf_spot_em()
+        df = ak.portfolio_etf_spot_em()
         price = float(df.query('代码=="' + stock_code + '"')['最新价'].iloc[0])
         increase = float(df.query('代码=="' + stock_code + '"')['涨跌幅'].iloc[0])
     else:
@@ -596,7 +596,7 @@ def get_quote_akshare(stock_code):
     # price1 = df.query('代码=="00700"')['最新价'].iloc[0]
     # print(price1)
     #
-    # df = ak.fund_etf_spot_em()
+    # df = ak.portfolio_etf_spot_em()
     # print(df.query('代码=="511880"')['最新价'].iloc[0])
 
     return price, increase, color
@@ -1972,34 +1972,34 @@ def get_baseline_closing_price(baseline_object, target_year):
     return float(closing_price)
 
 
-# 从基金明细表获取当前基金的最大记账日期
-def get_max_date(fund_id):
-    max_date = FundHistory.objects.filter(fund_id=fund_id).aggregate(max_date=Max('date'))['max_date']
+# 从投资组合明细表获取当前投资组合的最大记账日期
+def get_max_date(portfolio_id):
+    max_date = PortfolioHistory.objects.filter(portfolio_id=portfolio_id).aggregate(max_date=Max('date'))['max_date']
     return max_date
 
 
-# 从基金明细表获取当前基金的最小记账日期
-def get_min_date(fund_id):
-    min_date = FundHistory.objects.filter(fund_id=fund_id).aggregate(min_date=Min('date'))['min_date']
+# 从投资组合明细表获取当前投资组合的最小记账日期
+def get_min_date(portfolio_id):
+    min_date = PortfolioHistory.objects.filter(portfolio_id=portfolio_id).aggregate(min_date=Min('date'))['min_date']
     return min_date
 
 
-# 从基金明细表获取当前基金的第二大记账日期
-def get_second_max_date(fund_id):
-    max_date = FundHistory.objects.filter(fund_id=fund_id).aggregate(max_date=Max('date'))['max_date']
+# 从投资组合明细表获取当前投资组合的第二大记账日期
+def get_second_max_date(portfolio_id):
+    max_date = PortfolioHistory.objects.filter(portfolio_id=portfolio_id).aggregate(max_date=Max('date'))['max_date']
     second_max_date = \
-        FundHistory.objects.filter(fund_id=fund_id).exclude(date=max_date).order_by('-date').values_list('date',
+        PortfolioHistory.objects.filter(portfolio_id=portfolio_id).exclude(date=max_date).order_by('-date').values_list('date',
                                                                                                             flat=True)[
             0]
-    # second_max_date = fund_history.objects.filter(fund_id=fund_id).order_by('-date').values_list('date', flat=True)[1]
-    # third_max_date = fund_history.objects.filter(fund_id=fund_id).order_by('-date').values_list('date', flat=True)[2]
+    # second_max_date = portfolio_history.objects.filter(portfolio_id=portfolio_id).order_by('-date').values_list('date', flat=True)[1]
+    # third_max_date = portfolio_history.objects.filter(portfolio_id=portfolio_id).order_by('-date').values_list('date', flat=True)[2]
     return second_max_date
 
 
-# 从基金明细表获取指定年份的年末日期
-def get_year_end_date(fund_id, year):
+# 从投资组合明细表获取指定年份的年末日期
+def get_year_end_date(portfolio_id, year):
     year_end_date = None
-    year_end_date = FundHistory.objects.filter(fund_id=fund_id, date__year=year).aggregate(max_date=Max('date'))[
+    year_end_date = PortfolioHistory.objects.filter(portfolio_id=portfolio_id, date__year=year).aggregate(max_date=Max('date'))[
         'max_date']
     return year_end_date
 
@@ -2133,11 +2133,11 @@ def get_akshare():
     stock_zh_b_daily_df = ak.stock_zh_b_daily(symbol='sz200596', start_date='20250101', end_date='20250120', adjust='')
     print(stock_zh_b_daily_df)
 
-    fund_etf_hist_em_df = ak.fund_etf_hist_em(symbol="000300", period="daily", start_date="20250101", end_date="20250120", adjust="")
-    print(fund_etf_hist_em_df)
+    portfolio_etf_hist_em_df = ak.portfolio_etf_hist_em(symbol="000300", period="daily", start_date="20250101", end_date="20250120", adjust="")
+    print(portfolio_etf_hist_em_df)
 
-    fund_etf_hist_em_df = ak.fund_etf_hist_em(symbol="511880", period="daily", start_date="20250101", end_date="20250120", adjust="")
-    print(fund_etf_hist_em_df)
+    portfolio_etf_hist_em_df = ak.portfolio_etf_hist_em(symbol="511880", period="daily", start_date="20250101", end_date="20250120", adjust="")
+    print(portfolio_etf_hist_em_df)
 
     #index_investing_global_df = ak.index_investing_global(country="美国", index_name="VIX恐慌指数", period="每月", start_date="2005-01-01", end_date="2020-06-05")
     #print(index_investing_global_df)
@@ -2203,7 +2203,7 @@ def get_akshare():
     # df = ak.stock_hk_spot_em()
     # print(df)
     #
-    # df = ak.fund_etf_spot_em()
+    # df = ak.portfolio_etf_spot_em()
     # print(df)
     #
     # df = ak.stock_hk_index_daily_em(symbol="HSI").sort_values(by='date', ascending=False).head(1)

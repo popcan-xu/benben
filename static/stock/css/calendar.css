@@ -1,4 +1,4 @@
-    /* 资产变化日历 */
+    /* 投资组合变化日历 */
     @media (max-width: 768px) {
         #viewSwitch .btn {
             padding: 0.25rem 0.5rem; /* 减小按钮内边距 */
@@ -57,7 +57,7 @@
         cursor: pointer; /* 鼠标指针样式 */
     }
 
-    /* 资产变化值的样式 */
+    /* 投资组合变化值的样式 */
     .asset-value {
         margin-top: 5px; /* 上边距 */
         font-weight: bold; /* 加粗 */
@@ -97,13 +97,13 @@
         font-weight: bold; /* 当前日期字体加粗 */
     }
 
-    /* 正资产变化的样式 */
+    /* 正投资组合变化的样式 */
     .positive {
         background-color: #ffe5e5 !important; /* 背景颜色 */
         color: #b30000 !important; /* 文字颜色 */
     }
 
-    /* 负资产变化的样式 */
+    /* 负投资组合变化的样式 */
     .negative {
         background-color: #e5ffe5 !important; /* 背景颜色 */
         color: #008000 !important; /* 文字颜色 */

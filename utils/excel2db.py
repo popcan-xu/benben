@@ -8,7 +8,7 @@ import django
 # 从应用之外调用stock应用的models时，需要设置'DJANGO_SETTINGS_MODULE'变量
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'benben.settings')
 django.setup()
-from stock.models import Broker, Market, Account, Stock, Trade, Dividend, Subscription, Fund, FundHistory
+from stock.models import Broker, Market, Account, Stock, Trade, Dividend, Subscription, Portfolio, PortfolioHistory
 import re
 from django.contrib import messages
 
@@ -191,10 +191,10 @@ def excel2subscription(file_name, sheet_name, start_row, end_row):
     return ()
 
 
-def excel2fund(file_name, sheet_name, start_row, end_row):
+def excel2portfolio(file_name, sheet_name, start_row, end_row):
     workbook = xlrd.open_workbook(file_name)
     sht = workbook.sheet_by_name(sheet_name)
-    fund_id = Fund.objects.get(fund_name=sheet_name).id
+    portfolio_id = Portfolio.objects.get(portfolio_name=sheet_name).id
     # 获取总行数
     nrows = sht.nrows  # 包括标题
     # 获取总列数
@@ -205,89 +205,89 @@ def excel2fund(file_name, sheet_name, start_row, end_row):
         end_row = nrows
     for i in range(start_row, end_row):
         if sht.cell(i, 0).ctype == 3:  # 判断单元格内容是否为日期类型
-            if fund_id == 3: # 人民币账户
+            if portfolio_id == 3: # 人民币账户
                 date = xldate_as_datetime(sht.cell(i, 0).value, 0)
-                fund_value = sht.cell(i, 12).value
-                fund_in_out = sht.cell(i, 13).value
-                fund_principal = sht.cell(i, 14).value
-                fund_PHR = sht.cell(i, 15).value
-                fund_net_value = sht.cell(i, 16).value
-                fund_current_profit = sht.cell(i, 17).value
-                fund_current_profit_rate = sht.cell(i, 18).value
-                fund_profit = sht.cell(i, 19).value
-                fund_profit_rate = sht.cell(i, 20).value
-                fund_annualized_profit_rate = sht.cell(i, 21).value
-            elif fund_id == 4: # 港元账户
+                portfolio_value = sht.cell(i, 12).value
+                portfolio_in_out = sht.cell(i, 13).value
+                portfolio_principal = sht.cell(i, 14).value
+                portfolio_PHR = sht.cell(i, 15).value
+                portfolio_net_value = sht.cell(i, 16).value
+                portfolio_current_profit = sht.cell(i, 17).value
+                portfolio_current_profit_rate = sht.cell(i, 18).value
+                portfolio_profit = sht.cell(i, 19).value
+                portfolio_profit_rate = sht.cell(i, 20).value
+                portfolio_annualized_profit_rate = sht.cell(i, 21).value
+            elif portfolio_id == 4: # 港元账户
                 date = xldate_as_datetime(sht.cell(i, 0).value, 0)
-                fund_value = sht.cell(i, 6).value
-                fund_in_out = sht.cell(i, 7).value
-                fund_principal = sht.cell(i, 8).value
-                fund_PHR = sht.cell(i, 9).value
-                fund_net_value = sht.cell(i, 10).value
-                fund_current_profit = sht.cell(i, 11).value
-                fund_current_profit_rate = sht.cell(i, 12).value
-                fund_profit = sht.cell(i, 13).value
-                fund_profit_rate = sht.cell(i, 14).value
-                fund_annualized_profit_rate = sht.cell(i, 15).value
-            elif fund_id == 5: # 美元账户
+                portfolio_value = sht.cell(i, 6).value
+                portfolio_in_out = sht.cell(i, 7).value
+                portfolio_principal = sht.cell(i, 8).value
+                portfolio_PHR = sht.cell(i, 9).value
+                portfolio_net_value = sht.cell(i, 10).value
+                portfolio_current_profit = sht.cell(i, 11).value
+                portfolio_current_profit_rate = sht.cell(i, 12).value
+                portfolio_profit = sht.cell(i, 13).value
+                portfolio_profit_rate = sht.cell(i, 14).value
+                portfolio_annualized_profit_rate = sht.cell(i, 15).value
+            elif portfolio_id == 5: # 美元账户
                 date = xldate_as_datetime(sht.cell(i, 0).value, 0)
-                fund_value = sht.cell(i, 3).value
-                fund_in_out = sht.cell(i, 4).value
-                fund_principal = sht.cell(i, 5).value
-                fund_PHR = sht.cell(i, 6).value
-                fund_net_value = sht.cell(i, 7).value
-                fund_current_profit = sht.cell(i, 8).value
-                fund_current_profit_rate = sht.cell(i, 9).value
-                fund_profit = sht.cell(i, 10).value
-                fund_profit_rate = sht.cell(i, 11).value
-                fund_annualized_profit_rate = sht.cell(i, 12).value
+                portfolio_value = sht.cell(i, 3).value
+                portfolio_in_out = sht.cell(i, 4).value
+                portfolio_principal = sht.cell(i, 5).value
+                portfolio_PHR = sht.cell(i, 6).value
+                portfolio_net_value = sht.cell(i, 7).value
+                portfolio_current_profit = sht.cell(i, 8).value
+                portfolio_current_profit_rate = sht.cell(i, 9).value
+                portfolio_profit = sht.cell(i, 10).value
+                portfolio_profit_rate = sht.cell(i, 11).value
+                portfolio_annualized_profit_rate = sht.cell(i, 12).value
 
             try:
                 # 更新或新增一条记录
-                print(fund_id,date)
-                rs = FundHistory.objects.filter(fund_id=fund_id, date=date)
+                print(portfolio_id,date)
+                rs = PortfolioHistory.objects.filter(portfolio_id=portfolio_id, date=date)
                 print(rs)
                 if rs.exists():
                     # 删除一条记录
                     for r in rs:
                         r.delete()
-                        print('删除记录成功！', fund_id, date, fund_value, fund_in_out, fund_principal, fund_PHR, fund_net_value, fund_profit, fund_profit_rate, fund_annualized_profit_rate)
+                        print('删除记录成功！', portfolio_id, date, portfolio_value, portfolio_in_out, portfolio_principal, portfolio_PHR, portfolio_net_value, portfolio_profit, portfolio_profit_rate, portfolio_annualized_profit_rate)
                     '''
                     # 更新一条记录
                     for r in rs:
-                        r.fund_id = fund_id,
+                        r.portfolio_id = portfolio_id,
                         r.date = date,
-                        r.fund_value = fund_value,
-                        r.fund_in_out = fund_in_out,
-                        r.fund_principal = fund_principal,
-                        r.fund_PHR = fund_PHR,
-                        r.fund_net_value = fund_net_value,
-                        r.fund_current_profit = fund_current_profit,
-                        r.fund_current_profit_rate = fund_current_profit_rate,
-                        r.fund_profit = fund_profit,
-                        r.fund_profit_rate = fund_profit_rate,
-                        r.fund_annualized_profit_rate = fund_annualized_profit_rate
+                        r.portfolio_value = portfolio_value,
+                        r.portfolio_in_out = portfolio_in_out,
+                        r.portfolio_principal = portfolio_principal,
+                        r.portfolio_PHR = portfolio_PHR,
+                        r.portfolio_net_value = portfolio_net_value,
+                        r.portfolio_current_profit = portfolio_current_profit,
+                        r.portfolio_current_profit_rate = portfolio_current_profit_rate,
+                        r.portfolio_profit = portfolio_profit,
+                        r.portfolio_profit_rate = portfolio_profit_rate,
+                        r.portfolio_annualized_profit_rate = portfolio_annualized_profit_rate
                         r.save()
-                    print('更新记录成功！', fund_id, date, fund_value, fund_in_out, fund_principal, fund_PHR, fund_net_value, fund_profit, fund_profit_rate, fund_annualized_profit_rate)
+                    print('更新记录成功！', portfolio_id, date, portfolio_value, portfolio_in_out, portfolio_principal, portfolio_PHR, portfolio_net_value, portfolio_profit, portfolio_profit_rate, portfolio_annualized_profit_rate)
                     '''
                 # 新增一条记录
-                p = FundHistory.objects.create(
-                    fund_id=fund_id,
+                p = PortfolioHistory.objects.create(
+                    portfolio_id=portfolio_id,
                     date=date,
-                    fund_value=fund_value,
-                    fund_in_out=fund_in_out,
-                    fund_principal=fund_principal,
-                    fund_PHR=fund_PHR,
-                    fund_net_value=fund_net_value,
-                    fund_current_profit=fund_current_profit,
-                    fund_current_profit_rate=fund_current_profit_rate,
-                    fund_profit=fund_profit,
-                    fund_profit_rate=fund_profit_rate,
-                    fund_annualized_profit_rate=fund_annualized_profit_rate
+                    portfolio_value=portfolio_value,
+                    portfolio_in_out=portfolio_in_out,
+                    portfolio_principal=portfolio_principal,
+                    portfolio_PHR=portfolio_PHR,
+                    portfolio_net_value=portfolio_net_value,
+                    portfolio_current_profit=portfolio_current_profit,
+                    portfolio_current_profit_rate=portfolio_current_profit_rate,
+                    portfolio_profit=portfolio_profit,
+                    portfolio_profit_rate=portfolio_profit_rate,
+                    portfolio_annualized_profit_rate=portfolio_annualized_profit_rate
                 )
-                print('新增记录成功！', fund_id, date, fund_value, fund_in_out, fund_principal, fund_PHR, fund_net_value, fund_profit, fund_profit_rate, fund_annualized_profit_rate)
+                print('新增记录成功！', portfolio_id, date, portfolio_value, portfolio_in_out, portfolio_principal, portfolio_PHR, portfolio_net_value, portfolio_profit, portfolio_profit_rate, portfolio_annualized_profit_rate)
             except:
-                print('失败！', fund_id, date, fund_value, fund_in_out, fund_principal, fund_PHR, fund_net_value, fund_profit, fund_profit_rate, fund_annualized_profit_rate)
+                print('失败！', portfolio_id, date, portfolio_value, portfolio_in_out, portfolio_principal, portfolio_PHR, portfolio_net_value, portfolio_profit, portfolio_profit_rate, portfolio_annualized_profit_rate)
     return ()
 
 

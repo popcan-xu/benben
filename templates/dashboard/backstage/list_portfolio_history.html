@@ -7,8 +7,8 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <div class="d-sm-flex align-items-center justify-content-between mb-0">
-                <h1 class="h4 mb-0 text-gray-800">基金明细列表</h1>
-                <a href="/benben/add_fund_history/0/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                <h1 class="h4 mb-0 text-gray-800">投资组合明细列表</h1>
+                <a href="/benben/add_portfolio_history/0/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
                     <i class="fa fa-plus fa-sm text-white-50"></i> 增加
                 </a>
             </div>
@@ -18,9 +18,9 @@
                 <table id="dataTable" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
                     <thead class="bg-gradient-secondary text-gray-100">
                         <tr>
-                            <th>基金名称</th>
+                            <th>名称</th>
                             <th>日期</th>
-                            <th>基金价值</th>
+                            <th>价值</th>
                             <th>出入金</th>
                             <th>本金</th>
                             <th>份数</th>
@@ -36,27 +36,27 @@
                     </thead>
                     <tbody>
                         <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                        {% for fund_history in fund_history_list %}
+                        {% for portfolio_history in portfolio_history_list %}
                             <tr>
-                                <td>{{ fund_history.fund.fund_name }}</td>
-                                <td>{{ fund_history.date|date:'Y-m-d' }}</td>
-                                <td>{{ fund_history.fund_value }}</td>
-                                <td>{{ fund_history.fund_in_out }}</td>
-                                <td>{{ fund_history.fund_principal }}</td>
-                                <td>{{ fund_history.fund_PHR }}</td>
-                                <td>{{ fund_history.fund_net_value }}</td>
-                                <td style="color: {{ fund_history.fund_current_profit|text_color }}">{{ fund_history.fund_current_profit }}</td>
-                                <td style="color: {{ fund_history.fund_current_profit_rate|text_color }}">{{ fund_history.fund_current_profit_rate|percent }}%</td>
-                                <td>{{ fund_history.fund_profit }}</td>
-                                <td>{{ fund_history.fund_profit_rate|percent }}%</td>
-                                <td>{{ fund_history.fund_annualized_profit_rate|percent }}%</td>
+                                <td>{{ portfolio_history.portfolio.portfolio_name }}</td>
+                                <td>{{ portfolio_history.date|date:'Y-m-d' }}</td>
+                                <td>{{ portfolio_history.portfolio_value }}</td>
+                                <td>{{ portfolio_history.portfolio_in_out }}</td>
+                                <td>{{ portfolio_history.portfolio_principal }}</td>
+                                <td>{{ portfolio_history.portfolio_PHR }}</td>
+                                <td>{{ portfolio_history.portfolio_net_value }}</td>
+                                <td style="color: {{ portfolio_history.portfolio_current_profit|text_color }}">{{ portfolio_history.portfolio_current_profit }}</td>
+                                <td style="color: {{ portfolio_history.portfolio_current_profit_rate|text_color }}">{{ portfolio_history.portfolio_current_profit_rate|percent }}%</td>
+                                <td>{{ portfolio_history.portfolio_profit }}</td>
+                                <td>{{ portfolio_history.portfolio_profit_rate|percent }}%</td>
+                                <td>{{ portfolio_history.portfolio_annualized_profit_rate|percent }}%</td>
                                 <td>
-                                    <a href="/benben/del_fund_history/{{ fund_history.id|safe }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/del_portfolio_history/{{ portfolio_history.id|safe }}/" class="btn btn-default btn-sm">
                                         删除
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/benben/edit_fund_history/{{ fund_history.id|safe }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/edit_portfolio_history/{{ portfolio_history.id|safe }}/" class="btn btn-default btn-sm">
                                         修改
                                     </a>
                                 </td>

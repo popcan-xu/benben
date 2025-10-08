@@ -61,24 +61,24 @@ def _generate_overview_data1(rate):
     # 创建一个字典，格式为 {货币ID: {'code': 代码, 'name': 名称}}
     currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in currencies}
 
-    # 计算基金价值总和
-    fund_value_sum = 0
-    fund_list = Fund.objects.all()
-    # 获得资产占比数据，用于生成chart图表
-    fund_value_array = []
-    for rs in fund_list:
-        fund_value_array.append(round(float(rs.fund_value) * rate[rs.currency.code]))
-        # fund_principal_array.append(round(float(rs.fund_principal) * rate[rs.currency.code]))
-        fund_value_sum += round(float(rs.fund_value) * rate[rs.currency.code])
+    # 计算投资组合价值总和
+    portfolio_value_sum = 0
+    portfolio_list = Portfolio.objects.all()
+    # 获得投资组合占比数据，用于生成chart图表
+    portfolio_value_array = []
+    for rs in portfolio_list:
+        portfolio_value_array.append(round(float(rs.portfolio_value) * rate[rs.currency.code]))
+        # portfolio_principal_array.append(round(float(rs.portfolio_principal) * rate[rs.currency.code]))
+        portfolio_value_sum += round(float(rs.portfolio_value) * rate[rs.currency.code])
 
-    # 计算基金价值占比和加权净值
-    fund_percent_dict = {1: 0, 2: 0, 3: 0}
-    fund_net_value_weighting = 0
+    # 计算投资组合价值占比和加权净值
+    portfolio_percent_dict = {1: 0, 2: 0, 3: 0}
+    portfolio_net_value_weighting = 0
     for key in currency_dict:
-        fund_percent_dict[key] = float(fund_list.get(currency_id=key).fund_value) / fund_value_sum
-        fund_net_value_weighting += float(fund_list.get(currency_id=key).fund_net_value) * fund_percent_dict[key]
+        portfolio_percent_dict[key] = float(portfolio_list.get(currency_id=key).portfolio_value) / portfolio_value_sum
+        portfolio_net_value_weighting += float(portfolio_list.get(currency_id=key).portfolio_net_value) * portfolio_percent_dict[key]
 
-    # 计算人民币持仓市值总和，用于进一步计算人民币基金的持仓比例
+    # 计算人民币持仓市值总和，用于进一步计算人民币投资组合的持仓比例
     stock_dict = Position.objects.values("stock").annotate(
         count=Count("stock")).values('stock__stock_code').order_by('stock__stock_code')
     stock_code_array = []
@@ -91,28 +91,28 @@ def _generate_overview_data1(rate):
 
     # 计算仓位
     position_percent_dict = {}
-    fund_value_dict = {}
+    portfolio_value_dict = {}
     market_value_dict = {}
 
-    # 获取所有fund同时存在记录的最大有效日期
-    # 获取所有不同的基金数量
-    total_fund = FundHistory.objects.values('fund').distinct().count()
-    # 查找所有日期及其对应的基金数量，并筛选出基金数等于总基金数的日期
-    valid_dates = FundHistory.objects.values('date').annotate(
-        fund_count=Count('fund', distinct=True)
-    ).filter(fund_count=total_fund).order_by('-date')
+    # 获取所有portfolio同时存在记录的最大有效日期
+    # 获取所有不同的投资组合数量
+    total_portfolio = PortfolioHistory.objects.values('portfolio').distinct().count()
+    # 查找所有日期及其对应的投资组合数量，并筛选出投资组合数等于总投资组合数的日期
+    valid_dates = PortfolioHistory.objects.values('date').annotate(
+        portfolio_count=Count('portfolio', distinct=True)
+    ).filter(portfolio_count=total_portfolio).order_by('-date')
     if valid_dates.exists():
-        max_date_fund = valid_dates.first()['date']
+        max_date_portfolio = valid_dates.first()['date']
     else:
         # 根据问题描述，其他逻辑确保存在有效日期，此处无需处理
-        max_date_fund = None
+        max_date_portfolio = None
 
     for key, value in currency_dict.items():
-        fund_id = Fund.objects.get(currency_id=key).id
-        fund_value_dict[key] = FundHistory.objects.get(fund_id=fund_id, date=max_date_fund).fund_value
-        market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_fund).value
-        position_percent_dict[key] = market_value_dict[key] / fund_value_dict[key]
-    # 人民币基金的持仓比例通过511880的市值占比计算
+        portfolio_id = Portfolio.objects.get(currency_id=key).id
+        portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=max_date_portfolio).portfolio_value
+        market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_portfolio).value
+        position_percent_dict[key] = market_value_dict[key] / portfolio_value_dict[key]
+    # 人民币投资组合的持仓比例通过511880的市值占比计算
     current_price, increase, color = get_quote_snowball('511880')  # 银华日利
     positions = Position.objects.filter(stock=93)  # 银华日利
     quantity = 0
@@ -124,7 +124,7 @@ def _generate_overview_data1(rate):
     # 计算加权仓位
     position_percent_weighting = 0
     for key in currency_dict:
-        position_percent_weighting += float(position_percent_dict[key]) * fund_percent_dict[key]
+        position_percent_weighting += float(position_percent_dict[key]) * portfolio_percent_dict[key]
 
     total_dividend = []
     current_dividend = []
@@ -245,8 +245,8 @@ def _generate_overview_data1(rate):
     # 写入overview.json
     overview_data = {}
     # 总市值、分红收益、当年分红、当年分红率、打新收益、当年打新、持股数量
-    overview_data.update(fund_value_sum=fund_value_sum)
-    overview_data.update(fund_net_value_weighting=fund_net_value_weighting)
+    overview_data.update(portfolio_value_sum=portfolio_value_sum)
+    overview_data.update(portfolio_net_value_weighting=portfolio_net_value_weighting)
     overview_data.update(market_value_sum=market_value_sum)
     overview_data.update(position_percent_weighting=position_percent_weighting)
     overview_data.update(total_dividend_sum=total_dividend_sum)
@@ -261,9 +261,9 @@ def _generate_overview_data1(rate):
     overview_data.update(current_subscription_stock_num=current_subscription_stock_num)
     overview_data.update(current_subscription_band_num=current_subscription_band_num)
     overview_data.update(holding_stock_number=holding_stock_number)
-    overview_data.update(fund_value_array=fund_value_array)
-    # overview_data.update(fund_principal_array=fund_principal_array)
-    # overview_data.update(fund_currency_array=fund_currency_array)
+    overview_data.update(portfolio_value_array=portfolio_value_array)
+    # overview_data.update(portfolio_principal_array=portfolio_principal_array)
+    # overview_data.update(portfolio_currency_array=portfolio_currency_array)
     overview_data.update(holding_stock_array=holding_stock_array)
 
     overview_data.update(top5_percent=top5_percent)
@@ -324,8 +324,8 @@ def _generate_overview_data(rate):
     # 获取货币信息
     currency_dict = _get_currency_dict()
 
-    # 计算基金相关数据
-    fund_data = _calculate_fund_data(rate, currency_dict)
+    # 计算投资组合相关数据
+    portfolio_data = _calculate_portfolio_data(rate, currency_dict)
 
     # 获取持仓股票代码和价格数据
     stock_code_array, price_array = _get_stock_data()
@@ -359,7 +359,7 @@ def _generate_overview_data(rate):
 
     # 构建最终结果
     overview_data = _build_overview_data(
-        fund_data, position_data, dividend_data, subscription_data,
+        portfolio_data, position_data, dividend_data, subscription_data,
         market_data, holding_stock_number, top5_data, market_sum_data,
         recent_activities, colors, current_year
     )
@@ -373,32 +373,32 @@ def _get_currency_dict():
     return {c.id: {'code': c.code, 'name': c.name} for c in currencies}
 
 
-def _calculate_fund_data(rate, currency_dict):
-    """计算基金相关数据"""
-    fund_list = Fund.objects.all()
-    fund_value_array = []
-    fund_value_sum = 0
+def _calculate_portfolio_data(rate, currency_dict):
+    """计算投资组合相关数据"""
+    portfolio_list = Portfolio.objects.all()
+    portfolio_value_array = []
+    portfolio_value_sum = 0
 
-    for fund in fund_list:
-        value = round(float(fund.fund_value) * rate[fund.currency.code])
-        fund_value_array.append(value)
-        fund_value_sum += value
+    for portfolio in portfolio_list:
+        value = round(float(portfolio.portfolio_value) * rate[portfolio.currency.code])
+        portfolio_value_array.append(value)
+        portfolio_value_sum += value
 
-    # 计算基金价值占比和加权净值
-    fund_percent_dict = {}
-    fund_net_value_weighting = 0
+    # 计算投资组合价值占比和加权净值
+    portfolio_percent_dict = {}
+    portfolio_net_value_weighting = 0
 
     for key in currency_dict:
-        fund = fund_list.get(currency_id=key)
-        percent = float(fund.fund_value) / fund_value_sum
-        fund_percent_dict[key] = percent
-        fund_net_value_weighting += float(fund.fund_net_value) * percent
+        portfolio = portfolio_list.get(currency_id=key)
+        percent = float(portfolio.portfolio_value) / portfolio_value_sum
+        portfolio_percent_dict[key] = percent
+        portfolio_net_value_weighting += float(portfolio.portfolio_net_value) * percent
 
     return {
-        'fund_value_sum': fund_value_sum,
-        'fund_value_array': fund_value_array,
-        'fund_percent_dict': fund_percent_dict,
-        'fund_net_value_weighting': fund_net_value_weighting
+        'portfolio_value_sum': portfolio_value_sum,
+        'portfolio_value_array': portfolio_value_array,
+        'portfolio_percent_dict': portfolio_percent_dict,
+        'portfolio_net_value_weighting': portfolio_net_value_weighting
     }
 
 
@@ -430,25 +430,25 @@ def _calculate_cny_position_data(price_array, rate):
 
 def _calculate_position_data(currency_dict, amount_sum_CNY):
     """计算仓位数据"""
-    # 获取所有fund同时存在记录的最大有效日期
-    total_fund = FundHistory.objects.values('fund').distinct().count()
-    valid_dates = FundHistory.objects.values('date').annotate(
-        fund_count=Count('fund', distinct=True)
-    ).filter(fund_count=total_fund).order_by('-date')
+    # 获取所有portfolio同时存在记录的最大有效日期
+    total_portfolio = PortfolioHistory.objects.values('portfolio').distinct().count()
+    valid_dates = PortfolioHistory.objects.values('date').annotate(
+        portfolio_count=Count('portfolio', distinct=True)
+    ).filter(portfolio_count=total_portfolio).order_by('-date')
 
-    max_date_fund = valid_dates.first()['date'] if valid_dates.exists() else None
+    max_date_portfolio = valid_dates.first()['date'] if valid_dates.exists() else None
 
     position_percent_dict = {}
-    fund_value_dict = {}
+    portfolio_value_dict = {}
     market_value_dict = {}
 
     for key, value in currency_dict.items():
-        fund_id = Fund.objects.get(currency_id=key).id
-        fund_value_dict[key] = FundHistory.objects.get(fund_id=fund_id, date=max_date_fund).fund_value
-        market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_fund).value
-        position_percent_dict[key] = market_value_dict[key] / fund_value_dict[key]
+        portfolio_id = Portfolio.objects.get(currency_id=key).id
+        portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=max_date_portfolio).portfolio_value
+        market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_portfolio).value
+        position_percent_dict[key] = market_value_dict[key] / portfolio_value_dict[key]
 
-    # 人民币基金的持仓比例通过511880的市值占比计算
+    # 人民币投资组合的持仓比例通过511880的市值占比计算
     current_price, increase, color = get_quote_snowball('511880')  # 银华日利
     positions = Position.objects.filter(stock=93)  # 银华日利
     quantity = sum(pos.position_quantity for pos in positions)
@@ -658,7 +658,7 @@ def _get_recent_activities():
     }
 
 
-def _build_overview_data(fund_data, position_data, dividend_data, subscription_data,
+def _build_overview_data(portfolio_data, position_data, dividend_data, subscription_data,
                          market_data, holding_stock_number, top5_data, market_sum_data,
                          recent_activities, colors, current_year):
     """构建最终的总览数据字典"""
@@ -670,13 +670,13 @@ def _build_overview_data(fund_data, position_data, dividend_data, subscription_d
     # 计算加权仓位
     position_percent_weighting = 0
     for key in position_data:
-        position_percent_weighting += float(position_data[key]) * fund_data['fund_percent_dict'].get(key, 0)
+        position_percent_weighting += float(position_data[key]) * portfolio_data['portfolio_percent_dict'].get(key, 0)
 
     overview_data = {
-        # 基金数据
-        'fund_value_sum': fund_data['fund_value_sum'],
-        'fund_net_value_weighting': fund_data['fund_net_value_weighting'],
-        'fund_value_array': fund_data['fund_value_array'],
+        # 投资组合数据
+        'portfolio_value_sum': portfolio_data['portfolio_value_sum'],
+        'portfolio_net_value_weighting': portfolio_data['portfolio_net_value_weighting'],
+        'portfolio_value_array': portfolio_data['portfolio_value_array'],
 
         # 市场数据
         'market_value_sum': market_data['market_value_sum'],
@@ -726,64 +726,64 @@ def _build_overview_data(fund_data, position_data, dividend_data, subscription_d
 
 
 
-# 资产概览
-def view_fund(request):
-    fund_list = Fund.objects.all()
+# 投资组合概览
+def view_portfolio(request):
+    portfolio_list = Portfolio.objects.all()
     rate = get_rate()
     currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in Currency.objects.all()}
     asset_distribution = {}
     for key in currency_dict:
-        asset_distribution[key] = float(Fund.objects.get(currency_id=key).fund_value) * rate[
+        asset_distribution[key] = float(Portfolio.objects.get(currency_id=key).portfolio_value) * rate[
             currency_dict[key]['code']]
 
     updating_time = datetime.datetime.now()
 
     context = {
-        "fund_list": fund_list,
+        "portfolio_list": portfolio_list,
         "rate": rate,
         "asset_distribution": asset_distribution,
         "updating_time": updating_time
     }
-    return render(request, templates_path + 'view_fund.html', context)
+    return render(request, templates_path + 'view_portfolio.html', context)
 
 
-# 资产详情
-def view_fund_details(request, fund_id):
-    fund_net_value_list = []
+# 投资组合详情
+def view_portfolio_details(request, portfolio_id):
+    portfolio_net_value_list = []
     baseline_net_value_list = []
-    fund_profit_rate_list = []
+    portfolio_profit_rate_list = []
     baseline_profit_rate_list = []
-    fund_annualized_profit_rate_list = []
+    portfolio_annualized_profit_rate_list = []
     baseline_annualized_profit_rate_list = []
     year_end_date_list = []
 
-    fund_history_list = FundHistory.objects.filter(fund=fund_id).order_by("date")
-    fund_name = Fund.objects.get(id=fund_id).fund_name
-    baseline_name = Fund.objects.get(id=fund_id).baseline.name
-    name_list = [fund_name, baseline_name]
+    portfolio_history_list = PortfolioHistory.objects.filter(portfolio=portfolio_id).order_by("date")
+    portfolio_name = Portfolio.objects.get(id=portfolio_id).portfolio_name
+    baseline_name = Portfolio.objects.get(id=portfolio_id).baseline.name
+    name_list = [portfolio_name, baseline_name]
 
-    max_date = get_max_date(fund_id)
-    min_date = get_min_date(fund_id)
+    max_date = get_max_date(portfolio_id)
+    min_date = get_min_date(portfolio_id)
     years = max_date.year - min_date.year
-    second_max_date = get_second_max_date(fund_id)
-    current_fund_history_object = fund_history_list.get(date=max_date)  # 生成概要数据
-    profit_rate = current_fund_history_object.fund_profit / current_fund_history_object.fund_principal
-    last_period_value = current_fund_history_object.fund_value - current_fund_history_object.fund_current_profit
-    last_year_max_date = FundHistory.objects.filter(
+    second_max_date = get_second_max_date(portfolio_id)
+    current_portfolio_history_object = portfolio_history_list.get(date=max_date)  # 生成概要数据
+    profit_rate = current_portfolio_history_object.portfolio_profit / current_portfolio_history_object.portfolio_principal
+    last_period_value = current_portfolio_history_object.portfolio_value - current_portfolio_history_object.portfolio_current_profit
+    last_year_max_date = PortfolioHistory.objects.filter(
         date__year=datetime.date.today().year - 1,
-        fund=fund_id
+        portfolio=portfolio_id
     ).aggregate(
         max_date=Max('date')
     )['max_date']
-    last_year_value = fund_history_list.get(date=last_year_max_date).fund_value
-    year_change_amount = current_fund_history_object.fund_value - last_year_value
+    last_year_value = portfolio_history_list.get(date=last_year_max_date).portfolio_value
+    year_change_amount = current_portfolio_history_object.portfolio_value - last_year_value
     if last_year_value != Decimal('0.0000') and year_change_amount != Decimal('0.0000'):
         year_change_rate = year_change_amount / last_year_value
     else:
         year_change_rate = 0
-    last_year_net_value = fund_history_list.get(date=last_year_max_date).fund_net_value
+    last_year_net_value = portfolio_history_list.get(date=last_year_max_date).portfolio_net_value
     if last_year_net_value != Decimal('0.0000'):
-        year_change_net_value_rate = current_fund_history_object.fund_net_value / last_year_net_value - 1
+        year_change_net_value_rate = current_portfolio_history_object.portfolio_net_value / last_year_net_value - 1
     else:
         year_change_net_value_rate = 0
 
@@ -822,7 +822,7 @@ def view_fund_details(request, fund_id):
 
         # 如果需要更新，则执行更新操作
         if need_update:
-            baseline_name_array = [rs.baseline.name for rs in Fund.objects.all()]
+            baseline_name_array = [rs.baseline.name for rs in Portfolio.objects.all()]
             get_current_index(baseline_name_array)
 
     # 读取baseline.json文件
@@ -834,20 +834,20 @@ def view_fund_details(request, fund_id):
     # 生成收益率比对数据compare_data_group
     compare_data_group = []
     year_list = list(
-        fund_history_list.annotate(year=ExtractYear('date')).values_list('year', flat=True).distinct().order_by('year')
+        portfolio_history_list.annotate(year=ExtractYear('date')).values_list('year', flat=True).distinct().order_by('year')
     )
-    pre_fund_net_value = 1
+    pre_portfolio_net_value = 1
     pre_baseline_net_value = 1
-    fund_temp = []
+    portfolio_temp = []
     baseline_temp = []
     for year in year_list:
-        year_end_date = get_year_end_date(fund_id, year)
+        year_end_date = get_year_end_date(portfolio_id, year)
 
-        fund_value = float(fund_history_list.get(date=year_end_date).fund_value)
-        fund_net_value = float(fund_history_list.get(date=year_end_date).fund_net_value)
-        fund_temp.append(fund_net_value)
-        fund_profit_rate = (fund_net_value / pre_fund_net_value - 1) * 100
-        pre_fund_net_value = fund_net_value
+        portfolio_value = float(portfolio_history_list.get(date=year_end_date).portfolio_value)
+        portfolio_net_value = float(portfolio_history_list.get(date=year_end_date).portfolio_net_value)
+        portfolio_temp.append(portfolio_net_value)
+        portfolio_profit_rate = (portfolio_net_value / pre_portfolio_net_value - 1) * 100
+        pre_portfolio_net_value = portfolio_net_value
 
         baseline_value = float(get_baseline_closing_price(baseline[baseline_name], year))
         baseline_net_value = float(baseline_value / min_date_baseline_value)
@@ -855,84 +855,84 @@ def view_fund_details(request, fund_id):
         baseline_profit_rate = (baseline_net_value / pre_baseline_net_value - 1) * 100
         pre_baseline_net_value = baseline_net_value
 
-        earliest_date = Fund.objects.get(id=fund_id).fund_create_date  # 计算年化收益率的起始日期为基金的创立日期
+        earliest_date = Portfolio.objects.get(id=portfolio_id).portfolio_create_date  # 计算年化收益率的起始日期为投资组合的创立日期
         years_value = float((year_end_date - earliest_date).days / 365)
-        fund_annualized_profit_rate = 0 if years_value == 0 else (float(fund_net_value) ** (1 / years_value) - 1) *100
+        portfolio_annualized_profit_rate = 0 if years_value == 0 else (float(portfolio_net_value) ** (1 / years_value) - 1) *100
         baseline_annualized_profit_rate = 0 if years_value == 0 else (float(baseline_net_value) **  (1 / years_value) - 1) *100
 
         # 初始化默认值
-        fund_annualized_profit_rate_3years = 0
+        portfolio_annualized_profit_rate_3years = 0
         baseline_annualized_profit_rate_3years = 0
-        fund_annualized_profit_rate_5years = 0
+        portfolio_annualized_profit_rate_5years = 0
         baseline_annualized_profit_rate_5years = 0
 
         # 计算3年年化收益率（当数据点足够时）
-        if len(fund_temp) > 3:
-            fund_annualized_profit_rate_3years = ((fund_temp[-1] / fund_temp[-4]) ** (1 / 3) - 1) * 100
+        if len(portfolio_temp) > 3:
+            portfolio_annualized_profit_rate_3years = ((portfolio_temp[-1] / portfolio_temp[-4]) ** (1 / 3) - 1) * 100
             baseline_annualized_profit_rate_3years = ((baseline_temp[-1] / baseline_temp[-4]) ** (1 / 3) - 1) * 100
 
         # 计算5年年化收益率（当数据点足够时）
-        if len(fund_temp) > 5:
-            fund_annualized_profit_rate_5years = ((fund_temp[-1] / fund_temp[-6]) ** (1 / 5) - 1) * 100
+        if len(portfolio_temp) > 5:
+            portfolio_annualized_profit_rate_5years = ((portfolio_temp[-1] / portfolio_temp[-6]) ** (1 / 5) - 1) * 100
             baseline_annualized_profit_rate_5years = ((baseline_temp[-1] / baseline_temp[-6]) ** (1 / 5) - 1) * 100
 
-        compare_net_value = (fund_net_value - baseline_net_value) * 100
-        compare_profit_rate = fund_profit_rate - baseline_profit_rate
-        compare_annualized_profit_rate = fund_annualized_profit_rate - baseline_annualized_profit_rate
-        compare_annualized_profit_rate_3years = fund_annualized_profit_rate_3years - baseline_annualized_profit_rate_3years
-        compare_annualized_profit_rate_5years = fund_annualized_profit_rate_5years - baseline_annualized_profit_rate_5years
+        compare_net_value = (portfolio_net_value - baseline_net_value) * 100
+        compare_profit_rate = portfolio_profit_rate - baseline_profit_rate
+        compare_annualized_profit_rate = portfolio_annualized_profit_rate - baseline_annualized_profit_rate
+        compare_annualized_profit_rate_3years = portfolio_annualized_profit_rate_3years - baseline_annualized_profit_rate_3years
+        compare_annualized_profit_rate_5years = portfolio_annualized_profit_rate_5years - baseline_annualized_profit_rate_5years
 
         # 生成收益率对比数据
-        compare_data = [str(year_end_date.year), fund_value, baseline_value, fund_net_value, baseline_net_value,
-                        compare_net_value, fund_profit_rate, baseline_profit_rate, compare_profit_rate,
-                        fund_annualized_profit_rate, baseline_annualized_profit_rate, compare_annualized_profit_rate,
-                        fund_annualized_profit_rate_3years, baseline_annualized_profit_rate_3years,
-                        compare_annualized_profit_rate_3years, fund_annualized_profit_rate_5years,
+        compare_data = [str(year_end_date.year), portfolio_value, baseline_value, portfolio_net_value, baseline_net_value,
+                        compare_net_value, portfolio_profit_rate, baseline_profit_rate, compare_profit_rate,
+                        portfolio_annualized_profit_rate, baseline_annualized_profit_rate, compare_annualized_profit_rate,
+                        portfolio_annualized_profit_rate_3years, baseline_annualized_profit_rate_3years,
+                        compare_annualized_profit_rate_3years, portfolio_annualized_profit_rate_5years,
                         baseline_annualized_profit_rate_5years, compare_annualized_profit_rate_5years]
         compare_data_group.append(compare_data)
 
         # 生成年度收益率数据，用于图表
         year_end_date_list.append(float(year_end_date.year))
-        fund_net_value_list.append(float(Decimal(fund_net_value).quantize(Decimal('0.0000'))))
+        portfolio_net_value_list.append(float(Decimal(portfolio_net_value).quantize(Decimal('0.0000'))))
         baseline_net_value_list.append(float(Decimal(baseline_net_value).quantize(Decimal('0.0000'))))
-        fund_profit_rate_list.append(float(Decimal(fund_profit_rate).quantize(Decimal('0.00'))))
+        portfolio_profit_rate_list.append(float(Decimal(portfolio_profit_rate).quantize(Decimal('0.00'))))
         baseline_profit_rate_list.append(float(Decimal(baseline_profit_rate).quantize(Decimal('0.00'))))
 
 
         # 生成年化收益率数据，用于图表
-        fund_annualized_profit_rate_list.append(
-            float(Decimal(fund_annualized_profit_rate).quantize(Decimal('0.00'))))
+        portfolio_annualized_profit_rate_list.append(
+            float(Decimal(portfolio_annualized_profit_rate).quantize(Decimal('0.00'))))
         baseline_annualized_profit_rate_list.append(
             float(Decimal(baseline_annualized_profit_rate).quantize(Decimal('0.00'))))
 
     # 生成年度收益率柱图和净值折线图数据
     line_year_end_date_list = year_end_date_list
-    line_fund_net_value_list = fund_net_value_list
+    line_portfolio_net_value_list = portfolio_net_value_list
     line_baseline_net_value_list = baseline_net_value_list
     # bar_year_end_date_list = year_end_date_list[1:]  # 柱图第一列去掉
-    # bar_fund_profit_rate_list = fund_profit_rate_list[1:]  # 柱图第一列去掉
+    # bar_portfolio_profit_rate_list = portfolio_profit_rate_list[1:]  # 柱图第一列去掉
     # bar_baseline_profit_rate_list = baseline_profit_rate_list[1:]  # 柱图第一列去掉
     bar_year_end_date_list = year_end_date_list  # 柱图第一列去掉
-    bar_fund_profit_rate_list = fund_profit_rate_list # 柱图第一列去掉
+    bar_portfolio_profit_rate_list = portfolio_profit_rate_list # 柱图第一列去掉
     bar_baseline_profit_rate_list = baseline_profit_rate_list  # 柱图第一列去掉
 
-    # 生成资产变化日历字典数据assetChanges
+    # 生成投资组合变化日历字典数据assetChanges
     assetChanges = {}
-    for rs in fund_history_list:
+    for rs in portfolio_history_list:
         date = rs.date.strftime("%Y-%m-%d")
-        # amount = float(rs.fund_current_profit) - float(rs.fund_in_out)
-        amount = float(rs.fund_current_profit)
+        # amount = float(rs.portfolio_current_profit) - float(rs.portfolio_in_out)
+        amount = float(rs.portfolio_current_profit)
         assetChanges[date] = amount
 
-    # 生成净值、资产、收益曲线数据
-    fund_data = []
-    for rs in fund_history_list:
+    # 生成净值、投资组合、收益曲线数据
+    portfolio_data = []
+    for rs in portfolio_history_list:
         date = str(rs.date)
-        net_value = float(rs.fund_net_value)
-        value = float(rs.fund_value / 10000)
-        principal = float(rs.fund_principal / 10000)
-        profit = float(rs.fund_profit / 10000)
-        fund_data.append({
+        net_value = float(rs.portfolio_net_value)
+        value = float(rs.portfolio_value / 10000)
+        principal = float(rs.portfolio_principal / 10000)
+        profit = float(rs.portfolio_profit / 10000)
+        portfolio_data.append({
             "date": date,
             "net_value": net_value,
             "value": value,
@@ -940,10 +940,10 @@ def view_fund_details(request, fund_id):
             "profit": profit
         })
 
-    # 近期资产、收益、年度收益列表
-    fund_history_list_TOP = FundHistory.objects.filter(fund=fund_id).order_by("-date")[:12]
-    yearly_profit_list = FundHistory.objects.filter(fund=fund_id).values('date__year').annotate(
-        yearly_profit=Sum('fund_current_profit')
+    # 近期投资组合、收益、年度收益列表
+    portfolio_history_list_TOP = PortfolioHistory.objects.filter(portfolio=portfolio_id).order_by("-date")[:12]
+    yearly_profit_list = PortfolioHistory.objects.filter(portfolio=portfolio_id).values('date__year').annotate(
+        yearly_profit=Sum('portfolio_current_profit')
     ).order_by('-date__year')
     profit_total = sum(entry['yearly_profit'] for entry in yearly_profit_list)
 
@@ -957,9 +957,9 @@ def view_fund_details(request, fund_id):
         })
 
     # 近期、年度出入金列表
-    recent_in_out_list = FundHistory.objects.filter(fund=fund_id).exclude(fund_in_out=0).order_by('-date')[:12]
-    yearly_in_out_list = FundHistory.objects.filter(fund=fund_id).values('date__year').annotate(
-        yearly_in_out=Sum('fund_in_out')
+    recent_in_out_list = PortfolioHistory.objects.filter(portfolio=portfolio_id).exclude(portfolio_in_out=0).order_by('-date')[:12]
+    yearly_in_out_list = PortfolioHistory.objects.filter(portfolio=portfolio_id).values('date__year').annotate(
+        yearly_in_out=Sum('portfolio_in_out')
     ).order_by('-date__year')
     in_out_total = sum(entry['yearly_in_out'] for entry in yearly_in_out_list)
 
@@ -975,7 +975,7 @@ def view_fund_details(request, fund_id):
 
     updating_time = datetime.datetime.now()
 
-    return render(request, templates_path + 'view_fund_details.html', locals())
+    return render(request, templates_path + 'view_portfolio_details.html', locals())
 
 
 # 市值概览
@@ -1016,28 +1016,28 @@ def view_market_value(request):
 
     # 仓位计算
     position_percent_dict = {}
-    fund_value_dict = {}
+    portfolio_value_dict = {}
     market_value_dict = {}
 
-    # 获取所有fund同时存在记录的最大有效日期
-    # 获取所有不同的基金数量
-    total_fund = FundHistory.objects.values('fund').distinct().count()
-    # 查找所有日期及其对应的基金数量，并筛选出基金数等于总基金数的日期
-    valid_dates = FundHistory.objects.values('date').annotate(
-        fund_count=Count('fund', distinct=True)
-    ).filter(fund_count=total_fund).order_by('-date')
+    # 获取所有portfolio同时存在记录的最大有效日期
+    # 获取所有不同的投资组合数量
+    total_portfolio = PortfolioHistory.objects.values('portfolio').distinct().count()
+    # 查找所有日期及其对应的投资组合数量，并筛选出投资组合数等于总投资组合数的日期
+    valid_dates = PortfolioHistory.objects.values('date').annotate(
+        portfolio_count=Count('portfolio', distinct=True)
+    ).filter(portfolio_count=total_portfolio).order_by('-date')
     if valid_dates.exists():
-        max_date_fund = valid_dates.first()['date']
+        max_date_portfolio = valid_dates.first()['date']
     else:
-        max_date_fund = None
+        max_date_portfolio = None
 
     for key in currency_dict:
-        fund_id = Fund.objects.get(currency_id=key).id
-        fund_value_dict[key] = FundHistory.objects.get(fund_id=fund_id, date=max_date_fund).fund_value
-        market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_fund).value
-        position_percent_dict[key] = market_value_dict[key] / fund_value_dict[key]
+        portfolio_id = Portfolio.objects.get(currency_id=key).id
+        portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=max_date_portfolio).portfolio_value
+        market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_portfolio).value
+        position_percent_dict[key] = market_value_dict[key] / portfolio_value_dict[key]
 
-    # 人民币基金的持仓比例通过511880的市值占比计算
+    # 人民币投资组合的持仓比例通过511880的市值占比计算
     current_price, increase, color = get_quote_snowball('511880')  # 银华日利
     positions = Position.objects.filter(stock=93)  # 银华日利
     quantity = 0
@@ -2948,8 +2948,8 @@ def list_dividend_history(request):
     return render(request, templates_path + 'backstage/list_dividend_history.html', locals())
 
 
-# 基金表增删改查
-def add_fund(request):
+# 投资组合表增删改查
+def add_portfolio(request):
     baseline_list = Baseline.objects.all().order_by('currency_id', 'code')
     currency_items = ()
     keys = []
@@ -2959,48 +2959,48 @@ def add_fund(request):
         values.append(rs.name)
     currency_items = tuple(zip(keys, values))
     if request.method == 'POST':
-        fund_name = request.POST.get('fund_name')
-        # fund_currency = request.POST.get('fund_currency')
+        portfolio_name = request.POST.get('portfolio_name')
+        # portfolio_currency = request.POST.get('portfolio_currency')
         currency_value = request.POST.get('currency')
-        fund_create_date = request.POST.get('fund_create_date')
-        fund_value = request.POST.get('fund_value')
-        fund_principal = request.POST.get('fund_principal')
-        fund_PHR = request.POST.get('fund_PHR')
-        fund_net_value = request.POST.get('fund_net_value')
+        portfolio_create_date = request.POST.get('portfolio_create_date')
+        portfolio_value = request.POST.get('portfolio_value')
+        portfolio_principal = request.POST.get('portfolio_principal')
+        portfolio_PHR = request.POST.get('portfolio_PHR')
+        portfolio_net_value = request.POST.get('portfolio_net_value')
         baseline_value = request.POST.get('baseline')
-        fund_script = request.POST.get('fund_script')
-        if fund_name.strip() == '':
-            error_info = "基金名称不能为空！"
-            return render(request, templates_path + 'backstage/add_fund.html', locals())
+        portfolio_script = request.POST.get('portfolio_script')
+        if portfolio_name.strip() == '':
+            error_info = "投资组合名称不能为空！"
+            return render(request, templates_path + 'backstage/add_portfolio.html', locals())
         try:
-            p = Fund.objects.create(
-                fund_name=fund_name,
-                # fund_currency=fund_currency,
+            p = Portfolio.objects.create(
+                portfolio_name=portfolio_name,
+                # portfolio_currency=portfolio_currency,
                 currency_id=currency_value,
-                fund_create_date=fund_create_date,
-                fund_value=fund_value,
-                fund_principal=fund_principal,
-                fund_PHR=fund_PHR,
-                fund_net_value=fund_net_value,
+                portfolio_create_date=portfolio_create_date,
+                portfolio_value=portfolio_value,
+                portfolio_principal=portfolio_principal,
+                portfolio_PHR=portfolio_PHR,
+                portfolio_net_value=portfolio_net_value,
                 baseline_id=baseline_value,
-                fund_script=fund_script
+                portfolio_script=portfolio_script
             )
-            return redirect('/benben/list_fund/')
+            return redirect('/benben/list_portfolio/')
         except Exception as e:
             error_info = "输入信息有错误！"
-            return render(request, templates_path + 'backstage/add_fund.html', locals())
+            return render(request, templates_path + 'backstage/add_portfolio.html', locals())
         finally:
             pass
-    return render(request, templates_path + 'backstage/add_fund.html', locals())
+    return render(request, templates_path + 'backstage/add_portfolio.html', locals())
 
 
-def del_fund(request, fund_id):
-    fund_object = Fund.objects.get(id=fund_id)
-    fund_object.delete()
-    return redirect('/benben/list_fund/')
+def del_portfolio(request, portfolio_id):
+    portfolio_object = Portfolio.objects.get(id=portfolio_id)
+    portfolio_object.delete()
+    return redirect('/benben/list_portfolio/')
 
 
-def edit_fund(request, fund_id):
+def edit_portfolio(request, portfolio_id):
     baseline_list = Baseline.objects.all().order_by('currency_id', 'code')
     currency_items = ()
     keys = []
@@ -3011,189 +3011,189 @@ def edit_fund(request, fund_id):
     currency_items = tuple(zip(keys, values))
     if request.method == 'POST':
         id = request.POST.get('id')
-        fund_name = request.POST.get('fund_name')
-        # fund_currency = request.POST.get('fund_currency')
+        portfolio_name = request.POST.get('portfolio_name')
+        # portfolio_currency = request.POST.get('portfolio_currency')
         currency_value = request.POST.get('currency')
-        fund_create_date = request.POST.get('fund_create_date')
-        fund_value = request.POST.get('fund_value')
-        fund_principal = request.POST.get('fund_principal')
-        fund_PHR = request.POST.get('fund_PHR')
-        fund_net_value = request.POST.get('fund_net_value')
+        portfolio_create_date = request.POST.get('portfolio_create_date')
+        portfolio_value = request.POST.get('portfolio_value')
+        portfolio_principal = request.POST.get('portfolio_principal')
+        portfolio_PHR = request.POST.get('portfolio_PHR')
+        portfolio_net_value = request.POST.get('portfolio_net_value')
         baseline_value = request.POST.get('baseline')
-        fund_script = request.POST.get('fund_script')
-        fund_object = Fund.objects.get(id=id)
+        portfolio_script = request.POST.get('portfolio_script')
+        portfolio_object = Portfolio.objects.get(id=id)
         try:
-            fund_object.fund_name = fund_name
-            # fund_object.fund_currency = fund_currency
-            fund_object.currency_id = currency_value
-            fund_object.fund_create_date = fund_create_date
-            fund_object.fund_value = fund_value
-            fund_object.fund_principal = fund_principal
-            fund_object.fund_PHR = fund_PHR
-            fund_object.fund_net_value = fund_net_value
-            fund_object.baseline_id = baseline_value
-            fund_object.fund_script = fund_script
-            fund_object.save()
+            portfolio_object.portfolio_name = portfolio_name
+            # portfolio_object.portfolio_currency = portfolio_currency
+            portfolio_object.currency_id = currency_value
+            portfolio_object.portfolio_create_date = portfolio_create_date
+            portfolio_object.portfolio_value = portfolio_value
+            portfolio_object.portfolio_principal = portfolio_principal
+            portfolio_object.portfolio_PHR = portfolio_PHR
+            portfolio_object.portfolio_net_value = portfolio_net_value
+            portfolio_object.baseline_id = baseline_value
+            portfolio_object.portfolio_script = portfolio_script
+            portfolio_object.save()
         except Exception as e:
             error_info = "输入信息有错误！"
-            return render(request, templates_path + 'backstage/edit_fund.html', locals())
+            return render(request, templates_path + 'backstage/edit_portfolio.html', locals())
         finally:
             pass
-        return redirect('/benben/list_fund/')
+        return redirect('/benben/list_portfolio/')
     else:
-        fund_object = Fund.objects.get(id=fund_id)
-        return render(request, templates_path + 'backstage/edit_fund.html', locals())
+        portfolio_object = Portfolio.objects.get(id=portfolio_id)
+        return render(request, templates_path + 'backstage/edit_portfolio.html', locals())
 
 
-def list_fund(request):
-    fund_list = Fund.objects.all().order_by('id')
-    return render(request, templates_path + 'backstage/list_fund.html', locals())
+def list_portfolio(request):
+    portfolio_list = Portfolio.objects.all().order_by('id')
+    return render(request, templates_path + 'backstage/list_portfolio.html', locals())
 
 
-# 基金明细表增删改查
-def add_fund_history(request, fund_id):
-    fund_list = Fund.objects.all()
+# 投资组合明细表增删改查
+def add_portfolio_history(request, portfolio_id):
+    portfolio_list = Portfolio.objects.all()
     if request.method == 'POST':
-        fund_id = request.POST.get('fund_id')
+        portfolio_id = request.POST.get('portfolio_id')
         date = datetime.datetime.strptime(request.POST.get('date'), "%Y-%m-%d").date()
-        fund_value = request.POST.get('fund_value')
-        fund_in_out = request.POST.get('fund_in_out')
-        # fund_principal = request.POST.get('fund_principal')
-        # fund_PHR = request.POST.get('fund_PHR')
-        # fund_net_value = request.POST.get('fund_net_value')
-        # fund_profit = request.POST.get('fund_profit')
-        # fund_profit_rate = request.POST.get('fund_profit_rate')
-        # fund_annualized_profit_rate = request.POST.get('fund_annualized_profit_rate')
-        # print(fund_id,date,fund_value,fund_in_out)
-        if fund_id.strip() == '':
-            error_info = "基金名称不能为空！"
-            return render(request, templates_path + 'backstage/add_fund_history.html', locals())
+        portfolio_value = request.POST.get('portfolio_value')
+        portfolio_in_out = request.POST.get('portfolio_in_out')
+        # portfolio_principal = request.POST.get('portfolio_principal')
+        # portfolio_PHR = request.POST.get('portfolio_PHR')
+        # portfolio_net_value = request.POST.get('portfolio_net_value')
+        # portfolio_profit = request.POST.get('portfolio_profit')
+        # portfolio_profit_rate = request.POST.get('portfolio_profit_rate')
+        # portfolio_annualized_profit_rate = request.POST.get('portfolio_annualized_profit_rate')
+        # print(portfolio_id,date,portfolio_value,portfolio_in_out)
+        if portfolio_id.strip() == '':
+            error_info = "投资组合名称不能为空！"
+            return render(request, templates_path + 'backstage/add_portfolio_history.html', locals())
         try:
-            fund_value = float(fund_value)
-            fund_in_out = float(fund_in_out)
-            latest_date = get_max_date(fund_id)
-            earliest_date = Fund.objects.get(id=fund_id).fund_create_date  # 计算年化收益率的起始日期为基金的创立日期
-            # earliest_date = get_min_date(fund_id)
+            portfolio_value = float(portfolio_value)
+            portfolio_in_out = float(portfolio_in_out)
+            latest_date = get_max_date(portfolio_id)
+            earliest_date = Portfolio.objects.get(id=portfolio_id).portfolio_create_date  # 计算年化收益率的起始日期为投资组合的创立日期
+            # earliest_date = get_min_date(portfolio_id)
             years = float((latest_date - earliest_date).days / 365)
             # print(latest_date,earliest_date,years)
-            latest_fund_value = float(FundHistory.objects.get(fund_id=fund_id, date=latest_date).fund_value)
-            latest_fund_principal = float(
-                FundHistory.objects.get(fund_id=fund_id, date=latest_date).fund_principal)
-            latest_fund_PHR = float(FundHistory.objects.get(fund_id=fund_id, date=latest_date).fund_PHR)
-            latest_fund_net_value = float(
-                FundHistory.objects.get(fund_id=fund_id, date=latest_date).fund_net_value)
-            latest_fund_profit_rate = float(
-                FundHistory.objects.get(fund_id=fund_id, date=latest_date).fund_profit_rate)
-            # print(latest_date,earliest_date,years,latest_fund_principal,latest_fund_PHR)
+            latest_portfolio_value = float(PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_value)
+            latest_portfolio_principal = float(
+                PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_principal)
+            latest_portfolio_PHR = float(PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_PHR)
+            latest_portfolio_net_value = float(
+                PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_net_value)
+            latest_portfolio_profit_rate = float(
+                PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_profit_rate)
+            # print(latest_date,earliest_date,years,latest_portfolio_principal,latest_portfolio_PHR)
 
-            fund_principal = latest_fund_principal + fund_in_out
-            if latest_fund_PHR == 0:  # 如果份数为0，则基金已经关闭，净值保持不变
-                fund_net_value = latest_fund_net_value
+            portfolio_principal = latest_portfolio_principal + portfolio_in_out
+            if latest_portfolio_PHR == 0:  # 如果份数为0，则投资组合已经关闭，净值保持不变
+                portfolio_net_value = latest_portfolio_net_value
             else:
-                fund_net_value = (fund_value - fund_in_out) / latest_fund_PHR
-            fund_PHR = fund_value / fund_net_value
-            fund_current_profit = fund_value - fund_in_out - latest_fund_value
-            fund_current_profit_rate = (fund_net_value - latest_fund_net_value) / latest_fund_net_value
-            fund_profit = fund_value - fund_principal
-            if latest_fund_PHR == 0:  # 如果份数为0，则基金已经关闭，累计收益率保持不变
-                fund_profit_rate = latest_fund_profit_rate
+                portfolio_net_value = (portfolio_value - portfolio_in_out) / latest_portfolio_PHR
+            portfolio_PHR = portfolio_value / portfolio_net_value
+            portfolio_current_profit = portfolio_value - portfolio_in_out - latest_portfolio_value
+            portfolio_current_profit_rate = (portfolio_net_value - latest_portfolio_net_value) / latest_portfolio_net_value
+            portfolio_profit = portfolio_value - portfolio_principal
+            if latest_portfolio_PHR == 0:  # 如果份数为0，则投资组合已经关闭，累计收益率保持不变
+                portfolio_profit_rate = latest_portfolio_profit_rate
             else:
-                fund_profit_rate = fund_profit / fund_principal
+                portfolio_profit_rate = portfolio_profit / portfolio_principal
 
-            # print(latest_date,earliest_date,years,latest_fund_principal,latest_fund_PHR,fund_principal,fund_net_value,fund_PHR,fund_profit,fund_profit_rate)
+            # print(latest_date,earliest_date,years,latest_portfolio_principal,latest_portfolio_PHR,portfolio_principal,portfolio_net_value,portfolio_PHR,portfolio_profit,portfolio_profit_rate)
             # print(date, earliest_date)
             years = float((date - earliest_date).days / 365)
             # print(years)
-            fund_annualized_profit_rate = fund_net_value ** (1 / years) - 1
-            # print(fund_annualized_profit_rate)
-            # fund_annualized_profit_rate = (fund_net_value ** (1 / float(((latest_date - earliest_date).days) / 365)) - 1) * 100
-            # print(latest_date,earliest_date,years,latest_fund_principal,latest_fund_PHR,fund_principal,fund_net_value,fund_PHR,fund_profit,fund_profit_rate,fund_annualized_profit_rate)
-            # 插入一条基金明细记录
-            p = FundHistory.objects.create(
-                fund_id=fund_id,
+            portfolio_annualized_profit_rate = portfolio_net_value ** (1 / years) - 1
+            # print(portfolio_annualized_profit_rate)
+            # portfolio_annualized_profit_rate = (portfolio_net_value ** (1 / float(((latest_date - earliest_date).days) / 365)) - 1) * 100
+            # print(latest_date,earliest_date,years,latest_portfolio_principal,latest_portfolio_PHR,portfolio_principal,portfolio_net_value,portfolio_PHR,portfolio_profit,portfolio_profit_rate,portfolio_annualized_profit_rate)
+            # 插入一条投资组合明细记录
+            p = PortfolioHistory.objects.create(
+                portfolio_id=portfolio_id,
                 date=date,
-                fund_value=fund_value,
-                fund_in_out=fund_in_out,
-                fund_principal=fund_principal,
-                fund_PHR=fund_PHR,
-                fund_net_value=fund_net_value,
-                fund_current_profit=fund_current_profit,
-                fund_current_profit_rate=fund_current_profit_rate,
-                fund_profit=fund_profit,
-                fund_profit_rate=fund_profit_rate,
-                fund_annualized_profit_rate=fund_annualized_profit_rate
+                portfolio_value=portfolio_value,
+                portfolio_in_out=portfolio_in_out,
+                portfolio_principal=portfolio_principal,
+                portfolio_PHR=portfolio_PHR,
+                portfolio_net_value=portfolio_net_value,
+                portfolio_current_profit=portfolio_current_profit,
+                portfolio_current_profit_rate=portfolio_current_profit_rate,
+                portfolio_profit=portfolio_profit,
+                portfolio_profit_rate=portfolio_profit_rate,
+                portfolio_annualized_profit_rate=portfolio_annualized_profit_rate
             )
 
-            # 更新一条基金记录
-            fund_object = Fund.objects.get(id=fund_id)
-            fund_object.fund_value = fund_value
-            fund_object.fund_principal = fund_principal
-            fund_object.fund_PHR = fund_PHR
-            fund_object.fund_net_value = fund_net_value
-            fund_object.update_date = date
-            fund_object.save()
+            # 更新一条投资组合记录
+            portfolio_object = Portfolio.objects.get(id=portfolio_id)
+            portfolio_object.portfolio_value = portfolio_value
+            portfolio_object.portfolio_principal = portfolio_principal
+            portfolio_object.portfolio_PHR = portfolio_PHR
+            portfolio_object.portfolio_net_value = portfolio_net_value
+            portfolio_object.update_date = date
+            portfolio_object.save()
 
-            return redirect('/benben/list_fund_history/')
+            return redirect('/benben/list_portfolio_history/')
         except Exception as e:
             error_info = "输入信息有错误！"
-            print(latest_date, earliest_date, latest_fund_principal, latest_fund_PHR, fund_principal,
-                  fund_net_value, fund_PHR, fund_profit, fund_profit_rate, fund_annualized_profit_rate)
-            return render(request, templates_path + 'backstage/add_fund_history.html', locals())
+            print(latest_date, earliest_date, latest_portfolio_principal, latest_portfolio_PHR, portfolio_principal,
+                  portfolio_net_value, portfolio_PHR, portfolio_profit, portfolio_profit_rate, portfolio_annualized_profit_rate)
+            return render(request, templates_path + 'backstage/add_portfolio_history.html', locals())
         finally:
             pass
     else:
-        if fund_id != 0:
-            fund_object = Fund.objects.get(id=fund_id)
+        if portfolio_id != 0:
+            portfolio_object = Portfolio.objects.get(id=portfolio_id)
         else:
-            fund_object = Fund.objects.all()
-    return render(request, templates_path + 'backstage/add_fund_history.html', locals())
+            portfolio_object = Portfolio.objects.all()
+    return render(request, templates_path + 'backstage/add_portfolio_history.html', locals())
 
 
-def del_fund_history(request, fund_history_id):
-    fund_history_object = FundHistory.objects.get(id=fund_history_id)
-    fund_history_object.delete()
-    return redirect('/benben/list_fund_history/')
+def del_portfolio_history(request, portfolio_history_id):
+    portfolio_history_object = PortfolioHistory.objects.get(id=portfolio_history_id)
+    portfolio_history_object.delete()
+    return redirect('/benben/list_portfolio_history/')
 
 
-def edit_fund_history(request, fund_history_id):
-    fund_list = Fund.objects.all()
+def edit_portfolio_history(request, portfolio_history_id):
+    portfolio_list = Portfolio.objects.all()
     if request.method == 'POST':
         id = request.POST.get('id')
         date = request.POST.get('date')
-        fund_value = request.POST.get('fund_value')
-        fund_in_out = request.POST.get('fund_in_out')
-        fund_principal = request.POST.get('fund_principal')
-        fund_PHR = request.POST.get('fund_PHR')
-        fund_net_value = request.POST.get('fund_net_value')
-        fund_profit = request.POST.get('fund_profit')
-        fund_profit_rate = request.POST.get('fund_profit_rate')
-        fund_annualized_profit_rate = request.POST.get('fund_annualized_profit_rate')
-        fund_history_object = FundHistory.objects.get(id=id)
+        portfolio_value = request.POST.get('portfolio_value')
+        portfolio_in_out = request.POST.get('portfolio_in_out')
+        portfolio_principal = request.POST.get('portfolio_principal')
+        portfolio_PHR = request.POST.get('portfolio_PHR')
+        portfolio_net_value = request.POST.get('portfolio_net_value')
+        portfolio_profit = request.POST.get('portfolio_profit')
+        portfolio_profit_rate = request.POST.get('portfolio_profit_rate')
+        portfolio_annualized_profit_rate = request.POST.get('portfolio_annualized_profit_rate')
+        portfolio_history_object = PortfolioHistory.objects.get(id=id)
         try:
-            fund_history_object.date = date
-            fund_history_object.fund_value = fund_value
-            fund_history_object.fund_in_out = fund_in_out
-            fund_history_object.fund_principal = fund_principal
-            fund_history_object.fund_PHR = fund_PHR
-            fund_history_object.fund_net_value = fund_net_value
-            fund_history_object.fund_profit = fund_profit
-            fund_history_object.fund_profit_rate = fund_profit_rate
-            fund_history_object.fund_annualized_profit_rate = fund_annualized_profit_rate
-            fund_history_object.save()
+            portfolio_history_object.date = date
+            portfolio_history_object.portfolio_value = portfolio_value
+            portfolio_history_object.portfolio_in_out = portfolio_in_out
+            portfolio_history_object.portfolio_principal = portfolio_principal
+            portfolio_history_object.portfolio_PHR = portfolio_PHR
+            portfolio_history_object.portfolio_net_value = portfolio_net_value
+            portfolio_history_object.portfolio_profit = portfolio_profit
+            portfolio_history_object.portfolio_profit_rate = portfolio_profit_rate
+            portfolio_history_object.portfolio_annualized_profit_rate = portfolio_annualized_profit_rate
+            portfolio_history_object.save()
         except Exception as e:
             error_info = "输入信息有错误！"
-            return render(request, templates_path + 'backstage/edit_fund_history.html', locals())
+            return render(request, templates_path + 'backstage/edit_portfolio_history.html', locals())
         finally:
             pass
-        return redirect('/benben/list_fund_history/')
+        return redirect('/benben/list_portfolio_history/')
     else:
-        fund_history_object = FundHistory.objects.get(id=fund_history_id)
-        return render(request, templates_path + 'backstage/edit_fund_history.html', locals())
+        portfolio_history_object = PortfolioHistory.objects.get(id=portfolio_history_id)
+        return render(request, templates_path + 'backstage/edit_portfolio_history.html', locals())
 
 
-def list_fund_history(request):
-    fund_history_list = FundHistory.objects.all()
-    return render(request, templates_path + 'backstage/list_fund_history.html', locals())
+def list_portfolio_history(request):
+    portfolio_history_list = PortfolioHistory.objects.all()
+    return render(request, templates_path + 'backstage/list_portfolio_history.html', locals())
 
 
 # 比较基准表增删改查
@@ -3340,7 +3340,7 @@ def capture_dividend_history(request):
 
 # 从excel表读取数据导入数据库
 def batch_import(request):
-    fund_list = Fund.objects.all()
+    portfolio_list = Portfolio.objects.all()
     if request.method == 'POST':
         form_name = request.POST.get('form_name')
         if form_name == '交易':
@@ -3358,12 +3358,12 @@ def batch_import(request):
             account_type = request.POST.get('account_type')
             print(form_name, account_type)
             # excel2dividend('D:/gp/GP_操作.xlsm', '分红', -1, -1)
-        elif form_name == '基金明细':
-            fund_id = request.POST.get('fund_id')
-            fund_name = Fund.objects.get(id=fund_id).fund_name
-            file_name = 'c:/gp/GP（' + fund_name + '）.xls'
-            excel2fund(file_name, fund_name, -1, -1)
-            print(form_name, fund_id, fund_name)
+        elif form_name == '投资组合明细':
+            portfolio_id = request.POST.get('portfolio_id')
+            portfolio_name = Portfolio.objects.get(id=portfolio_id).portfolio_name
+            file_name = 'c:/gp/GP（' + portfolio_name + '）.xls'
+            excel2portfolio(file_name, portfolio_name, -1, -1)
+            print(form_name, portfolio_id, portfolio_name)
         else:
             pass
     return render(request, templates_path + 'other/batch_import.html', locals())  # 这里用'/'，‘//’或者‘/’代替'\'，防止'\b'被转义
@@ -4452,10 +4452,10 @@ def test(request):
 
     # echarts图表--净值曲线
     # data = []
-    # fund_history_list = fund_history.objects.filter(fund=3).order_by("date")
-    # for rs in fund_history_list:
+    # portfolio_history_list = portfolio_history.objects.filter(portfolio=3).order_by("date")
+    # for rs in portfolio_history_list:
     #     date = str(rs.date)
-    #     value = float(rs.fund_net_value)
+    #     value = float(rs.portfolio_net_value)
     #     data.append({
     #         "date": date,
     #         "value": value
@@ -4633,7 +4633,7 @@ def test(request):
 
     # migrate_market_currencies()
     # migrate_position_currencies()
-    # migrate_fund_currencies()
+    # migrate_portfolio_currencies()
     # migrate_dividend_currencies()
     # migrate_trade_currencies()
 
@@ -4773,22 +4773,22 @@ def migrate_position_currencies():
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
 
 
-def migrate_fund_currencies():
+def migrate_portfolio_currencies():
     """
-    迁移fund表中货币字段的数据
-    根据fund_currency值设置currency外键字段
+    迁移portfolio表中货币字段的数据
+    根据portfolio_currency值设置currency外键字段
     """
-    from .models import fund, currency
+    from .models import portfolio, currency
     # 创建货币映射字典
     currency_mapping = {
-        fund.CNY: 'CNY',
-        fund.HKD: 'HKD',
-        fund.USD: 'USD',
+        portfolio.CNY: 'CNY',
+        portfolio.HKD: 'HKD',
+        portfolio.USD: 'USD',
     }
 
     # 获取所有未迁移的市场记录
-    fund_to_migrate = Fund.objects.filter(currency__isnull=True)
-    total_count = fund_to_migrate.count()
+    portfolio_to_migrate = Portfolio.objects.filter(currency__isnull=True)
+    total_count = portfolio_to_migrate.count()
     migrated_count = 0
 
     if total_count == 0:
@@ -4798,12 +4798,12 @@ def migrate_fund_currencies():
     print(f"发现 {total_count} 条需要迁移货币字段的记录")
 
     # 处理每条记录
-    for fund_record in fund_to_migrate.iterator():
+    for portfolio_record in portfolio_to_migrate.iterator():
         # 获取原字段值对应的货币代码
-        currency_code = currency_mapping.get(fund_record.fund_currency)
+        currency_code = currency_mapping.get(portfolio_record.portfolio_currency)
 
         if not currency_code:
-            print(f"警告: 有未知的货币ID: {fund_record.fund_currency}")
+            print(f"警告: 有未知的货币ID: {portfolio_record.portfolio_currency}")
             continue
 
         try:
@@ -4811,8 +4811,8 @@ def migrate_fund_currencies():
             currency_obj = currency.objects.get(code=currency_code)
 
             # 更新currency字段
-            fund_record.currency = currency_obj
-            fund_record.save(update_fields=['currency'])
+            portfolio_record.currency = currency_obj
+            portfolio_record.save(update_fields=['currency'])
 
             migrated_count += 1
 
@@ -4821,7 +4821,7 @@ def migrate_fund_currencies():
             continue
 
     # 统计结果
-    remaining = Fund.objects.filter(currency__isnull=True).count()
+    remaining = Portfolio.objects.filter(currency__isnull=True).count()
 
     print(f"\n迁移完成!")
     print(f"成功迁移记录: {migrated_count}")
@@ -4830,7 +4830,7 @@ def migrate_fund_currencies():
 
     if remaining > 0:
         print("\n处理失败的可能原因:")
-        print("1. 市场记录中有未知的fund_currency值")
+        print("1. 市场记录中有未知的portfolio_currency值")
         print("2. 缺少对应的currency记录")
         print("3. 需要扩展currency_mapping字典以覆盖更多货币类型")
 
@@ -4883,7 +4883,7 @@ def migrate_dividend_currencies():
             continue
 
     # 统计结果
-    remaining = Fund.objects.filter(currency__isnull=True).count()
+    remaining = Portfolio.objects.filter(currency__isnull=True).count()
 
     print(f"\n迁移完成!")
     print(f"成功迁移记录: {migrated_count}")
@@ -4945,7 +4945,7 @@ def migrate_trade_currencies():
             continue
 
     # 统计结果
-    remaining = Fund.objects.filter(currency__isnull=True).count()
+    remaining = Portfolio.objects.filter(currency__isnull=True).count()
 
     print(f"\n迁移完成!")
     print(f"成功迁移记录: {migrated_count}")

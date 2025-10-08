@@ -15,7 +15,7 @@
         <!-- Page Heading -->
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <div class="col-xl-4" style="text-align:left">
-                <h1 class="h3 mb-0 font-weight-bold text-gray-700">资产</h1>
+                <h1 class="h3 mb-0 font-weight-bold text-gray-700">投资组合</h1>
             </div>
             <div class="col-xl-4" style="text-align:center">
     {#            <form action="" method="post" class="form-horizontal" role="form">#}
@@ -30,19 +30,19 @@
 
         <!-- Content Card Row -->
         <div class="row">
-            {% for fund in fund_list %}
+            {% for portfolio in portfolio_list %}
                 <div class="col-xl-4 col-md-6 mb-4">
                     <div class="card shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="h6 font-weight-bold text-primary text-uppercase mb-1">
-                                        <a href="/benben/view_fund_details/{{ fund.id|safe }}" style="color: inherit; text-decoration: none;">{{ fund.currency.name|safe }}资产</a>
+                                        <a href="/benben/view_portfolio_details/{{ portfolio.id|safe }}" style="color: inherit; text-decoration: none;">{{ portfolio.portfolio_name|safe }}</a>
                                     </div>
                                 </div>
                                 <div class="col-auto">
                                     <div class="metric-label">
-                                        <a href="/benben/view_fund_details/{{ fund.id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>
+                                        <a href="/benben/view_portfolio_details/{{ portfolio.id|safe }}" style="color: inherit; text-decoration: none;">详情 ></a>
                                     </div>
                                 </div>
                             </div>
@@ -50,16 +50,16 @@
                             <h3>&nbsp;</h3>
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
-                                    <div class="metric-label">总资产</div>
+                                    <div class="metric-label">总价值</div>
                                     <div class="metric-value">
-                                        <span>{{ fund.fund_value|floatformat:0 }}</span>
+                                        <span>{{ portfolio.portfolio_value|floatformat:0 }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
                                 <div class="col mr-2">
                                     <div class="metric-label">净值</div>
                                     <div class="metric-value">
-                                        <span>{{ fund.fund_net_value|floatformat:4 }}</span>
+                                        <span>{{ portfolio.portfolio_net_value|floatformat:4 }}</span>
                                         <span class="metric-unit">元</span>
                                     </div>
                                 </div>
@@ -71,11 +71,11 @@
         </div>
 
         <div class="row">
-            <!-- 资产分布图 -->
+            <!-- 投资组合分布图 -->
             <div class="col-xl-4 col-lg-4">
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
-                        <h6 class="m-0 font-weight-bold text-primary">资产分布</h6>
+                        <h6 class="m-0 font-weight-bold text-primary">投资组合分布</h6>
                     </div>
                     <div class="card-body">
                         <div class="chart-container" id="assetDistributionChart" style="width:100%; height:350px; display:block;"></div>
@@ -87,23 +87,23 @@
                 </div>
             </div>
 
-            <!-- 资产列表 -->
+            <!-- 投资组合列表 -->
             <div class="col-xl-8 col-lg-8 d-flex">
                 <div class="card shadow mb-4 w-100 d-flex flex-column">
                     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="height: 60px;">
-                        <h6 class="m-0 font-weight-bold text-primary">资产列表</h6>
+                        <h6 class="m-0 font-weight-bold text-primary">投资组合列表</h6>
                     </div>
                     <div class="card-body" style="position: relative; flex-grow: 1; min-height: 0;">
                         <div class="scroll-area">
-                            <!-- 资产列表 -->
-                            <div id="fundTable" class="h-100" style="display:block; overflow-y:auto;">
+                            <!-- 投资组合列表 -->
+                            <div id="portfolioTable" class="h-100" style="display:block; overflow-y:auto;">
                                 <div class="table-responsive">
                                     <table class="table table-bordered table-condensed table-striped table-hover list_tab">
                                         <thead class="bg-gradient-secondary text-gray-100">
                                             <tr>
                                                 <th>名称</th>
                                                 <th>创立日期</th>
-                                                <th>基金价值</th>
+                                                <th>价值</th>
                                                 <th>本金</th>
                                                 <th>单位</th>
                                                 <th>份数</th>
@@ -115,19 +115,19 @@
                                         </thead>
                                         <tbody>
                                             <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                                            {% for fund in fund_list %}
+                                            {% for portfolio in portfolio_list %}
                                                 <tr>
-                                                    <td>{{ fund.currency.name }}账户</td>
-                                                    <td>{{ fund.fund_create_date|date:'Y-m-d' }}</td>
-                                                    <td>{{ fund.fund_value|floatformat:0 }}</td>
-                                                    <td>{{ fund.fund_principal|floatformat:0 }}</td>
-                                                    <td>{{ fund.currency.code }}</td>
-                                                    <td>{{ fund.fund_PHR|floatformat:0 }}</td>
-                                                    <td>{{ fund.fund_net_value }}</td>
-                                                    <td>{{ fund.baseline.name }}</td>
-                                                    <td>{{ fund.update_date|date:'Y-m-d' }}</td>
+                                                    <td>{{ portfolio.portfolio_name }}</td>
+                                                    <td>{{ portfolio.portfolio_create_date|date:'Y-m-d' }}</td>
+                                                    <td>{{ portfolio.portfolio_value|floatformat:0 }}</td>
+                                                    <td>{{ portfolio.portfolio_principal|floatformat:0 }}</td>
+                                                    <td>{{ portfolio.currency.code }}</td>
+                                                    <td>{{ portfolio.portfolio_PHR|floatformat:0 }}</td>
+                                                    <td>{{ portfolio.portfolio_net_value }}</td>
+                                                    <td>{{ portfolio.baseline.name }}</td>
+                                                    <td>{{ portfolio.update_date|date:'Y-m-d' }}</td>
                                                     <td>
-                                                        <a href="/benben/view_fund_details/{{ fund.id|safe }}" class="btn btn-default btn-sm">
+                                                        <a href="/benben/view_portfolio_details/{{ portfolio.id|safe }}" class="btn btn-default btn-sm">
                                                             详情
                                                         </a>
                                                     </td>
@@ -155,7 +155,7 @@
     </div>
 
     <script>
-        // 资产分布图
+        // 投资组合分布图
         document.addEventListener('DOMContentLoaded', function() {
             const chart = echarts.init(document.getElementById('assetDistributionChart'));
             const chartData = {{ asset_distribution|safe }};
@@ -186,7 +186,7 @@
                         }
                     },
                     series: [{
-                        name: '资产',
+                        name: '投资组合',
                         type: 'pie',
                         radius: ['40%', '70%'],
                         center: ['40%', '50%'],

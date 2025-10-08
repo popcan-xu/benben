@@ -6,8 +6,8 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <div class="d-sm-flex align-items-center justify-content-between mb-0">
-                <h1 class="h4 mb-0 text-gray-800">基金列表</h1>
-                <a href="/benben/add_fund/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                <h1 class="h4 mb-0 text-gray-800">投资组合列表</h1>
+                <a href="/benben/add_portfolio/" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
                     <i class="fa fa-plus fa-sm text-white-50"></i> 增加
                 </a>
             </div>
@@ -17,13 +17,13 @@
                 <table id="dataTable" class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
                     <thead class="bg-gradient-secondary text-gray-100">
                         <tr>
-                            <th>基金名称</th>
+                            <th>名称</th>
                             <th>更新日期</th>
-                            <th>基金价值</th>
+                            <th>价值</th>
                             <th>本金</th>
                             <th>份数</th>
                             <th>净值</th>
-                            <th>货币类型</th>
+                            <th>货币</th>
                             <th>创立日期</th>
                             <th>更新日期</th>
                             <th>比较基准</th>
@@ -34,27 +34,27 @@
                     </thead>
                     <tbody>
                         <!--#trade_list即为视图函数list_trade中render传入参数//-->
-                        {% for fund in fund_list %}
+                        {% for portfolio in portfolio_list %}
                             <tr>
-                                <td>{{ fund.fund_name }}</td>
-                                <td>{{ fund.update_date|date:'Y-m-d' }}</td>
-                                <td>{{ fund.fund_value }}</td>
-                                <td>{{ fund.fund_principal }}</td>
-                                <td>{{ fund.fund_PHR }}</td>
-                                <td>{{ fund.fund_net_value }}</td>
-{#                                <td>{{ fund.get_fund_currency_display }}</td>#}
-                                <td>{{ fund.currency.name }}</td>
-                                <td>{{ fund.fund_create_date|date:'Y-m-d' }}</td>
-                                <td>{{ fund.update_date|date:'Y-m-d' }}</td>
-                                <td>{{ fund.baseline.name }}</td>
-                                <td>{{ fund.fund_script }}</td>
+                                <td>{{ portfolio.portfolio_name }}</td>
+                                <td>{{ portfolio.update_date|date:'Y-m-d' }}</td>
+                                <td>{{ portfolio.portfolio_value }}</td>
+                                <td>{{ portfolio.portfolio_principal }}</td>
+                                <td>{{ portfolio.portfolio_PHR }}</td>
+                                <td>{{ portfolio.portfolio_net_value }}</td>
+{#                                <td>{{ portfolio.get_portfolio_currency_display }}</td>#}
+                                <td>{{ portfolio.currency.name }}</td>
+                                <td>{{ portfolio.portfolio_create_date|date:'Y-m-d' }}</td>
+                                <td>{{ portfolio.update_date|date:'Y-m-d' }}</td>
+                                <td>{{ portfolio.baseline.name }}</td>
+                                <td>{{ portfolio.portfolio_script }}</td>
                                 <td>
-                                    <a href="/benben/del_fund/{{ fund.id|safe }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/del_portfolio/{{ portfolio.id|safe }}/" class="btn btn-default btn-sm">
                                         删除
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/benben/edit_fund/{{ fund.id|safe }}/" class="btn btn-default btn-sm">
+                                    <a href="/benben/edit_portfolio/{{ portfolio.id|safe }}/" class="btn btn-default btn-sm">
                                         修改
                                     </a>
                                 </td>

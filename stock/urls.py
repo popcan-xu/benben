@@ -15,8 +15,8 @@ urlpatterns = [
     path('index/', overview),
     path('overview/', overview),
 
-    path('view_fund/', view_fund),
-    path('view_fund_details/<int:fund_id>/', view_fund_details),
+    path('view_portfolio/', view_portfolio),
+    path('view_portfolio_details/<int:portfolio_id>/', view_portfolio_details),
 
     path('view_market_value/', view_market_value),
     path('view_market_value_details/<int:currency_id>/', view_market_value_details),
@@ -105,15 +105,15 @@ urlpatterns = [
     path('edit_dividend_history/<int:dividend_history_id>/', edit_dividend_history),
     path('list_dividend_history/', list_dividend_history),
 
-    path('add_fund/', add_fund),
-    path('del_fund/<int:fund_id>/', del_fund),
-    path('edit_fund/<int:fund_id>/', edit_fund),
-    path('list_fund/', list_fund),
+    path('add_portfolio/', add_portfolio),
+    path('del_portfolio/<int:portfolio_id>/', del_portfolio),
+    path('edit_portfolio/<int:portfolio_id>/', edit_portfolio),
+    path('list_portfolio/', list_portfolio),
 
-    path('add_fund_history/<int:fund_id>/', add_fund_history),
-    path('del_fund_history/<int:fund_history_id>/', del_fund_history),
-    path('edit_fund_history/<int:fund_history_id>/', edit_fund_history),
-    path('list_fund_history/', list_fund_history),
+    path('add_portfolio_history/<int:portfolio_id>/', add_portfolio_history),
+    path('del_portfolio_history/<int:portfolio_history_id>/', del_portfolio_history),
+    path('edit_portfolio_history/<int:portfolio_history_id>/', edit_portfolio_history),
+    path('list_portfolio_history/', list_portfolio_history),
 
     path('add_baseline/', add_baseline),
     path('del_baseline/<int:baseline_id>/', del_baseline),

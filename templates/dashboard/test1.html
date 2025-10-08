@@ -1,9 +1,9 @@
-<!--资产变化日历-->
+<!--投资组合变化日历-->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>资产变化日历</title>
+    <title>投资组合变化日历</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         @media (max-width: 768px) {
@@ -149,7 +149,7 @@
     </div>
 
     <script>
-        // 每日资产变化数据
+        // 每日投资组合变化数据
         const assetChanges = {
             "2024-10-15": 5000,
             "2024-10-20": -3000,
@@ -315,7 +315,7 @@
             }
 
             document.getElementById('periodSummary').textContent =
-                `${currentView === 'month' ? '本月' : '本年'}资产变化汇总：${formatAmount(total)}`;
+                `${currentView === 'month' ? '本月' : '本年'}投资组合变化汇总：${formatAmount(total)}`;
         }
 
         function updateNavigation() {
@@ -471,12 +471,12 @@ function getDaysOfMonth(year, month) {
 </body>
 </html>
 
-<!-- 加入资产变化率 -->
+<!-- 加入投资组合变化率 -->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>资产变化日历</title>
+    <title>投资组合变化日历</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         @media (max-width: 768px) {
@@ -599,8 +599,8 @@ function getDaysOfMonth(year, month) {
                             </button>
                         </div>
                         <div class="btn-group" id="toggleSwitch">
-                            <button class="btn btn-outline-primary active" data-type="value">资产变化值</button>
-                            <button class="btn btn-outline-primary" data-type="rate">资产变化率</button>
+                            <button class="btn btn-outline-primary active" data-type="value">投资组合变化值</button>
+                            <button class="btn btn-outline-primary" data-type="rate">投资组合变化率</button>
                         </div>
                     </div>
                 </div>
@@ -618,7 +618,7 @@ function getDaysOfMonth(year, month) {
     </div>
 
     <script>
-        // 模拟数据（日期 -> 资产变化值和变化率）
+        // 模拟数据（日期 -> 投资组合变化值和变化率）
         const assetChanges = {
             "2024-10-15": { value: 5000, rate: 0.05 },
             "2024-10-20": { value: -3000, rate: -0.03 },
@@ -786,7 +786,7 @@ function getDaysOfMonth(year, month) {
             }
 
             document.getElementById('periodSummary').textContent =
-                `${currentView === 'month' ? '本月' : '本年'}资产变化汇总：${formatAmount(total)}`;
+                `${currentView === 'month' ? '本月' : '本年'}投资组合变化汇总：${formatAmount(total)}`;
         }
 
         function updateNavigation() {
@@ -923,7 +923,7 @@ function getDaysOfMonth(year, month) {
 </body>
 </html>
 
-<!-- 资产净值走势图 -->
+<!-- 投资组合净值走势图 -->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -963,7 +963,7 @@ function getDaysOfMonth(year, month) {
     <div class="col-xl-12 col-md-6 mb-4">
         <div class="card chart-card">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">资产净值走势图</h5>
+                <h5 class="mb-0">投资组合净值走势图</h5>
                 <div class="btn-group">
                     <button type="button" class="btn btn-sm btn-outline-primary active" data-range="currentYear">今年</button>
                     <button type="button" class="btn btn-sm btn-outline-primary" data-range="year">近一年</button>

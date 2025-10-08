@@ -107,21 +107,21 @@
                 </form>
                 <form action="" method="post" class="form-horizontal" role="form">
                     {% csrf_token %}
-                    <input type="hidden" style="visibility: hidden;" name="form_name" value="基金明细" />
+                    <input type="hidden" style="visibility: hidden;" name="form_name" value="投资组合明细" />
                     <div class="row align-items-center h-100">
                         <div class="col-md-11">
                             <div class="row form-group">
                                 <div class="col-md-1 text-right">
-                                    <label for="account_id" class="control-label">基金明细：</label>
+                                    <label for="account_id" class="control-label">投资组合明细：</label>
                                 </div>
                                 <div class="col-md-11">
-                                    <select class="form-control" name="fund_id" id="fund_id">
-                                        <option disabled selected value="">请选择基金...</option>
-                                        {% for fund in fund_list %}
-                                            {% if fund.fund_name == fund_history.fund.fund_name %}
-                                            <option value="{{ fund.id }}" selected>{{ fund.fund_name }}</option>
+                                    <select class="form-control" name="portfolio_id" id="portfolio_id">
+                                        <option disabled selected value="">请选择投资组合...</option>
+                                        {% for portfolio in portfolio_list %}
+                                            {% if portfolio.portfolio_name == portfolio_history.portfolio.portfolio_name %}
+                                            <option value="{{ portfolio.id }}" selected>{{ portfolio.portfolio_name }}</option>
                                             {% else %}
-                                            <option value="{{ fund.id }}">{{ fund.fund_name }}</option>
+                                            <option value="{{ portfolio.id }}">{{ portfolio.portfolio_name }}</option>
                                             {% endif %}
                                         {% endfor %}
                                     </select>
