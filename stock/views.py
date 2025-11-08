@@ -1,5 +1,7 @@
+import random
 import logging
 import threading
+# from random import random
 
 from dateutil.relativedelta import relativedelta
 from django.core.cache import cache
@@ -3385,7 +3387,7 @@ task_status = {
 def update_historical_market_value(request):
     # 获取初始日期范围
     result = HistoricalPosition.objects.aggregate(max_date=Max('date'))
-    start_date = result['max_date'] - datetime.timedelta(days=30)
+    start_date = result['max_date'] - datetime.timedelta(days=7)
     end_date = datetime.date.today()
 
     steps = [
@@ -3739,28 +3741,115 @@ def get_hk_historical_prices(stocks, start_date, end_date):
     return price_data
 
 
-def get_single_hk_stock_price(stock, start_date, end_date):
+def get_single_hk_stock_price1(stock, start_date, end_date):
+    # 添加随机延迟（0.5-2秒）
+    # time.sleep(random.uniform(0.5, 2))
+    # time.sleep(1)
+
     """获取单只港股历史价格"""
     prices = {}
     stock_code = stock.stock_code
 
     try:
         # 港股历史行情接口
-        df = ak.stock_hk_hist(
-            symbol=stock_code,
-            period="daily",
-            start_date=start_date.strftime("%Y%m%d"),
-            end_date=end_date.strftime("%Y%m%d"),
-            adjust=""
-        )
+
+        # 东财接口
+        # df = ak.stock_hk_hist(
+        #     symbol=stock_code,
+        #     period="daily",
+        #     start_date=start_date.strftime("%Y%m%d"),
+        #     end_date=end_date.strftime("%Y%m%d"),
+        #     adjust=""
+        # )
+        #
+        # if not df.empty:
+        #     df['日期'] = pd.to_datetime(df['日期'])
+        #     for _, row in df.iterrows():
+        #         date = row['日期'].date()
+        #         price = row['收盘']
+        #         prices[date] = price
+
+        # 新浪接口
+        df = ak.stock_hk_daily(symbol=stock_code, adjust="")
 
         if not df.empty:
-            df['日期'] = pd.to_datetime(df['日期'])
+            df['date'] = pd.to_datetime(df['date'])
+
+            # 修复日期比较问题：将日期转换为相同的类型
+            start_date_pd = pd.Timestamp(start_date)
+            end_date_pd = pd.Timestamp(end_date)
+
+            # 过滤日期范围
+            df = df[(df['date'] >= start_date_pd) & (df['date'] <= end_date_pd)]
+
             for _, row in df.iterrows():
-                date = row['日期'].date()
-                price = row['收盘']
+                date = row['date'].date()
+                price = row['close']
                 prices[date] = price
+
         print(f"获取港股 {stock_code} 价格成功！")
+    except Exception as e:
+        print(f"获取港股 {stock_code} 价格失败: {str(e)}")
+
+    return stock_code, prices
+
+
+def get_single_hk_stock_price(stock, start_date, end_date):
+    # 添加随机延迟（0.5-2秒）
+    # time.sleep(random.uniform(0.5, 2))
+    # time.sleep(1)
+
+    """获取单只港股历史价格"""
+    prices = {}
+    stock_code = stock.stock_code
+
+    try:
+        # 首先尝试东财接口
+        try:
+            df = ak.stock_hk_hist(
+                symbol=stock_code,
+                period="daily",
+                start_date=start_date.strftime("%Y%m%d"),
+                end_date=end_date.strftime("%Y%m%d"),
+                adjust=""
+            )
+
+            if not df.empty:
+                df['日期'] = pd.to_datetime(df['日期'])
+                for _, row in df.iterrows():
+                    date = row['日期'].date()
+                    price = row['收盘']
+                    prices[date] = price
+                print(f"通过东财接口获取港股 {stock_code} 价格成功！")
+                return stock_code, prices
+            else:
+                print(f"东财接口返回空数据，尝试新浪接口...")
+
+        except Exception as e1:
+            print(f"东财接口获取港股 {stock_code} 失败: {str(e1)}，尝试新浪接口...")
+
+        # 如果东财接口失败，尝试新浪接口
+        df = ak.stock_hk_daily(symbol=stock_code, adjust="")
+
+        if not df.empty:
+            df['date'] = pd.to_datetime(df['date'])
+
+            # 修复日期比较问题：将日期转换为相同的类型
+            start_date_pd = pd.Timestamp(start_date)
+            end_date_pd = pd.Timestamp(end_date)
+
+            # 过滤日期范围
+            df = df[(df['date'] >= start_date_pd) & (df['date'] <= end_date_pd)]
+
+            for _, row in df.iterrows():
+                date = row['date'].date()
+                price = row['close']
+                prices[date] = price
+
+            print(f"通过新浪接口获取港股 {stock_code} 价格成功！")
+        else:
+            print(f"新浪接口也返回空数据")
+
     except Exception as e:
         print(f"获取港股 {stock_code} 价格失败: {str(e)}")
 
@@ -4276,9 +4365,12 @@ def calculate_and_fill_historical_data(start_date, end_date):
         workdays = generate_workdays(start_date, end_date)
 
         # 获取所有货币种类（包括新增数据可能包含的新货币）
-        currencies = HistoricalMarketValue.objects.values_list(
-            'currency', flat=True
-        ).distinct()
+        # currencies = HistoricalMarketValue.objects.values_list(
+        #     'currency', flat=True
+        # ).distinct()
+
+        # 获取所有货币种类（Currency 实例）
+        currencies = Currency.objects.all()  # 假设你的货币模型名为 Currency
 
         # 逐货币补全数据
         for currency in currencies:
@@ -4416,6 +4508,7 @@ def about(request):
     # result = HistoricalPosition.objects.aggregate(max_date=Max('date'))
     # start_date = result['max_date'] - datetime.timedelta(days=7)
     # end_date = datetime.date.today()
+    # start_date1 = datetime.date(2007, 8, 16)
     #
     # generate_historical_positions(start_date, end_date)
     # get_historical_closing_price(start_date, end_date - datetime.timedelta(days=1))
@@ -4433,11 +4526,13 @@ def about(request):
 def test(request):
     # get_akshare()
 
-    # df = ak.stock_hk_daily(symbol='00700', adjust="")
-    # print(df)
-    # stock_hk_hist_df = ak.stock_hk_hist(symbol="00700", period="daily", start_date="19700101", end_date="22220101",
-    #                                     adjust="")
-    # print(stock_hk_hist_df)
+    # 港股历史行情-新浪接口
+    df = ak.stock_hk_daily(symbol='00700', adjust="")
+    print(df)
+
+    # 港股历史行情-东财接口
+    df = ak.stock_hk_hist(symbol="00700", period="daily", start_date="19700101", end_date="22220101", adjust="")
+    print(df)
 
     # price, increase, color = get_quote_akshare('00700')
     # print(price, increase, color)
@@ -4644,6 +4739,7 @@ def test(request):
     # migrate_historical_position_currencies()
     # migrate_historical_rate_currencies()
     # migrate_historical_market_value_currencies()
+
 
     return render(request, templates_path + 'test.html', locals())
 

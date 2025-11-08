@@ -255,3 +255,5 @@ class HistoricalMarketValue(models.Model):
             models.Index(fields=['currency', '-date']),
             models.Index(fields=['date', 'currency'])
         ]
+
+
