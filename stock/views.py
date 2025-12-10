@@ -78,7 +78,8 @@ def _generate_overview_data1(rate):
     portfolio_net_value_weighting = 0
     for key in currency_dict:
         portfolio_percent_dict[key] = float(portfolio_list.get(currency_id=key).portfolio_value) / portfolio_value_sum
-        portfolio_net_value_weighting += float(portfolio_list.get(currency_id=key).portfolio_net_value) * portfolio_percent_dict[key]
+        portfolio_net_value_weighting += float(portfolio_list.get(currency_id=key).portfolio_net_value) * \
+                                         portfolio_percent_dict[key]
 
     # 计算人民币持仓市值总和，用于进一步计算人民币投资组合的持仓比例
     stock_dict = Position.objects.values("stock").annotate(
@@ -111,7 +112,8 @@ def _generate_overview_data1(rate):
 
     for key, value in currency_dict.items():
         portfolio_id = Portfolio.objects.get(currency_id=key).id
-        portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=max_date_portfolio).portfolio_value
+        portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id,
+                                                                 date=max_date_portfolio).portfolio_value
         market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_portfolio).value
         position_percent_dict[key] = market_value_dict[key] / portfolio_value_dict[key]
     # 人民币投资组合的持仓比例通过511880的市值占比计算
@@ -446,7 +448,8 @@ def _calculate_position_data(currency_dict, amount_sum_CNY):
 
     for key, value in currency_dict.items():
         portfolio_id = Portfolio.objects.get(currency_id=key).id
-        portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=max_date_portfolio).portfolio_value
+        portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id,
+                                                                 date=max_date_portfolio).portfolio_value
         market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_portfolio).value
         position_percent_dict[key] = market_value_dict[key] / portfolio_value_dict[key]
 
@@ -593,7 +596,7 @@ def _calculate_top5_data(content, colors):
         'top5_percent': top5_percent,
         'top5_array': top5_array,
         'holding_stock_array': holding_stock_array,
-        'holding_stock_json': json.dumps(holding_stock_array) #因为holding_stock_array为包含元组的列表，需要将数据转换为JSON字符串
+        'holding_stock_json': json.dumps(holding_stock_array)  # 因为holding_stock_array为包含元组的列表，需要将数据转换为JSON字符串
     }
 
 
@@ -725,9 +728,6 @@ def _build_overview_data(portfolio_data, position_data, dividend_data, subscript
     return overview_data
 
 
-
-
-
 # 投资组合概览
 def view_portfolio(request):
     portfolio_list = Portfolio.objects.all()
@@ -836,7 +836,8 @@ def view_portfolio_details(request, portfolio_id):
     # 生成收益率比对数据compare_data_group
     compare_data_group = []
     year_list = list(
-        portfolio_history_list.annotate(year=ExtractYear('date')).values_list('year', flat=True).distinct().order_by('year')
+        portfolio_history_list.annotate(year=ExtractYear('date')).values_list('year', flat=True).distinct().order_by(
+            'year')
     )
     pre_portfolio_net_value = 1
     pre_baseline_net_value = 1
@@ -859,8 +860,10 @@ def view_portfolio_details(request, portfolio_id):
 
         earliest_date = Portfolio.objects.get(id=portfolio_id).portfolio_create_date  # 计算年化收益率的起始日期为投资组合的创立日期
         years_value = float((year_end_date - earliest_date).days / 365)
-        portfolio_annualized_profit_rate = 0 if years_value == 0 else (float(portfolio_net_value) ** (1 / years_value) - 1) *100
-        baseline_annualized_profit_rate = 0 if years_value == 0 else (float(baseline_net_value) **  (1 / years_value) - 1) *100
+        portfolio_annualized_profit_rate = 0 if years_value == 0 else (float(portfolio_net_value) ** (
+                1 / years_value) - 1) * 100
+        baseline_annualized_profit_rate = 0 if years_value == 0 else (float(baseline_net_value) ** (
+                1 / years_value) - 1) * 100
 
         # 初始化默认值
         portfolio_annualized_profit_rate_3years = 0
@@ -885,9 +888,11 @@ def view_portfolio_details(request, portfolio_id):
         compare_annualized_profit_rate_5years = portfolio_annualized_profit_rate_5years - baseline_annualized_profit_rate_5years
 
         # 生成收益率对比数据
-        compare_data = [str(year_end_date.year), portfolio_value, baseline_value, portfolio_net_value, baseline_net_value,
+        compare_data = [str(year_end_date.year), portfolio_value, baseline_value, portfolio_net_value,
+                        baseline_net_value,
                         compare_net_value, portfolio_profit_rate, baseline_profit_rate, compare_profit_rate,
-                        portfolio_annualized_profit_rate, baseline_annualized_profit_rate, compare_annualized_profit_rate,
+                        portfolio_annualized_profit_rate, baseline_annualized_profit_rate,
+                        compare_annualized_profit_rate,
                         portfolio_annualized_profit_rate_3years, baseline_annualized_profit_rate_3years,
                         compare_annualized_profit_rate_3years, portfolio_annualized_profit_rate_5years,
                         baseline_annualized_profit_rate_5years, compare_annualized_profit_rate_5years]
@@ -899,7 +904,6 @@ def view_portfolio_details(request, portfolio_id):
         baseline_net_value_list.append(float(Decimal(baseline_net_value).quantize(Decimal('0.0000'))))
         portfolio_profit_rate_list.append(float(Decimal(portfolio_profit_rate).quantize(Decimal('0.00'))))
         baseline_profit_rate_list.append(float(Decimal(baseline_profit_rate).quantize(Decimal('0.00'))))
-
 
         # 生成年化收益率数据，用于图表
         portfolio_annualized_profit_rate_list.append(
@@ -915,7 +919,7 @@ def view_portfolio_details(request, portfolio_id):
     # bar_portfolio_profit_rate_list = portfolio_profit_rate_list[1:]  # 柱图第一列去掉
     # bar_baseline_profit_rate_list = baseline_profit_rate_list[1:]  # 柱图第一列去掉
     bar_year_end_date_list = year_end_date_list  # 柱图第一列去掉
-    bar_portfolio_profit_rate_list = portfolio_profit_rate_list # 柱图第一列去掉
+    bar_portfolio_profit_rate_list = portfolio_profit_rate_list  # 柱图第一列去掉
     bar_baseline_profit_rate_list = baseline_profit_rate_list  # 柱图第一列去掉
 
     # 生成投资组合变化日历字典数据assetChanges
@@ -959,7 +963,8 @@ def view_portfolio_details(request, portfolio_id):
         })
 
     # 近期、年度出入金列表
-    recent_in_out_list = PortfolioHistory.objects.filter(portfolio=portfolio_id).exclude(portfolio_in_out=0).order_by('-date')[:12]
+    recent_in_out_list = PortfolioHistory.objects.filter(portfolio=portfolio_id).exclude(portfolio_in_out=0).order_by(
+        '-date')[:12]
     yearly_in_out_list = PortfolioHistory.objects.filter(portfolio=portfolio_id).values('date__year').annotate(
         yearly_in_out=Sum('portfolio_in_out')
     ).order_by('-date__year')
@@ -1035,7 +1040,8 @@ def view_market_value(request):
 
     for key in currency_dict:
         portfolio_id = Portfolio.objects.get(currency_id=key).id
-        portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=max_date_portfolio).portfolio_value
+        portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id,
+                                                                 date=max_date_portfolio).portfolio_value
         market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_portfolio).value
         position_percent_dict[key] = market_value_dict[key] / portfolio_value_dict[key]
 
@@ -2580,7 +2586,7 @@ def edit_historical_position(request, historical_position_id):
 def list_historical_position(request):
     # historical_position_list = historical_position.objects.filter(date='2025-02-27')
     # historical_position_list = historical_position.objects.all()
-    historical_position_list = HistoricalPosition.objects.order_by('-date')[:200]
+    historical_position_list = HistoricalPosition.objects.order_by('-date')[16500:16700]
     return render(request, templates_path + 'backstage/list_historical_position.html', locals())
 
 
@@ -3078,10 +3084,12 @@ def add_portfolio_history(request, portfolio_id):
             # earliest_date = get_min_date(portfolio_id)
             years = float((latest_date - earliest_date).days / 365)
             # print(latest_date,earliest_date,years)
-            latest_portfolio_value = float(PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_value)
+            latest_portfolio_value = float(
+                PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_value)
             latest_portfolio_principal = float(
                 PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_principal)
-            latest_portfolio_PHR = float(PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_PHR)
+            latest_portfolio_PHR = float(
+                PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_PHR)
             latest_portfolio_net_value = float(
                 PortfolioHistory.objects.get(portfolio_id=portfolio_id, date=latest_date).portfolio_net_value)
             latest_portfolio_profit_rate = float(
@@ -3095,7 +3103,8 @@ def add_portfolio_history(request, portfolio_id):
                 portfolio_net_value = (portfolio_value - portfolio_in_out) / latest_portfolio_PHR
             portfolio_PHR = portfolio_value / portfolio_net_value
             portfolio_current_profit = portfolio_value - portfolio_in_out - latest_portfolio_value
-            portfolio_current_profit_rate = (portfolio_net_value - latest_portfolio_net_value) / latest_portfolio_net_value
+            portfolio_current_profit_rate = (
+                                                    portfolio_net_value - latest_portfolio_net_value) / latest_portfolio_net_value
             portfolio_profit = portfolio_value - portfolio_principal
             if latest_portfolio_PHR == 0:  # 如果份数为0，则投资组合已经关闭，累计收益率保持不变
                 portfolio_profit_rate = latest_portfolio_profit_rate
@@ -3139,7 +3148,8 @@ def add_portfolio_history(request, portfolio_id):
         except Exception as e:
             error_info = "输入信息有错误！"
             print(latest_date, earliest_date, latest_portfolio_principal, latest_portfolio_PHR, portfolio_principal,
-                  portfolio_net_value, portfolio_PHR, portfolio_profit, portfolio_profit_rate, portfolio_annualized_profit_rate)
+                  portfolio_net_value, portfolio_PHR, portfolio_profit, portfolio_profit_rate,
+                  portfolio_annualized_profit_rate)
             return render(request, templates_path + 'backstage/add_portfolio_history.html', locals())
         finally:
             pass
@@ -4117,12 +4127,22 @@ def get_historical_rate(start_date, end_date):
     currency_usd = Currency.objects.get(name='美元')
 
     try:
+        # ak.currency_boc_sina
         df = ak.currency_boc_sina(symbol="港币", start_date=start_date_str, end_date=end_date_str)
         df['日期'] = pd.to_datetime(df['日期'])
         df_hkd = df.loc[:, ['日期', '中行汇买价']]
         df = ak.currency_boc_sina(symbol="美元", start_date=start_date_str, end_date=end_date_str)
         df['日期'] = pd.to_datetime(df['日期'])
         df_usd = df.loc[:, ['日期', '中行汇买价']]
+
+        # ak.currency_boc_safe()
+        # df = ak.currency_boc_safe()
+        # df['日期'] = pd.to_datetime(df['日期'])
+        # df_hkd = df.loc[:, ['日期', '港元']]
+        # df_hkd.rename(columns={'港元': '中行汇买价'}, inplace=True)
+        # df_usd = df.loc[:, ['日期', '美元']]
+        # df_usd.rename(columns={'美元': '中行汇买价'}, inplace=True)
+
     except Exception as e:
         print(f"查询报错: {e}")
 
@@ -4145,31 +4165,53 @@ def update_historical_rate(df: pd.DataFrame, currency_obj, start_date, end_date)
     if not all(col in df.columns for col in required_columns):
         raise ValueError(f"DataFrame 必须包含列: {required_columns}")
 
+    # +++ 新增：清理数据中的 NaN 值 +++
+    # 删除包含 NaN 的行
+    df_clean = df.dropna(subset=['中行汇买价'])
+
+    # 检查清理后的数据是否为空
+    if df_clean.empty:
+        print(f"警告: 货币 {currency_obj.name} 在 {start_date} 到 {end_date} 期间无有效数据")
+        return
+
     # 转换日期列为 datetime.date 类型
-    df['日期'] = pd.to_datetime(df['日期']).dt.date
+    df_clean['日期'] = pd.to_datetime(df_clean['日期']).dt.date
 
     # 准备模型实例列表
-    instances = [
-        HistoricalRate(
-            date=row['日期'],
-            # +++ 修改点4：使用货币对象而不是名称 +++
-            currency=currency_obj,
-            rate=row['中行汇买价'] / 100
-        )
-        for _, row in df.iterrows()
-    ]
+    instances = []
+    for _, row in df_clean.iterrows():
+        try:
+            # 确保汇率值是有效的数字
+            rate_value = row['中行汇买价']
+            if pd.isna(rate_value) or rate_value == '':
+                continue
+
+            instances.append(HistoricalRate(
+                date=row['日期'],
+                currency=currency_obj,
+                rate=float(rate_value) / 100  # 确保转换为浮点数
+            ))
+        except (ValueError, TypeError) as e:
+            print(f"跳过无效数据行: 日期={row['日期']}, 汇率={row['中行汇买价']}, 错误: {e}")
+            continue
+
+    # 如果所有数据都无效，直接返回
+    if not instances:
+        print(f"警告: 货币 {currency_obj.name} 无有效数据可写入")
+        return
 
     # 原子操作：删除旧数据 + 插入新数据
     with transaction.atomic():
         # 删除该货币所有旧数据
         HistoricalRate.objects.filter(
-            # +++ 修改点5：使用货币对象替代名称 +++
             currency=currency_obj,
             date__gte=start_date,
             date__lte=end_date
         ).delete()
         # 批量写入新数据
         HistoricalRate.objects.bulk_create(instances)
+    print(f"成功写入 {len(instances)} 条 {currency_obj.name} 汇率记录")
+
 
 
 # 补充akshare数据中缺失的日期
@@ -4508,7 +4550,7 @@ def about(request):
     # result = HistoricalPosition.objects.aggregate(max_date=Max('date'))
     # start_date = result['max_date'] - datetime.timedelta(days=7)
     # end_date = datetime.date.today()
-    # start_date1 = datetime.date(2007, 8, 16)
+    # start_date = datetime.date(2007, 8, 16)
     #
     # generate_historical_positions(start_date, end_date)
     # get_historical_closing_price(start_date, end_date - datetime.timedelta(days=1))
@@ -4527,12 +4569,12 @@ def test(request):
     # get_akshare()
 
     # 港股历史行情-新浪接口
-    df = ak.stock_hk_daily(symbol='00700', adjust="")
-    print(df)
+    # df = ak.stock_hk_daily(symbol='00700', adjust="")
+    # print(df)
 
     # 港股历史行情-东财接口
-    df = ak.stock_hk_hist(symbol="00700", period="daily", start_date="19700101", end_date="22220101", adjust="")
-    print(df)
+    # df = ak.stock_hk_hist(symbol="00700", period="daily", start_date="19700101", end_date="22220101", adjust="")
+    # print(df)
 
     # price, increase, color = get_quote_akshare('00700')
     # print(price, increase, color)
@@ -4557,15 +4599,15 @@ def test(request):
     #     })
     # # print(data)
 
-    data = []
-    market_value_list = HistoricalMarketValue.objects.filter(currency=1).order_by("date")
-    for rs in market_value_list:
-        date = str(rs.date)
-        value = float(rs.value)
-        data.append({
-            "date": date,
-            "value": value / 10000
-        })
+    # data = []
+    # market_value_list = HistoricalMarketValue.objects.filter(currency=1).order_by("date")
+    # for rs in market_value_list:
+    #     date = str(rs.date)
+    #     value = float(rs.value)
+    #     data.append({
+    #         "date": date,
+    #         "value": value / 10000
+    #     })
 
     # # 更新历史持仓市值数据（historical_position、historical_rate、historical_market_value表）
     # start_date = datetime.date(2007, 8, 15)
@@ -4587,8 +4629,8 @@ def test(request):
     # currency_boc_sina_df = ak.currency_boc_sina(symbol="港币", start_date="20250425", end_date="20250430")
     # print(currency_boc_sina_df)
 
-    current_date = pd.to_datetime(datetime.date.today())
-    current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
+    # current_date = pd.to_datetime(datetime.date.today())
+    # current_date_str = current_date.strftime("%Y%m%d") if current_date else ""
 
     # df = ak.fx_spot_quote()
     # rate_HKD = float(df[df['货币对'] == 'HKD/CNY']['买报价'].iloc[0])
@@ -4732,14 +4774,47 @@ def test(request):
     # migrate_dividend_currencies()
     # migrate_trade_currencies()
 
-    df = ak.stock_zh_index_daily(symbol="sz399006").sort_values(by='date', ascending=False)
-    current_latest = float(df.head(1)['close'].iloc[0])
+    # df = ak.stock_zh_index_daily(symbol="sz399006").sort_values(by='date', ascending=False)
+    # current_latest = float(df.head(1)['close'].iloc[0])
     # print(current_latest)
 
     # migrate_historical_position_currencies()
     # migrate_historical_rate_currencies()
     # migrate_historical_market_value_currencies()
 
+    # df = ak.currency_boc_safe()
+    # df = ak.currency_boc_sina(symbol="港币", start_date="20251201", end_date="20251206")
+    # print(df)
+
+    # df['日期'] = pd.to_datetime(df['日期'])
+    # df_hkd = df.loc[:, ['日期', '港元']]
+    # df_usd = df.loc[:, ['日期', '美元']]
+    # print(df_hkd)
+    # print(df_usd)
+
+    try:
+        # 获取数据
+        df = ak.currency_boc_sina(symbol="港币", start_date="20251201", end_date="20251206")
+
+        print("=== 数据信息 ===")
+        print(f"数据形状: {df.shape}")
+        print(f"列名: {list(df.columns)}")
+        print("\n=== 前5行数据 ===")
+        print(df.head())
+
+        # 根据实际列名重命名
+        # 假设原来的'现汇卖出价'列是我们要的汇率数据
+        if '现汇卖出价' in df.columns:
+            df = df.rename(columns={'现汇卖出价': '港币汇率'})
+            print(f"\n重命名后列名: {list(df.columns)}")
+        else:
+            # 根据实际情况调整
+            print("\n请根据上面的列名，确定哪个是汇率列，然后重命名")
+
+    except Exception as e:
+        print(f"发生错误: {e}")
+        import traceback
+        traceback.print_exc()
 
     return render(request, templates_path + 'test.html', locals())
 
@@ -6326,4 +6401,37 @@ def update_today_prices1(current_date, stock_code, price_dict):
         print(stock_code)
         print(f"当日价格更新失败: {str(e)}")
         
+"""
+
+"""
+def update_historical_rate1(df: pd.DataFrame, currency_obj, start_date, end_date) -> None:
+    required_columns = ['日期', '中行汇买价']
+    if not all(col in df.columns for col in required_columns):
+        raise ValueError(f"DataFrame 必须包含列: {required_columns}")
+
+    # 转换日期列为 datetime.date 类型
+    df['日期'] = pd.to_datetime(df['日期']).dt.date
+
+    # 准备模型实例列表
+    instances = [
+        HistoricalRate(
+            date=row['日期'],
+            # +++ 修改点4：使用货币对象而不是名称 +++
+            currency=currency_obj,
+            rate=row['中行汇买价'] / 100
+        )
+        for _, row in df.iterrows()
+    ]
+
+    # 原子操作：删除旧数据 + 插入新数据
+    with transaction.atomic():
+        # 删除该货币所有旧数据
+        HistoricalRate.objects.filter(
+            # +++ 修改点5：使用货币对象替代名称 +++
+            currency=currency_obj,
+            date__gte=start_date,
+            date__lte=end_date
+        ).delete()
+        # 批量写入新数据
+        HistoricalRate.objects.bulk_create(instances)
 """
