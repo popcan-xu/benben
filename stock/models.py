@@ -152,6 +152,7 @@ class Portfolio(models.Model):
     portfolio_principal = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='投资组合本金')
     portfolio_PHR = models.DecimalField(default=0.0, max_digits=12, decimal_places=2, verbose_name='投资组合份数')
     portfolio_net_value = models.DecimalField(default=0.0, max_digits=12, decimal_places=4, verbose_name='投资组合净值')
+    is_aggregated = models.BooleanField(default=False, verbose_name='是否为汇总投资组合')
     update_date = models.DateField(verbose_name='更新日期', null=True, blank=True)
     modified_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
 

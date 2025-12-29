@@ -2,7 +2,6 @@ import json
 import os
 import pathlib
 import re
-import time
 from decimal import Decimal
 import datetime
 import time
@@ -1180,7 +1179,7 @@ def get_stock_dividend_history(stock_code):
     # 使用雪球账号登录后的cookie，只需替换xq_a_token
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
-        "Cookie": "xq_a_token=8d6d5dcdfd4fa6e92ede143ee82276bc107c9fd4;"
+        "Cookie": "xq_a_token=dbaabe4c127b95f56af5ed4ec073d77fd1a93aa0;"
     }
     # headers = {
     #     "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",

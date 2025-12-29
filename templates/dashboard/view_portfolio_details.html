@@ -360,7 +360,8 @@
                         </div>
                     </div>
                     <div class="card-footer">
-                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：货币为{{ currency_name|safe }}，单位为元。</span>
                     </div>
                 </div>
             </div>
@@ -404,7 +405,7 @@
                     </div>
                     <div class="card-footer">
                         <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                        <span>注：净值单位为元。</span>
+                        <span>注：货币为{{ currency_name|safe }}，单位为元。</span>
                     </div>
                 </div>
             </div>
@@ -451,7 +452,7 @@
                     </div>
                     <div class="card-footer bg-white text-muted small d-flex justify-content-between">
                         <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                        <span>注：投资组合单位为万元。</span>
+                        <span>注：货币为{{ currency_name|safe }}，单位为万元。</span>
                     </div>
                 </div>
             </div>
@@ -495,7 +496,7 @@
                     </div>
                     <div class="card-footer bg-white text-muted small d-flex justify-content-between">
                         <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                        <span>注：收益单位为万元。</span>
+                        <span>注：货币为{{ currency_name|safe }}，单位为万元。</span>
                     </div>
                 </div>
             </div>
@@ -591,7 +592,7 @@
                     </div>
                     <div class="card-body" style="position: relative; flex-grow: 1; min-height: 0;">
                         <div class="scroll-area">
-                            <!-- 近期出入金表格 -->
+                            <!-- 投资组合表格 -->
                             <div id="portfolioTable" class="h-100" style="display:block; overflow-y:auto;">
                                 <div class="table-responsive">
                                     <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0;">
@@ -625,7 +626,7 @@
                                 </div>
                             </div>
 
-                            <!-- 年度出入金表格 -->
+                            <!-- 收益表格 -->
                             <div id="profitTable" class="h-100" style="display:none; overflow-y:auto;">
                                 <div class="table-responsive">
                                     <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0;">
@@ -656,7 +657,7 @@
                             </div>
 
 
-                            <!-- 全部出入金表格 -->
+                            <!-- 出入金表格 -->
                             <div id="inoutTable" class="h-100" style="display:none; overflow-y:auto;">
                                 <div class="table-responsive">
                                     <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0;">
@@ -686,8 +687,8 @@
                         </div>
                     </div>
                     <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
-                        <span></span>
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：货币为{{ currency_name|safe }}，单位为元。</span>
                     </div>
                 </div>
             </div>
@@ -750,7 +751,7 @@
                     </div>
                     <div class="card-footer bg-white text-muted small d-flex justify-content-between">
                         <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                        <span>注：单位为万元。</span>
+                        <span>注：货币为{{ currency_name|safe }}，单位为万元。</span>
                     </div>
                 </div>
             </div>
@@ -810,7 +811,7 @@
                     </div>
                     <div class="card-footer bg-white text-muted small d-flex justify-content-between">
                         <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                        <span>注：单位为万元。</span>
+                        <span>注：货币为{{ currency_name|safe }}，单位为万元。</span>
                     </div>
                 </div>
             </div>
@@ -831,7 +832,7 @@
                         <div id="bar_net_value" style="width:100%; height:400px;"></div><!--数据展现的容器1-->
                     </div>
                     <div class="card-footer bg-white text-muted small">
-                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
                     </div>
                 </div>
             </div>
@@ -926,7 +927,8 @@
                 </div>
             </div>
             <div class="card-footer bg-white text-muted small">
-                数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                <span>注：货币为{{ currency_name|safe }}，单位为元。</span>
             </div>
         </div>
     </div>

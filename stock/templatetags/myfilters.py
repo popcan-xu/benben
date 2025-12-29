@@ -7,6 +7,15 @@ from stock.models import Currency
 register = template.Library()
 
 @register.filter
+def bool_to_chinese(value):
+    """将布尔值转换为中文"""
+    if value is True:
+        return "是"
+    elif value is False:
+        return "否"
+    else:
+        return ""
+
 def percent(value):
     return "{:.2f}".format(float(value) * 100)
 
@@ -97,6 +106,8 @@ def to_float(value):
         return float(value)
     except (ValueError, TypeError):
         return 0.0  # 转换失败返回0.0，也可根据需求调整
+
+register.filter(bool_to_chinese)
 
 register.filter(percent)
 

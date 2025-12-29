@@ -379,16 +379,19 @@ def _get_currency_dict():
 
 def _calculate_portfolio_data(rate, currency_dict):
     """计算投资组合相关数据"""
-    portfolio_list = Portfolio.objects.all()
+    portfolio_list = Portfolio.objects.filter(is_aggregated=False)
     portfolio_value_array = []
     portfolio_value_sum = 0
+    portfolio_PHR_sum = 0
 
     for portfolio in portfolio_list:
         value = round(float(portfolio.portfolio_value) * rate[portfolio.currency.code])
         portfolio_value_array.append(value)
         portfolio_value_sum += value
+        portfolio_PHR_sum += float(portfolio.portfolio_PHR)
 
-    # 计算投资组合价值占比和加权净值
+
+    # 计算加权净值（市值权重加权平均）
     portfolio_percent_dict = {}
     portfolio_net_value_weighting = 0
 
@@ -397,6 +400,9 @@ def _calculate_portfolio_data(rate, currency_dict):
         percent = float(portfolio.portfolio_value) / portfolio_value_sum
         portfolio_percent_dict[key] = percent
         portfolio_net_value_weighting += float(portfolio.portfolio_net_value) * percent
+
+    # 计算加权净值（份额权重加权平均）
+    portfolio_net_value_weighting = portfolio_value_sum / portfolio_PHR_sum
 
     return {
         'portfolio_value_sum': portfolio_value_sum,
@@ -435,8 +441,8 @@ def _calculate_cny_position_data(price_array, rate):
 def _calculate_position_data(currency_dict, amount_sum_CNY):
     """计算仓位数据"""
     # 获取所有portfolio同时存在记录的最大有效日期
-    total_portfolio = PortfolioHistory.objects.values('portfolio').distinct().count()
-    valid_dates = PortfolioHistory.objects.values('date').annotate(
+    total_portfolio = PortfolioHistory.objects.filter(portfolio__is_aggregated=False).values('portfolio').distinct().count()
+    valid_dates = PortfolioHistory.objects.filter(portfolio__is_aggregated=False).values('date').annotate(
         portfolio_count=Count('portfolio', distinct=True)
     ).filter(portfolio_count=total_portfolio).order_by('-date')
 
@@ -447,7 +453,7 @@ def _calculate_position_data(currency_dict, amount_sum_CNY):
     market_value_dict = {}
 
     for key, value in currency_dict.items():
-        portfolio_id = Portfolio.objects.get(currency_id=key).id
+        portfolio_id = Portfolio.objects.filter(is_aggregated=False).get(currency_id=key).id
         portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id,
                                                                  date=max_date_portfolio).portfolio_value
         market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_portfolio).value
@@ -730,13 +736,30 @@ def _build_overview_data(portfolio_data, position_data, dividend_data, subscript
 
 # 投资组合概览
 def view_portfolio(request):
-    portfolio_list = Portfolio.objects.all()
+    portfolio_list = Portfolio.objects.filter(is_aggregated=False)
     rate = get_rate()
     currency_dict = {c.id: {'code': c.code, 'name': c.name} for c in Currency.objects.all()}
     asset_distribution = {}
+
+    # for key in currency_dict:
+    #     asset_distribution[key] = float(Portfolio.objects.get(currency_id=key).portfolio_value) * rate[
+    #         currency_dict[key]['code']]
+
+    # 只计算非汇总投资组合（is_aggregated=False）
     for key in currency_dict:
-        asset_distribution[key] = float(Portfolio.objects.get(currency_id=key).portfolio_value) * rate[
-            currency_dict[key]['code']]
+        # 获取指定货币的所有非汇总投资组合
+        portfolios = Portfolio.objects.filter(
+            currency_id=key,
+            is_aggregated=False
+        )
+
+        # 计算该货币下所有非汇总投资组合的总价值
+        total_value = 0
+        for portfolio in portfolios:
+            total_value += float(portfolio.portfolio_value)
+
+        if total_value > 0:
+            asset_distribution[key] = total_value * rate[currency_dict[key]['code']]
 
     updating_time = datetime.datetime.now()
 
@@ -751,6 +774,8 @@ def view_portfolio(request):
 
 # 投资组合详情
 def view_portfolio_details(request, portfolio_id):
+    currency_name = Portfolio.objects.get(id=portfolio_id).currency.name
+
     portfolio_net_value_list = []
     baseline_net_value_list = []
     portfolio_profit_rate_list = []
@@ -1039,7 +1064,7 @@ def view_market_value(request):
         max_date_portfolio = None
 
     for key in currency_dict:
-        portfolio_id = Portfolio.objects.get(currency_id=key).id
+        portfolio_id = Portfolio.objects.filter(is_aggregated=False).get(currency_id=key).id
         portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id,
                                                                  date=max_date_portfolio).portfolio_value
         market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_portfolio).value
@@ -4544,6 +4569,581 @@ def generate_workdays(start_date, end_date):
     return workdays
 
 
+'''
+def generate_aggregated_portfolio_history():
+    """
+    根据普通Portfolio历史记录生成汇总Portfolio的完整历史记录
+    """
+    try:
+        # 1. 获取汇总Portfolio
+        aggregated_portfolio = Portfolio.objects.filter(is_aggregated=True).first()
+        if not aggregated_portfolio:
+            raise ValueError("未找到汇总Portfolio记录")
+
+        # 2. 获取汇总Portfolio的初始记录
+        initial_aggregated_record = PortfolioHistory.objects.filter(
+            portfolio=aggregated_portfolio
+        ).order_by('date').first()
+
+        if not initial_aggregated_record:
+            raise ValueError(f"未找到汇总Portfolio(id={aggregated_portfolio.id})的初始记录")
+
+        # 3. 获取所有普通Portfolio的日期集合
+        normal_dates = PortfolioHistory.objects.filter(
+            portfolio__is_aggregated=False
+        ).values_list('date', flat=True).distinct().order_by('date')
+
+        if not normal_dates:
+            logger.info("没有普通Portfolio的历史记录")
+            return
+
+        # 4. 检查初始记录日期是否是最小日期
+        earliest_date = min(normal_dates)
+        if initial_aggregated_record.date != earliest_date:
+            raise ValueError(f"汇总Portfolio初始记录日期({initial_aggregated_record.date})不是最小日期({earliest_date})")
+
+        # 5. 准备日期列表（从第二小日期开始）
+        dates_to_process = list(normal_dates)[1:]  # 跳过最小日期（初始记录日期）
+
+        if not dates_to_process:
+            logger.info("只有初始日期，无需生成更多记录")
+            return
+
+        # 6. 获取所有普通Portfolio
+        normal_portfolios = Portfolio.objects.filter(is_aggregated=False)
+
+        # 7. 获取所有货币
+        currencies = Currency.objects.filter(id__in=normal_portfolios.values_list('currency', flat=True).distinct())
+
+        # 8. 获取所有汇率数据（按日期和货币组织）
+        historical_rates_qs = HistoricalRate.objects.filter(
+            date__gte=earliest_date,
+            date__lte=dates_to_process[-1],
+            currency__in=currencies
+        ).order_by('date')
+
+        # 组织汇率数据为字典：date->currency_id->rate
+        rate_dict = {}
+        for rate in historical_rates_qs:
+            date_str = rate.date.isoformat()
+            if date_str not in rate_dict:
+                rate_dict[date_str] = {}
+            if rate.currency_id:  # 确保currency_id不为None
+                rate_dict[date_str][rate.currency_id] = rate.rate
+
+        # 9. 定义获取汇率的函数
+        def get_rate_for_date_and_currency(target_date, currency_id, missing_info):
+            """
+            获取指定日期和货币的汇率
+            如果当天没有，则查找前一天的汇率
+            """
+            # 人民币汇率固定为1
+            if currency_id == 1:
+                return Decimal('1.0')
+
+            # 尝试获取当天的汇率
+            date_str = target_date.isoformat()
+            if date_str in rate_dict and currency_id in rate_dict[date_str]:
+                return rate_dict[date_str][currency_id]
+
+            # 当天没有汇率，查找前一天
+            prev_date = target_date - datetime.timedelta(days=1)
+            prev_date_str = prev_date.isoformat()
+
+            # 递归查找，最多查找30天（避免无限递归）
+            max_days_back = 30
+            days_back = 1
+
+            while days_back <= max_days_back:
+                if prev_date_str in rate_dict and currency_id in rate_dict[prev_date_str]:
+                    # 记录缺失信息
+                    missing_info.append({
+                        'date': target_date,
+                        'currency_id': currency_id,
+                        'used_date': prev_date
+                    })
+                    return rate_dict[prev_date_str][currency_id]
+
+                prev_date = prev_date - datetime.timedelta(days=1)
+                prev_date_str = prev_date.isoformat()
+                days_back += 1
+
+            # 如果超过最大回溯天数仍未找到，抛出异常
+            raise ValueError(f"在{max_days_back}天内未找到日期{target_date}、货币{currency_id}的汇率数据")
+
+        # 10. 按日期顺序处理
+        latest_date = earliest_date
+        latest_aggregated_record = initial_aggregated_record
+
+        # 存储汇率缺失信息
+        missing_rate_info = []
+
+        # 使用事务确保数据一致性
+        with transaction.atomic():
+            # 删除已有的汇总Portfolio历史记录（除了初始记录）
+            PortfolioHistory.objects.filter(
+                portfolio=aggregated_portfolio
+            ).exclude(id=initial_aggregated_record.id).delete()
+
+            for current_date in dates_to_process:
+                # 10.1 获取当前日期的汇率集合
+                # 汇率会在下面的循环中按需获取
+
+                # 10.2 初始化总和
+                total_portfolio_value = Decimal('0.0')
+                total_portfolio_in_out = Decimal('0.0')
+
+                # 10.3 处理每个普通Portfolio在当前日期的记录
+                for portfolio in normal_portfolios:
+                    # 获取该Portfolio在当前日期的记录
+                    portfolio_history = PortfolioHistory.objects.filter(
+                        portfolio=portfolio,
+                        date=current_date
+                    ).first()
+
+                    portfolio_value = Decimal('0.0')
+                    portfolio_in_out = Decimal('0.0')
+
+                    if portfolio_history:
+                        portfolio_value = portfolio_history.portfolio_value
+                        portfolio_in_out = portfolio_history.portfolio_in_out
+
+                    # 获取汇率
+                    currency_id = portfolio.currency_id if portfolio.currency_id else 1
+                    try:
+                        rate = get_rate_for_date_and_currency(current_date, currency_id, missing_rate_info)
+                    except ValueError as e:
+                        raise ValueError(f"处理日期{current_date}时出错: {str(e)}")
+
+                    # 计算汇率转换后的值
+                    total_portfolio_value += portfolio_value * rate
+                    total_portfolio_in_out += portfolio_in_out * rate
+
+                # 10.4 从latest_date的汇总记录中获取值
+                latest_portfolio_value = latest_aggregated_record.portfolio_value
+                latest_portfolio_net_value = latest_aggregated_record.portfolio_net_value
+                latest_portfolio_principal = latest_aggregated_record.portfolio_principal
+                latest_portfolio_PHR = latest_aggregated_record.portfolio_PHR
+                latest_portfolio_profit_rate = latest_aggregated_record.portfolio_profit_rate
+
+                # 10.5 计算当前日期的各项指标
+                # 2.7.1 portfolio_principal
+                portfolio_principal = latest_portfolio_principal + total_portfolio_in_out
+
+                # 2.7.2 portfolio_net_value
+                if latest_portfolio_PHR == Decimal('0.0'):
+                    portfolio_net_value = latest_portfolio_net_value
+                else:
+                    portfolio_net_value = (total_portfolio_value - total_portfolio_in_out) / latest_portfolio_PHR
+
+                # 2.7.3 portfolio_PHR
+                if portfolio_net_value != Decimal('0.0'):
+                    portfolio_PHR = total_portfolio_value / portfolio_net_value
+                else:
+                    portfolio_PHR = Decimal('0.0')
+
+                # 2.7.4 portfolio_current_profit
+                portfolio_current_profit = total_portfolio_value - total_portfolio_in_out - latest_portfolio_value
+
+                # 2.7.5 portfolio_current_profit_rate
+                if latest_portfolio_net_value != Decimal('0.0'):
+                    portfolio_current_profit_rate = (
+                                                                portfolio_net_value - latest_portfolio_net_value) / latest_portfolio_net_value
+                else:
+                    portfolio_current_profit_rate = Decimal('0.0')
+
+                # 2.7.6 portfolio_profit
+                portfolio_profit = total_portfolio_value - portfolio_principal
+
+                # 2.7.7 portfolio_profit_rate
+                if latest_portfolio_PHR == Decimal('0.0'):
+                    portfolio_profit_rate = latest_portfolio_profit_rate
+                else:
+                    if portfolio_principal != Decimal('0.0'):
+                        portfolio_profit_rate = portfolio_profit / portfolio_principal
+                    else:
+                        portfolio_profit_rate = Decimal('0.0')
+
+                # 2.7.8 portfolio_annualized_profit_rate
+                years = float((current_date - earliest_date).days) / 365.0
+                if years > 0 and portfolio_net_value > Decimal('0.0'):
+                    portfolio_annualized_profit_rate = float(portfolio_net_value) ** (1.0 / years) - 1.0
+                else:
+                    portfolio_annualized_profit_rate = Decimal('0.0')
+
+                # 10.6 创建当前日期的汇总Portfolio记录
+                portfolio_history = PortfolioHistory.objects.create(
+                    portfolio=aggregated_portfolio,
+                    date=current_date,
+                    portfolio_value=total_portfolio_value,
+                    portfolio_in_out=total_portfolio_in_out,
+                    portfolio_principal=portfolio_principal,
+                    portfolio_PHR=portfolio_PHR,
+                    portfolio_net_value=portfolio_net_value,
+                    portfolio_current_profit=portfolio_current_profit,
+                    portfolio_current_profit_rate=portfolio_current_profit_rate,
+                    portfolio_profit=portfolio_profit,
+                    portfolio_profit_rate=portfolio_profit_rate,
+                    portfolio_annualized_profit_rate=portfolio_annualized_profit_rate
+                )
+
+                # 更新latest_date和latest_aggregated_record
+                latest_date = current_date
+                latest_aggregated_record = portfolio_history
+
+                logger.info(f"已为日期{current_date}生成汇总Portfolio历史记录")
+
+            # 11. 如果有汇率缺失信息，记录日志
+            if missing_rate_info:
+                logger.warning("以下日期和币种的汇率数据缺失，使用了前一日的汇率:")
+                for info in missing_rate_info:
+                    logger.warning(f"  日期: {info['date']}, 货币ID: {info['currency_id']}, 使用的汇率日期: {info['used_date']}")
+
+        # 12. 更新汇总Portfolio的当前值
+        aggregated_portfolio.portfolio_value = latest_aggregated_record.portfolio_value
+        aggregated_portfolio.portfolio_principal = latest_aggregated_record.portfolio_principal
+        aggregated_portfolio.portfolio_PHR = latest_aggregated_record.portfolio_PHR
+        aggregated_portfolio.portfolio_net_value = latest_aggregated_record.portfolio_net_value
+        aggregated_portfolio.update_date = latest_date
+        aggregated_portfolio.save()
+
+        logger.info(f"成功生成汇总Portfolio历史记录，共处理{len(dates_to_process)}个日期")
+
+        return {
+            'success': True,
+            'processed_dates': len(dates_to_process),
+            'missing_rate_info': missing_rate_info
+        }
+
+    except Exception as e:
+        logger.error(f"生成汇总Portfolio历史记录时出错: {str(e)}")
+        raise
+'''
+
+
+
+def get_latest_portfolio_record(portfolio, target_date, max_look_back=365):
+    """
+    获取指定投资组合在目标日期或之前的最近一条记录
+    最多向前查找max_look_back天
+
+    Args:
+        portfolio: Portfolio对象
+        target_date: 目标日期
+        max_look_back: 最大向前查找天数，默认为10
+
+    Returns:
+        PortfolioHistory对象或None（如果没有找到记录）
+    """
+    # 首先尝试获取目标日期的记录
+    record = PortfolioHistory.objects.filter(
+        portfolio=portfolio,
+        date=target_date
+    ).first()
+
+    if record:
+        return record
+
+    # 向前查找
+    for i in range(1, max_look_back + 1):
+        prev_date = target_date - datetime.timedelta(days=i)
+        record = PortfolioHistory.objects.filter(
+            portfolio=portfolio,
+            date=prev_date
+        ).first()
+
+        if record:
+            return record
+
+    # 如果向前max_look_back天都没有找到记录
+    return None
+
+
+def has_record_before_date(portfolio, target_date):
+    """
+    判断指定投资组合在目标日期之前是否有记录
+
+    Args:
+        portfolio: Portfolio对象
+        target_date: 目标日期
+
+    Returns:
+        bool: True表示有记录，False表示没有记录
+    """
+    return PortfolioHistory.objects.filter(
+        portfolio=portfolio,
+        date__lt=target_date
+    ).exists()
+
+
+def generate_aggregated_portfolio_history():
+    """
+    根据普通Portfolio历史记录生成汇总Portfolio的完整历史记录
+    """
+    try:
+        # 1. 获取汇总Portfolio
+        aggregated_portfolio = Portfolio.objects.filter(is_aggregated=True).first()
+        if not aggregated_portfolio:
+            raise ValueError("未找到汇总Portfolio记录")
+
+        # 2. 获取汇总Portfolio的初始记录
+        initial_aggregated_record = PortfolioHistory.objects.filter(
+            portfolio=aggregated_portfolio
+        ).order_by('date').first()
+
+        if not initial_aggregated_record:
+            raise ValueError(f"未找到汇总Portfolio(id={aggregated_portfolio.id})的初始记录")
+
+        # 3. 获取所有普通Portfolio的日期集合
+        normal_dates = PortfolioHistory.objects.filter(
+            portfolio__is_aggregated=False
+        ).values_list('date', flat=True).distinct().order_by('date')
+
+        if not normal_dates:
+            logger.info("没有普通Portfolio的历史记录")
+            return
+
+        # 4. 检查初始记录日期是否是最小日期
+        earliest_date = min(normal_dates)
+        if initial_aggregated_record.date != earliest_date:
+            raise ValueError(f"汇总Portfolio初始记录日期({initial_aggregated_record.date})不是最小日期({earliest_date})")
+
+        # 5. 准备日期列表（从第二小日期开始）
+        all_dates = sorted(set(normal_dates))  # 去重并排序
+        dates_to_process = all_dates[1:]  # 跳过最小日期（初始记录日期）
+
+        if not dates_to_process:
+            logger.info("只有初始日期，无需生成更多记录")
+            return
+
+        # 6. 获取所有普通Portfolio
+        normal_portfolios_qs = Portfolio.objects.filter(is_aggregated=False)
+        normal_portfolios_list = list(normal_portfolios_qs)
+
+        # 7. 获取所有涉及的货币ID
+        currency_ids = normal_portfolios_qs.exclude(currency_id=None).values_list('currency_id', flat=True).distinct()
+
+        # 处理人民币的特殊情况
+        currency_id_set = set(currency_ids)
+        if 1 not in currency_id_set:
+            currency_id_set.add(1)
+
+        # 8. 获取所有汇率数据
+        min_date = earliest_date
+        max_date = dates_to_process[-1]
+
+        historical_rates_qs = HistoricalRate.objects.filter(
+            date__gte=min_date,
+            date__lte=max_date,
+            currency_id__in=currency_id_set
+        ).order_by('date')
+
+        # 组织汇率数据为字典：date->currency_id->rate
+        rate_dict = {}
+        for rate in historical_rates_qs:
+            date_str = rate.date.isoformat()
+            if date_str not in rate_dict:
+                rate_dict[date_str] = {}
+            if rate.currency_id:
+                rate_dict[date_str][rate.currency_id] = rate.rate
+
+        # 9. 定义获取汇率的函数
+        def get_rate_for_date_and_currency(target_date, currency_id, missing_info):
+            """
+            获取指定日期和货币的汇率
+            如果当天没有，则查找前一天的汇率
+            """
+            # 人民币汇率固定为1
+            if currency_id == 1:
+                return Decimal('1.0')
+
+            # 尝试获取当天的汇率
+            date_str = target_date.isoformat()
+            if date_str in rate_dict and currency_id in rate_dict[date_str]:
+                return rate_dict[date_str][currency_id]
+
+            # 当天没有汇率，查找前一天
+            prev_date = target_date - datetime.timedelta(days=1)
+            prev_date_str = prev_date.isoformat()
+
+            # 递归查找，最多查找30天
+            max_days_back = 30
+            days_back = 1
+
+            while days_back <= max_days_back:
+                if prev_date_str in rate_dict and currency_id in rate_dict[prev_date_str]:
+                    # 记录缺失信息
+                    missing_info.append({
+                        'date': target_date,
+                        'currency_id': currency_id,
+                        'used_date': prev_date
+                    })
+                    return rate_dict[prev_date_str][currency_id]
+
+                prev_date = prev_date - datetime.timedelta(days=1)
+                prev_date_str = prev_date.isoformat()
+                days_back += 1
+
+            raise ValueError(f"在{max_days_back}天内未找到日期{target_date}、货币{currency_id}的汇率数据")
+
+        # 10. 按日期顺序处理
+        latest_date = earliest_date
+        latest_aggregated_record = initial_aggregated_record
+
+        # 存储汇率缺失信息
+        missing_rate_info = []
+
+        # 使用事务确保数据一致性
+        with transaction.atomic():
+            # 删除已有的汇总Portfolio历史记录（除了初始记录）
+            PortfolioHistory.objects.filter(
+                portfolio=aggregated_portfolio
+            ).exclude(id=initial_aggregated_record.id).delete()
+
+            for current_date in dates_to_process:
+                # 初始化总和
+                total_portfolio_value = Decimal('0.0')
+                total_portfolio_in_out = Decimal('0.0')
+
+                # 处理每个普通Portfolio
+                for portfolio in normal_portfolios_list:
+                    portfolio_value = Decimal('0.0')
+                    portfolio_in_out = Decimal('0.0')
+
+                    # 判断该Portfolio在当前日期之前是否有记录
+                    has_previous_record = has_record_before_date(portfolio, current_date)
+
+                    if has_previous_record:
+                        # 如果有记录，向前查找最近的记录
+                        portfolio_history = get_latest_portfolio_record(portfolio, current_date, max_look_back=365)
+
+                        if not portfolio_history:
+                            raise ValueError(f"投资组合 {portfolio.portfolio_name} (ID: {portfolio.id}) "
+                                             f"在日期 {current_date} 及前365天内没有找到记录")
+
+                        portfolio_value = portfolio_history.portfolio_value
+                        portfolio_in_out = portfolio_history.portfolio_in_out
+
+                    # 如果没有记录，则使用0值（已经初始化为0）
+
+                    # 获取汇率
+                    currency_id = portfolio.currency_id if portfolio.currency_id else 1
+                    try:
+                        rate = get_rate_for_date_and_currency(current_date, currency_id, missing_rate_info)
+                    except ValueError as e:
+                        raise ValueError(f"处理日期{current_date}时出错: {str(e)}")
+
+                    # 计算汇率转换后的值
+                    total_portfolio_value += portfolio_value * rate
+                    total_portfolio_in_out += portfolio_in_out * rate
+
+                # 从latest_date的汇总记录中获取值
+                latest_portfolio_value = latest_aggregated_record.portfolio_value
+                latest_portfolio_net_value = latest_aggregated_record.portfolio_net_value
+                latest_portfolio_principal = latest_aggregated_record.portfolio_principal
+                latest_portfolio_PHR = latest_aggregated_record.portfolio_PHR
+                latest_portfolio_profit_rate = latest_aggregated_record.portfolio_profit_rate
+
+                # 计算当前日期的各项指标
+                # 2.7.1 portfolio_principal
+                portfolio_principal = latest_portfolio_principal + total_portfolio_in_out
+
+                # 2.7.2 portfolio_net_value
+                if latest_portfolio_PHR == Decimal('0.0'):
+                    portfolio_net_value = latest_portfolio_net_value
+                else:
+                    portfolio_net_value = (total_portfolio_value - total_portfolio_in_out) / latest_portfolio_PHR
+
+                # 2.7.3 portfolio_PHR
+                if portfolio_net_value != Decimal('0.0'):
+                    portfolio_PHR = total_portfolio_value / portfolio_net_value
+                else:
+                    portfolio_PHR = Decimal('0.0')
+
+                # 2.7.4 portfolio_current_profit
+                portfolio_current_profit = total_portfolio_value - total_portfolio_in_out - latest_portfolio_value
+
+                # 2.7.5 portfolio_current_profit_rate
+                if latest_portfolio_net_value != Decimal('0.0'):
+                    portfolio_current_profit_rate = (
+                                                                portfolio_net_value - latest_portfolio_net_value) / latest_portfolio_net_value
+                else:
+                    portfolio_current_profit_rate = Decimal('0.0')
+
+                # 2.7.6 portfolio_profit
+                portfolio_profit = total_portfolio_value - portfolio_principal
+
+                # 2.7.7 portfolio_profit_rate
+                if latest_portfolio_PHR == Decimal('0.0'):
+                    portfolio_profit_rate = latest_portfolio_profit_rate
+                else:
+                    if portfolio_principal != Decimal('0.0'):
+                        portfolio_profit_rate = portfolio_profit / portfolio_principal
+                    else:
+                        portfolio_profit_rate = Decimal('0.0')
+
+                # 2.7.8 portfolio_annualized_profit_rate
+                years = float((current_date - earliest_date).days) / 365.0
+                if years > 0 and portfolio_net_value > Decimal('0.0'):
+                    portfolio_annualized_profit_rate = float(portfolio_net_value) ** (1.0 / years) - 1.0
+                else:
+                    portfolio_annualized_profit_rate = Decimal('0.0')
+
+                # 创建当前日期的汇总Portfolio记录
+                portfolio_history = PortfolioHistory.objects.create(
+                    portfolio=aggregated_portfolio,
+                    date=current_date,
+                    portfolio_value=total_portfolio_value,
+                    portfolio_in_out=total_portfolio_in_out,
+                    portfolio_principal=portfolio_principal,
+                    portfolio_PHR=portfolio_PHR,
+                    portfolio_net_value=portfolio_net_value,
+                    portfolio_current_profit=portfolio_current_profit,
+                    portfolio_current_profit_rate=portfolio_current_profit_rate,
+                    portfolio_profit=portfolio_profit,
+                    portfolio_profit_rate=portfolio_profit_rate,
+                    portfolio_annualized_profit_rate=portfolio_annualized_profit_rate
+                )
+
+                # 更新latest_date和latest_aggregated_record
+                latest_date = current_date
+                latest_aggregated_record = portfolio_history
+
+                if len(dates_to_process) <= 10 or (
+                        len(dates_to_process) > 10 and dates_to_process.index(current_date) % 10 == 0):
+                    logger.info(
+                        f"已为日期{current_date}生成汇总Portfolio历史记录，进度: {dates_to_process.index(current_date) + 1}/{len(dates_to_process)}")
+
+            # 如果有汇率缺失信息，记录日志
+            if missing_rate_info:
+                logger.warning("以下日期和币种的汇率数据缺失，使用了前一日的汇率:")
+                for info in missing_rate_info:
+                    logger.warning(f"  日期: {info['date']}, 货币ID: {info['currency_id']}, 使用的汇率日期: {info['used_date']}")
+
+        # 更新汇总Portfolio的当前值
+        aggregated_portfolio.portfolio_value = latest_aggregated_record.portfolio_value
+        aggregated_portfolio.portfolio_principal = latest_aggregated_record.portfolio_principal
+        aggregated_portfolio.portfolio_PHR = latest_aggregated_record.portfolio_PHR
+        aggregated_portfolio.portfolio_net_value = latest_aggregated_record.portfolio_net_value
+        aggregated_portfolio.update_date = latest_date
+        aggregated_portfolio.save()
+
+        logger.info(f"成功生成汇总Portfolio历史记录，共处理{len(dates_to_process)}个日期")
+
+        return {
+            'success': True,
+            'aggregated_portfolio_id': aggregated_portfolio.id,
+            'aggregated_portfolio_name': aggregated_portfolio.portfolio_name,
+            'processed_dates': len(dates_to_process),
+            'earliest_date': earliest_date,
+            'latest_date': latest_date,
+            'missing_rate_count': len(missing_rate_info)
+        }
+
+    except Exception as e:
+        logger.error(f"生成汇总Portfolio历史记录时出错: {str(e)}", exc_info=True)
+        raise
+
 # 关于
 def about(request):
     # 手动执行更新历史持仓功能，用于调试
@@ -4553,13 +5153,19 @@ def about(request):
     # start_date = datetime.date(2007, 8, 16)
     #
     # generate_historical_positions(start_date, end_date)
+
     # get_historical_closing_price(start_date, end_date - datetime.timedelta(days=1))
     # fill_missing_closing_price(start_date, end_date - datetime.timedelta(days=1))
     # get_today_price()
+
     # get_historical_rate(start_date, end_date)
     # fill_missing_historical_rates()
+
     # calculate_market_value(start_date, end_date)
     # calculate_and_fill_historical_data(start_date, end_date)
+
+    result = generate_aggregated_portfolio_history()
+    print(f"处理结果: {result}")
 
     return render(request, templates_path + 'about.html', locals())
 

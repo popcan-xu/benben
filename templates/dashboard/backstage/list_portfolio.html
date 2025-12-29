@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 {% extends 'dashboard/base_dashboard.html' %}
+{% load myfilters %}
 
 {% block page_content %}
 <div class="container-fluid">
@@ -25,8 +26,8 @@
                             <th>净值</th>
                             <th>货币</th>
                             <th>创立日期</th>
-                            <th>更新日期</th>
                             <th>比较基准</th>
+                            <th>是否为汇总组合</th>
                             <th>备注</th>
                             <th>操作</th>
                             <th>操作</th>
@@ -45,8 +46,8 @@
 {#                                <td>{{ portfolio.get_portfolio_currency_display }}</td>#}
                                 <td>{{ portfolio.currency.name }}</td>
                                 <td>{{ portfolio.portfolio_create_date|date:'Y-m-d' }}</td>
-                                <td>{{ portfolio.update_date|date:'Y-m-d' }}</td>
                                 <td>{{ portfolio.baseline.name }}</td>
+                                <td>{{ portfolio.is_aggregated|bool_to_chinese }}</td>
                                 <td>{{ portfolio.portfolio_script }}</td>
                                 <td>
                                     <a href="/benben/del_portfolio/{{ portfolio.id|safe }}/" class="btn btn-default btn-sm">
@@ -70,5 +71,15 @@
         </div>
     </div>
 </div>
+
+<script>
+$(document).ready(function() {
+    $('#dataTable').DataTable( {
+        //先按第一列逆序排序，如果有相同，再按第二列顺序排序
+        //order后面就是一个多维数组，可以自由增删
+        "order": [[ 9, "desc" ],[ 0, "asc" ]]
+    } );
+} );
+</script>
 
 {% endblock %}

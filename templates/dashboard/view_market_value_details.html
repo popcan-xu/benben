@@ -119,7 +119,8 @@
                         </div>
                     </div>
                     <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：货币为{{ currency_name|safe }}，单位为元。</span>
                     </div>
                 </div>
             </div>
@@ -163,7 +164,7 @@
                     </div>
                     <div class="card-footer bg-white text-muted small d-flex justify-content-between">
                         <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
-                        <span>注：市值单位为万元。</span>
+                        <span>注：货币为{{ currency_name|safe }}，单位为万元。</span>
                     </div>
                 </div>
             </div>
@@ -228,7 +229,7 @@
                         <div class="summary" id="periodSummary"></div>
                     </div>
                     <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
                     </div>
                 </div>
             </div>
@@ -331,7 +332,8 @@
                         </div>
                     </div>
                     <div class="card-footer bg-white text-muted small d-flex justify-content-between">
-                        数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}
+                        <span>数据更新于：{{ updating_time|date:'Y-m-d H:i:s' }}</span>
+                        <span>注：货币为{{ currency_name|safe }}，单位为元。</span>
                     </div>
                 </div>
             </div>
