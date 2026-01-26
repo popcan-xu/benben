@@ -900,7 +900,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in compare_data_group %}
+                                {% for item in compare_data_group reversed %}
                                     <tr>
                                         {% for value in item %}
                                             {% if forloop.counter0 == 0 %}

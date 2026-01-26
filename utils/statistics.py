@@ -310,6 +310,7 @@ def get_position_content(currency_id, rate_dict):
         key=get_market_value,
         reverse=True
     )
+    # print(f"sorted_stock_ids: {sorted_stock_ids}")
 
     # 构建表格行
     for stock_id in sorted_stock_ids:
@@ -334,6 +335,7 @@ def get_position_content(currency_id, rate_dict):
         position_content.append(row)
 
     stock_num = len(position_content)
+    # print(f"position_content: {position_content}")
 
     return {
         'position_content': position_content,

@@ -1730,6 +1730,7 @@ def stats_position(request):
     context = {
         'positions': positions
     }
+    # print(f"context: {context}")
 
     return render(request, templates_path + 'stats/stats_position.html', context)
 
