@@ -442,11 +442,13 @@ def _calculate_position_data(currency_dict, amount_sum_CNY):
     """计算仓位数据"""
     # 获取所有portfolio同时存在记录的最大有效日期
     total_portfolio = PortfolioHistory.objects.filter(portfolio__is_aggregated=False).values('portfolio').distinct().count()
-    valid_dates = PortfolioHistory.objects.filter(portfolio__is_aggregated=False).values('date').annotate(
+    valid_dates_portfolio = PortfolioHistory.objects.filter(portfolio__is_aggregated=False).values('date').annotate(
         portfolio_count=Count('portfolio', distinct=True)
     ).filter(portfolio_count=total_portfolio).order_by('-date')
 
-    max_date_portfolio = valid_dates.first()['date'] if valid_dates.exists() else None
+    max_date_portfolio = valid_dates_portfolio.first()['date'] if valid_dates_portfolio.exists() else None
+
+    max_date_market_value = get_max_valid_date_for_market_value()
 
     position_percent_dict = {}
     portfolio_value_dict = {}
@@ -456,7 +458,7 @@ def _calculate_position_data(currency_dict, amount_sum_CNY):
         portfolio_id = Portfolio.objects.filter(is_aggregated=False).get(currency_id=key).id
         portfolio_value_dict[key] = PortfolioHistory.objects.get(portfolio_id=portfolio_id,
                                                                  date=max_date_portfolio).portfolio_value
-        market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_portfolio).value
+        market_value_dict[key] = HistoricalMarketValue.objects.get(currency_id=key, date=max_date_market_value).value
         position_percent_dict[key] = market_value_dict[key] / portfolio_value_dict[key]
 
     # 人民币投资组合的持仓比例通过511880的市值占比计算
@@ -467,6 +469,28 @@ def _calculate_position_data(currency_dict, amount_sum_CNY):
     position_percent_dict[1] = 1 - cash_like_assets_CNY / amount_sum_CNY
 
     return position_percent_dict
+
+
+def get_max_valid_date_for_market_value():
+    """优化版：单次查询获取最大有效日期"""
+    # 先获取货币总数
+    total_currencies = HistoricalMarketValue.objects.filter(
+        currency__isnull=False
+    ).values('currency').distinct().count()
+
+    if total_currencies == 0:
+        return None
+
+    # 使用子查询优化
+    valid_date = HistoricalMarketValue.objects.filter(
+        currency__isnull=False
+    ).values('date').annotate(
+        currency_count=Count('currency', distinct=True)
+    ).filter(
+        currency_count=total_currencies
+    ).order_by('-date').values('date').first()
+
+    return valid_date['date'] if valid_date else None
 
 
 def _calculate_dividend_data(rate, currency_dict, current_year, colors):
