@@ -1899,60 +1899,65 @@ def get_current_index(baseline_name_array):
         baseline = json.load(f)
     current_year = datetime.datetime.now().year
     for baseline_name in baseline_name_array:
-        if baseline_name == '上证指数':
-            # 上证指数
-            df = ak.stock_zh_index_spot_sina()
-            current_price = float(df[df['代码'] == 'sh000001']['最新价'].iloc[0])
-        elif baseline_name == '深证成份指数':
-            # 深证成份指数
-            df = ak.stock_zh_index_spot_sina()
-            current_price = float(df[df['代码'] == 'sz399001']['最新价'].iloc[0])
-        elif baseline_name == '创业板指数':
-            # 创业板指数
-            df = ak.stock_zh_index_spot_sina()
-            current_price = float(df[df['代码'] == 'sz399006']['最新价'].iloc[0])
-        elif baseline_name == '沪深300指数':
-            # 沪深300指数
-            df = ak.stock_zh_index_spot_sina()
-            current_price = float(df[df['代码'] == 'sh000300']['最新价'].iloc[0])
-        elif baseline_name == '沪深300全收益指数':
-            # 沪深300全收益指数
-            end_date_str = datetime.datetime.now().strftime('%Y%m%d')
-            start_date_str = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y%m%d')
-            df = ak.stock_zh_index_hist_csindex(symbol="H00300", start_date=start_date_str,
-                                                end_date=end_date_str).sort_values(by='日期', ascending=False)
-            current_price = float(df.head(1)['收盘'].iloc[0])
-        elif baseline_name == '恒生指数':
-            # 恒生指数
-            df = ak.stock_hk_index_spot_sina()
-            current_price = float(df[df['代码'] == 'HSI']['最新价'].iloc[0])
-        elif baseline_name == '国企指数':
-            # 国企指数
-            df = ak.stock_hk_index_spot_sina()
-            current_price = float(df[df['代码'] == 'HSCEI']['最新价'].iloc[0])
-        elif baseline_name == '恒生科技指数':
-            # 恒生科技指数
-            df = ak.stock_hk_index_spot_sina()
-            current_price = float(df[df['代码'] == 'HSTECH']['最新价'].iloc[0])
-        elif baseline_name == '标普500指数':
-            # 标普500指数
-            df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date', ascending=False).head(1)
-            current_price = float(df['close'].iloc[0])
-        elif baseline_name == '道琼斯指数':
-            # 道琼斯指数
-            df = ak.index_us_stock_sina(symbol=".DJI").sort_values(by='date', ascending=False).head(1)
-            current_price = float(df['close'].iloc[0])
-        elif baseline_name == '纳斯达克指数':
-            # 纳斯达克指数
-            df = ak.index_us_stock_sina(symbol=".IXIC").sort_values(by='date', ascending=False).head(1)
-            current_price = float(df['close'].iloc[0])
-        else:
-            current_price = 0
-        for item in baseline[baseline_name]:
-            if item["Year"] == current_year:
-                item["ClosingPrice"] = current_price  # 替换成你的新数值
-                # print(baseline_name,current_year,current_price)
-                break  # 找到后立即退出循环
+        current_price = None
+        try:
+            if baseline_name == '上证指数':
+                # 上证指数
+                df = ak.stock_zh_index_spot_sina()
+                current_price = float(df[df['代码'] == 'sh000001']['最新价'].iloc[0])
+            elif baseline_name == '深证成份指数':
+                # 深证成份指数
+                df = ak.stock_zh_index_spot_sina()
+                current_price = float(df[df['代码'] == 'sz399001']['最新价'].iloc[0])
+            elif baseline_name == '创业板指数':
+                # 创业板指数
+                df = ak.stock_zh_index_spot_sina()
+                current_price = float(df[df['代码'] == 'sz399006']['最新价'].iloc[0])
+            elif baseline_name == '沪深300指数':
+                # 沪深300指数
+                df = ak.stock_zh_index_spot_sina()
+                current_price = float(df[df['代码'] == 'sh000300']['最新价'].iloc[0])
+            elif baseline_name == '沪深300全收益指数':
+                # 沪深300全收益指数
+                end_date_str = datetime.datetime.now().strftime('%Y%m%d')
+                start_date_str = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y%m%d')
+                df = ak.stock_zh_index_hist_csindex(symbol="H00300", start_date=start_date_str,
+                                                    end_date=end_date_str).sort_values(by='日期', ascending=False)
+                current_price = float(df.head(1)['收盘'].iloc[0])
+            elif baseline_name == '恒生指数':
+                # 恒生指数
+                df = ak.stock_hk_index_spot_sina()
+                current_price = float(df[df['代码'] == 'HSI']['最新价'].iloc[0])
+            elif baseline_name == '国企指数':
+                # 国企指数
+                df = ak.stock_hk_index_spot_sina()
+                current_price = float(df[df['代码'] == 'HSCEI']['最新价'].iloc[0])
+            elif baseline_name == '恒生科技指数':
+                # 恒生科技指数
+                df = ak.stock_hk_index_spot_sina()
+                current_price = float(df[df['代码'] == 'HSTECH']['最新价'].iloc[0])
+            elif baseline_name == '标普500指数':
+                # 标普500指数
+                df = ak.index_us_stock_sina(symbol=".INX").sort_values(by='date', ascending=False).head(1)
+                current_price = float(df['close'].iloc[0])
+            elif baseline_name == '道琼斯指数':
+                # 道琼斯指数
+                df = ak.index_us_stock_sina(symbol=".DJI").sort_values(by='date', ascending=False).head(1)
+                current_price = float(df['close'].iloc[0])
+            elif baseline_name == '纳斯达克指数':
+                # 纳斯达克指数
+                df = ak.index_us_stock_sina(symbol=".IXIC").sort_values(by='date', ascending=False).head(1)
+                current_price = float(df['close'].iloc[0])
+            else:
+                current_price = 0
+        except Exception as e:
+            print(f"获取 {baseline_name} 当前价格失败: {e}")
+        if current_price is not None:
+            for item in baseline.get(baseline_name, []):
+                if item["Year"] == current_year:
+                    item["ClosingPrice"] = current_price  # 替换成你的新数值
+                    # print(baseline_name,current_year,current_price)
+                    break  # 找到后立即退出循环
     baseline["modified_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # 2. 写回JSON文件（保留原有格式）
