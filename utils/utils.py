@@ -1198,46 +1198,67 @@ def get_stock_dividend_history(stock_code):
     #                 'Hm_lpvt_1db88642e346389874251b5a1eded6e3=1745808363; '
     # }
 
+    def _safe_timestamp(value):
+        """将雪球时间戳安全转换为日期字符串；失败时返回空字符串"""
+        if value is None or value == '':
+            return ''
+        try:
+            return timeStamp13_2_date(value)
+        except Exception:
+            return ''
+
+    def _fetch_items(url):
+        """抓取并返回 items 列表；任何异常都返回空列表并打印日志"""
+        try:
+            response = session.get(url=url, headers=headers, timeout=30)
+            response.raise_for_status()
+            page_json = response.json()
+            items = page_json.get('data', {}).get('items', [])
+            if not isinstance(items, list):
+                print(f'抓取 {stock_code} 分红数据：items 非列表，实际类型={type(items).__name__}')
+                return []
+            return items
+        except Exception as e:
+            print(f'抓取 {stock_code} 分红数据失败：{e.__class__.__name__} {e}')
+            return []
+
     session = requests.Session()
 
     if market == 'sh' or market == 'sz':
         url = 'https://stock.xueqiu.com/v5/stock/f10/cn/bonus.json?symbol=' + market.upper() + stock_code + '&size=10000&page=1&extend=true'
-        page_json = session.get(url=url, headers=headers, timeout=30).json()
-        stock_dividend_dict = page_json['data']['items']
+        stock_dividend_dict = _fetch_items(url)
         for i in stock_dividend_dict:
             dict_tmp = {}
-            dict_tmp['reporting_period'] = i['dividend_year']
-            dict_tmp['dividend_plan'] = i['plan_explain']
+            dict_tmp['reporting_period'] = i.get('dividend_year', '')
+            dict_tmp['dividend_plan'] = i.get('plan_explain', '')
             dict_tmp['announcement_date'] = ''
-            dict_tmp['registration_date'] = timeStamp13_2_date(i['equity_date'])
-            dict_tmp['ex_right_date'] = timeStamp13_2_date(i['ashare_ex_dividend_date'])
-            dict_tmp['dividend_date'] = timeStamp13_2_date(i['ex_dividend_date'])
+            dict_tmp['registration_date'] = _safe_timestamp(i.get('equity_date'))
+            dict_tmp['ex_right_date'] = _safe_timestamp(i.get('ashare_ex_dividend_date'))
+            dict_tmp['dividend_date'] = _safe_timestamp(i.get('ex_dividend_date'))
             stock_dividend_history_list.append(dict_tmp)
     elif market == 'hk':
         url = 'https://stock.xueqiu.com/v5/stock/f10/hk/bonus.json?symbol=' + stock_code + '&size=1000&page=1&extend=true'
-        page_json = session.get(url=url, headers=headers, timeout=30).json()
-        stock_dividend_dict = page_json['data']['items']
+        stock_dividend_dict = _fetch_items(url)
         for i in stock_dividend_dict:
             dict_tmp = {}
             dict_tmp['reporting_period'] = ''
-            dict_tmp['dividend_plan'] = i['divdstep']
+            dict_tmp['dividend_plan'] = i.get('divdstep', '')
             dict_tmp['announcement_date'] = ''
             dict_tmp['registration_date'] = ''
-            dict_tmp['ex_right_date'] = timeStamp13_2_date(i['dertsdiv'])
-            dict_tmp['dividend_date'] = timeStamp13_2_date(i['datedivpy'])
+            dict_tmp['ex_right_date'] = _safe_timestamp(i.get('dertsdiv'))
+            dict_tmp['dividend_date'] = _safe_timestamp(i.get('datedivpy'))
             stock_dividend_history_list.append(dict_tmp)
     else:
         url = 'https://stock.xueqiu.com/v5/stock/f10/us/bonus.json?symbol=' + stock_code + '&size=1000&page=1&extend=true'
-        page_json = session.get(url=url, headers=headers, timeout=30).json()
-        stock_dividend_dict = page_json['data']['items']
+        stock_dividend_dict = _fetch_items(url)
         for i in stock_dividend_dict:
             dict_tmp = {}
             dict_tmp['reporting_period'] = ''
-            dict_tmp['dividend_plan'] = i['explain']
-            dict_tmp['announcement_date'] = timeStamp13_2_date(i['announcement_date'])
+            dict_tmp['dividend_plan'] = i.get('explain', '')
+            dict_tmp['announcement_date'] = _safe_timestamp(i.get('announcement_date'))
             dict_tmp['registration_date'] = ''
-            dict_tmp['ex_right_date'] = timeStamp13_2_date(i['exright_date'])
-            dict_tmp['dividend_date'] = timeStamp13_2_date(i['dividend_date'])
+            dict_tmp['ex_right_date'] = _safe_timestamp(i.get('exright_date'))
+            dict_tmp['dividend_date'] = _safe_timestamp(i.get('dividend_date'))
             stock_dividend_history_list.append(dict_tmp)
     return stock_dividend_history_list
 
