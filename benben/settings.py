@@ -19,12 +19,17 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '39vk1*ellwzoz(m8*$b(bsk+dpc-tn%$jc%qzl_p7ht(j+bj+('
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '39vk1*ellwzoz(m8*$b(bsk+dpc-tn%$jc%qzl_p7ht(j+bj+(')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# 跨平台：本地 Windows 默认开 DEBUG，服务器 Linux 默认关；均可用环境变量覆盖
+DEBUG = os.getenv('DJANGO_DEBUG', 'True' if os.name == 'nt' else 'False') == 'True'
 
-ALLOWED_HOSTS = ['127.0.0.1', '192.168.50.245', '192.168.50.49', '192.168.50.42']
+# 跨平台：默认含本机地址与服务器公网 IP，可用环境变量覆盖
+ALLOWED_HOSTS = os.getenv(
+    'DJANGO_ALLOWED_HOSTS',
+    'localhost,127.0.0.1,192.168.50.245,192.168.50.49,192.168.50.42,192.144.134.41'
+).split(',')
 
 # Application definition
 
@@ -93,8 +98,11 @@ WSGI_APPLICATION = 'benben.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        # 'NAME': os.path.join(BASE_DIR, 'benben.db'),
-        'NAME': os.path.join('D:\GP', 'benben.db'),
+        # 跨平台：Windows 本地默认 D:\GP\benben.db，Linux 服务器默认 BASE_DIR 相对路径；均可用 BENBEN_DB 覆盖
+        'NAME': os.getenv(
+            'BENBEN_DB',
+            os.path.join(r'D:\GP', 'benben.db') if os.name == 'nt' else os.path.join(BASE_DIR, 'benben.db'),
+        ),
     }
 }
 
@@ -152,13 +160,21 @@ THOUSAND_SEPARATOR = ","
 #   }
 #  }
 # }
-# 添加缓存配置
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'task-status-cache',  # 唯一标识缓存
+# 跨平台缓存：Windows 单进程用内存缓存；Linux 多 worker 用文件缓存共享状态
+if os.name == 'nt':
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'task-status-cache',
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+            'LOCATION': '/var/tmp/django_cache',
+        }
+    }
 
 # 确保时区正确
 # TIME_ZONE = 'Asia/Shanghai'
