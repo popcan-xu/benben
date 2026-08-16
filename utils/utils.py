@@ -1172,95 +1172,133 @@ def getDateRate_usd(date):
 
 # 从https://stock.xueqiu.com/网站抓取股票历史分红数据
 def get_stock_dividend_history(stock_code):
+    """抓取股票历史分红数据。
+
+    A股/港股走 akshare（东财/巨潮数据源，免登录态，长期稳定）；
+    美股走雪球兜底（需有效 xq_a_token，失败则优雅返回空，不抛异常）。
+    返回 list[dict]，每个 dict 含 6 个键：
+    reporting_period / dividend_plan / announcement_date /
+    registration_date / ex_right_date / dividend_date（值为 'YYYY-MM-DD' 或 ''）。
+    """
     stock_object = Stock.objects.get(stock_code=stock_code)
     market = stock_object.market.market_abbreviation
-    stock_dividend_history_list = []
-
-    # 使用雪球账号登录后的cookie，只需替换xq_a_token
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
-        "Cookie": "xq_a_token=dbaabe4c127b95f56af5ed4ec073d77fd1a93aa0;"
-    }
-    # headers = {
-    #     "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
-    #     'Cookie':   'cookiesu=491738051267842; '
-    #                 'device_id=b043d2601995dbbb5aa7312b27832e20; '
-    #                 'Hm_lvt_1db88642e346389874251b5a1eded6e3=1742526598; '
-    #                 'HMACCOUNT=B120DF9442E09CC4; '
-    #                 'remember=1; '
-    #                 'xq_a_token=f266c9393dc766b17cb5694f0510606e7e7f9256; '
-    #                 'xqat=f266c9393dc766b17cb5694f0510606e7e7f9256; '
-    #                 'xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOjE2ODI2NjI4MjAsImlzcyI6InVjIiwiZXhwIjoxNzQ5NDQzNTM1LCJjdG0iOjE3NDcyNjc5NTc0MjgsImNpZCI6ImQ5ZDBuNEFadXAifQ.S38DWHfWAvd4s-kUzjBvc9aeDe6QRDMBtI51bwqakXdamdQtsyQVmQOmR8h1jSHtTJO9I72qsX5aF02H6Bb0c-e6qFAfoIRhJrbLtic4ik3UcASlR-L7p1Is6Ix9YDR0h0AgFx3cMdzzZEivzO-y8k8emXrU0CJUtDWy2fPdTEDUbHxt0b2wvftofluo5BY0DjLi9CVEPTIuU6FqbWldMR_4gZVPbDTq4UIB7yeRXM-EYvM8T_sLj3EKZhPpTXJizQHTp-06qqfDzM9rxoSsdjWkZmgWcPKb5Qa4a_rVFDWtm22JgfolTDXZkndRC7UR_dVeKn54O1LjhhT0YTWGOw;'
-    #                 'xq_r_token=7fcdd7f2e943a91f55daee0fb28c2e36cfc7f482; '
-    #                 'xq_is_login=1; '
-    #                 'u=1682662820; '
-    #                 'is_overseas=0; '
-    #                 'Hm_lpvt_1db88642e346389874251b5a1eded6e3=1745808363; '
-    # }
-
-    def _safe_timestamp(value):
-        """将雪球时间戳安全转换为日期字符串；失败时返回空字符串"""
-        if value is None or value == '':
-            return ''
-        try:
-            return timeStamp13_2_date(value)
-        except Exception:
-            return ''
-
-    def _fetch_items(url):
-        """抓取并返回 items 列表；任何异常都返回空列表并打印日志"""
-        try:
-            response = session.get(url=url, headers=headers, timeout=30)
-            response.raise_for_status()
-            page_json = response.json()
-            items = page_json.get('data', {}).get('items', [])
-            if not isinstance(items, list):
-                print(f'抓取 {stock_code} 分红数据：items 非列表，实际类型={type(items).__name__}')
-                return []
-            return items
-        except Exception as e:
-            print(f'抓取 {stock_code} 分红数据失败：{e.__class__.__name__} {e}')
-            return []
-
-    session = requests.Session()
-
     if market == 'sh' or market == 'sz':
-        url = 'https://stock.xueqiu.com/v5/stock/f10/cn/bonus.json?symbol=' + market.upper() + stock_code + '&size=10000&page=1&extend=true'
-        stock_dividend_dict = _fetch_items(url)
-        for i in stock_dividend_dict:
-            dict_tmp = {}
-            dict_tmp['reporting_period'] = i.get('dividend_year', '')
-            dict_tmp['dividend_plan'] = i.get('plan_explain', '')
-            dict_tmp['announcement_date'] = ''
-            dict_tmp['registration_date'] = _safe_timestamp(i.get('equity_date'))
-            dict_tmp['ex_right_date'] = _safe_timestamp(i.get('ashare_ex_dividend_date'))
-            dict_tmp['dividend_date'] = _safe_timestamp(i.get('ex_dividend_date'))
-            stock_dividend_history_list.append(dict_tmp)
+        result = _get_dividend_cn(stock_code)
     elif market == 'hk':
-        url = 'https://stock.xueqiu.com/v5/stock/f10/hk/bonus.json?symbol=' + stock_code + '&size=1000&page=1&extend=true'
-        stock_dividend_dict = _fetch_items(url)
-        for i in stock_dividend_dict:
-            dict_tmp = {}
-            dict_tmp['reporting_period'] = ''
-            dict_tmp['dividend_plan'] = i.get('divdstep', '')
-            dict_tmp['announcement_date'] = ''
-            dict_tmp['registration_date'] = ''
-            dict_tmp['ex_right_date'] = _safe_timestamp(i.get('dertsdiv'))
-            dict_tmp['dividend_date'] = _safe_timestamp(i.get('datedivpy'))
-            stock_dividend_history_list.append(dict_tmp)
+        result = _get_dividend_hk(stock_code)
     else:
+        result = _get_dividend_us(stock_code)
+    # 统一按派息日降序，保证 index 0 为最新一条（兼容 get_dividend_date 的语义）
+    result.sort(key=lambda d: d['dividend_date'] or '0000-00-00', reverse=True)
+    return result
+
+
+def _norm_date(value):
+    """把 akshare / 接口返回的日期统一规范为 'YYYY-MM-DD' 或 ''（缺失）。"""
+    if value is None:
+        return ''
+    if isinstance(value, float) and pd.isna(value):
+        return ''
+    if pd.isna(value):  # 覆盖 NaN / NaT 等缺失值
+        return ''
+    if isinstance(value, (pd.Timestamp, datetime.datetime, datetime.date)):
+        return value.strftime('%Y-%m-%d')
+    s = str(value).strip()
+    if s in ('', 'nan', 'NaT', 'None'):
+        return ''
+    if ' ' in s:  # 去掉可能的时间部分，如 '2002-07-24 00:00:00'
+        s = s.split(' ')[0]
+    return s
+
+
+def _get_dividend_cn(stock_code):
+    """A股分红：akshare stock_dividend_cninfo（巨潮数据源，免登录态）。"""
+    result = []
+    try:
+        if not hasattr(ak, 'stock_dividend_cninfo'):
+            raise AttributeError('akshare 版本过低，缺少 stock_dividend_cninfo')
+        df = ak.stock_dividend_cninfo(symbol=stock_code)
+        if df is None or getattr(df, 'empty', True):
+            return result
+        for _, row in df.iterrows():
+            result.append({
+                'reporting_period': _norm_date(row.get('报告时间')),
+                'dividend_plan': str(row.get('实施方案分红说明') or ''),
+                'announcement_date': _norm_date(row.get('实施方案公告日期')),
+                'registration_date': _norm_date(row.get('股权登记日')),
+                'ex_right_date': _norm_date(row.get('除权日')),
+                'dividend_date': _norm_date(row.get('派息日')),
+            })
+    except Exception as e:
+        print(f'抓取 {stock_code} A股分红失败（akshare）：{e.__class__.__name__} {e}')
+    return result
+
+
+def _get_dividend_hk(stock_code):
+    """港股分红：akshare stock_hk_dividend_payout_em（东财数据源，免登录态）。"""
+    result = []
+    try:
+        if not hasattr(ak, 'stock_hk_dividend_payout_em'):
+            raise AttributeError('akshare 版本过低，缺少 stock_hk_dividend_payout_em')
+        df = ak.stock_hk_dividend_payout_em(symbol=stock_code)
+        if df is None or getattr(df, 'empty', True):
+            return result
+        for _, row in df.iterrows():
+            result.append({
+                'reporting_period': _norm_date(row.get('财政年度')),
+                'dividend_plan': str(row.get('分红方案') or ''),
+                'announcement_date': _norm_date(row.get('最新公告日期')),
+                'registration_date': '',
+                'ex_right_date': _norm_date(row.get('除净日')),
+                'dividend_date': _norm_date(row.get('发放日')),
+            })
+    except Exception as e:
+        print(f'抓取 {stock_code} 港股分红失败（akshare）：{e.__class__.__name__} {e}')
+    return result
+
+
+def _get_dividend_us(stock_code):
+    """美股分红：雪球兜底（需有效 xq_a_token，失败则优雅返回空，不抛异常）。
+
+    说明：雪球 xq_a_token 是登录态 cookie，会过期；且雪球现加 WAF，
+    访问首页已无法自动获取 guest token，故无有效 token 时本函数返回空列表。
+    如需长期稳定抓取美股分红，建议后续接入 yfinance 等免登录数据源。
+    """
+    result = []
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
+        }
+        session = requests.Session()
+        try:  # 先访问首页尝试自动获取 guest token（可能失败，忽略即可）
+            session.get(url="https://xueqiu.com", headers=headers, timeout=15)
+        except Exception:
+            pass
+
+        def _safe_ts(v):
+            if not v:
+                return ''
+            try:
+                return timeStamp13_2_date(v)
+            except Exception:
+                return ''
+
         url = 'https://stock.xueqiu.com/v5/stock/f10/us/bonus.json?symbol=' + stock_code + '&size=1000&page=1&extend=true'
-        stock_dividend_dict = _fetch_items(url)
-        for i in stock_dividend_dict:
-            dict_tmp = {}
-            dict_tmp['reporting_period'] = ''
-            dict_tmp['dividend_plan'] = i.get('explain', '')
-            dict_tmp['announcement_date'] = _safe_timestamp(i.get('announcement_date'))
-            dict_tmp['registration_date'] = ''
-            dict_tmp['ex_right_date'] = _safe_timestamp(i.get('exright_date'))
-            dict_tmp['dividend_date'] = _safe_timestamp(i.get('dividend_date'))
-            stock_dividend_history_list.append(dict_tmp)
-    return stock_dividend_history_list
+        resp = session.get(url=url, headers=headers, timeout=30)
+        resp.raise_for_status()
+        items = resp.json().get('data', {}).get('items', []) or []
+        for i in items:
+            result.append({
+                'reporting_period': '',
+                'dividend_plan': str(i.get('explain') or ''),
+                'announcement_date': _safe_ts(i.get('announcement_date')),
+                'registration_date': '',
+                'ex_right_date': _safe_ts(i.get('exright_date')),
+                'dividend_date': _safe_ts(i.get('dividend_date')),
+            })
+    except Exception as e:
+        print(f'抓取 {stock_code} 美股分红失败（xueqiu）：{e.__class__.__name__} {e}')
+    return result
 
 
 def get_stock_dividend_history_2lines(stock_code):
