@@ -1185,14 +1185,19 @@ def get_stock_dividend_history(stock_code):
     stock_object = Stock.objects.get(stock_code=stock_code)
     market = stock_object.market.market_abbreviation
     if market == 'sh' or market == 'sz':
-        result = _get_dividend_cn(stock_code)
+        data = _get_dividend_cn(stock_code)
+        meta = {'market': 'cn', 'source': 'cninfo', 'rate_limited': False,
+                'yf_error': False, 'error_type': '', 'error_msg': '', 'note': ''}
     elif market == 'hk':
-        result = _get_dividend_hk(stock_code)
+        data = _get_dividend_hk(stock_code)
+        meta = {'market': 'hk', 'source': 'em', 'rate_limited': False,
+                'yf_error': False, 'error_type': '', 'error_msg': '', 'note': ''}
     else:
-        result = _get_dividend_us(stock_code)
+        data, meta = _get_dividend_us(stock_code)
     # 统一按派息日降序，保证 index 0 为最新一条（兼容 get_dividend_date 的语义）
-    result.sort(key=lambda d: d['dividend_date'] or '0000-00-00', reverse=True)
-    return result
+    data.sort(key=lambda d: d['dividend_date'] or '0000-00-00', reverse=True)
+    meta['data'] = data
+    return meta
 
 
 def _norm_date(value):
@@ -1267,21 +1272,49 @@ def _get_dividend_hk(stock_code):
 
 
 def _get_dividend_us(stock_code):
-    """美股分红：优先 securitiesdb.com（免费、免 key、国内可直连、结构化、不限流），
-    yfinance 作兜底（securitiesdb 不可用或限流时）。两者均无需登录态。
+    """美股分红三层数据源（均免登录态）：
 
-    输入 stock_code 即雅虎 ticker（benben 美股代码形如 KO/PDD/DQ，securitiesdb
-    与 yfinance 共用同一 ticker 体系，无需转换）。
+    1) securitiesdb.com 主源（免费/免 key/国内直连/结构化/秒回，覆盖有限）
+    2) yfinance 兜底（雅虎，覆盖最广；可能 IP 级限流，10s 超时防卡 Django）
+    3) Nasdaq 官方 API 兜底（仅 Nasdaq 上市股可用，免 key，绕开雅虎限流）
+
+    输入 stock_code 即 ticker（benben 美股代码形如 KO/PDD/DQ/AGNC，三源共用同一
+    ticker 体系，无需转换）。
+
+    返回 (result, meta)；meta.rate_limited 仅当 yfinance 兜底被限流/不可用时为 True，
+    用于前端区分『雅虎限流』与『确实无分红记录』。
     """
-    result = _get_dividend_us_securitiesdb(stock_code)
+    result, meta_sec = _get_dividend_us_securitiesdb(stock_code)
     if result:
-        return result
-    return _get_dividend_us_yfinance(stock_code)
+        meta_sec['market'] = 'us'
+        return result, meta_sec
+    result, meta_yf = _get_dividend_us_yfinance(stock_code)
+    if result:
+        meta_yf['market'] = 'us'
+        return result, meta_yf
+    # yfinance 未取到（限流 / 异常 / 真无数据），再试 Nasdaq 兜底（仅 Nasdaq 上市股）
+    result, meta_nasdaq = _get_dividend_us_nasdaq(stock_code)
+    if result:
+        meta_nasdaq['market'] = 'us'
+        return result, meta_nasdaq
+    # 三个源都没数据：把 yfinance 的状态（限流 / 异常）透传，便于前端区分
+    if meta_yf.get('rate_limited'):
+        extra = meta_nasdaq.get('note') and ('；Nasdaq 兜底：' + meta_nasdaq['note']) or ''
+        meta_yf['note'] = (meta_yf.get('note', '') + extra).strip('；')
+        meta_yf['market'] = 'us'
+        return result, meta_yf
+    if meta_yf.get('yf_error'):
+        meta_yf['market'] = 'us'
+        return result, meta_yf
+    # yfinance 正常返回空（真无数据）→ 以 nasdaq 的空 meta 返回
+    meta_nasdaq['market'] = 'us'
+    return result, meta_nasdaq
 
 
 def _get_dividend_us_securitiesdb(stock_code):
     """主源：securitiesdb.com 免费美股分红 API（结构化 JSON，含 date / amount_per_share）。"""
     result = []
+    note = ''
     try:
         import json
         import urllib.request
@@ -1308,21 +1341,43 @@ def _get_dividend_us_securitiesdb(stock_code):
                 "dividend_date": ds,
             })
     except Exception as e:
+        note = f'securitiesdb 主源异常：{e.__class__.__name__} {e}'
         print(f"抓取 {stock_code} 美股分红失败（securitiesdb）：{e.__class__.__name__} {e}")
-    return result
+    return result, {'source': 'securitiesdb', 'rate_limited': False,
+                    'yf_error': False, 'error_type': '', 'error_msg': '', 'note': note}
 
 
 def _get_dividend_us_yfinance(stock_code):
     """兜底：yfinance（雅虎数据源）。雅虎可能临时限流，故用 ThreadPoolExecutor
-    强制单次 10 秒超时，避免卡住 Django 请求；限流/异常时优雅返回空，不抛异常。"""
+    强制单次 10 秒超时，避免卡住 Django 请求；限流/异常时优雅返回空，不抛异常。
+
+    返回 (result, meta)：
+      - meta.rate_limited=True  仅当真正命中雅虎限流（YFRateLimitError / 10s 超时）
+      - meta.yf_error=True      表示 yfinance 抛了其他异常（网络错误、Ticker 找不到、
+                                解析失败、版本问题等），并非限流
+      - meta.error_type/error_msg 记录具体异常类名与错误信息，供前端精确展示
+    """
     result = []
+    rate_limited = False
+    yf_error = False
+    error_type = ''
+    error_msg = ''
+    note = ''
     try:
         import yfinance as yf
     except ImportError:
+        note = '未安装 yfinance，无法兜底抓取美股分红'
         print(f"未安装 yfinance，无法兜底抓取美股分红（{stock_code}）")
-        return result
+        return result, {'source': 'yfinance', 'rate_limited': True,
+                        'yf_error': False, 'error_type': 'ImportError',
+                        'error_msg': '未安装 yfinance', 'note': note}
 
     from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+    # 显式捕获雅虎限流异常；低版本 yfinance 无此类则降级为普通 Exception
+    try:
+        from yfinance.exceptions import YFRateLimitError
+    except ImportError:
+        YFRateLimitError = Exception
 
     def _fetch():
         return yf.Ticker(stock_code).dividends
@@ -1332,7 +1387,9 @@ def _get_dividend_us_yfinance(stock_code):
             future = executor.submit(_fetch)
             div = future.result(timeout=10)
         if div is None or (hasattr(div, "empty") and div.empty):
-            return result
+            note = 'yfinance 返回为空（该股票可能确实无分红，或雅虎无记录）'
+            return result, {'source': 'yfinance', 'rate_limited': False,
+                            'yf_error': False, 'error_type': '', 'error_msg': '', 'note': note}
         for dt, amount in div.items():
             ex_date = dt.date() if hasattr(dt, "date") else None
             if ex_date is None:
@@ -1352,10 +1409,111 @@ def _get_dividend_us_yfinance(stock_code):
                 "dividend_date": ds,
             })
     except FutureTimeoutError:
+        rate_limited = True
+        error_type = 'TimeoutError'
+        error_msg = 'yfinance 10 秒内未响应（疑似雅虎限流）'
+        note = error_msg
         print(f"抓取 {stock_code} 美股分红超时（yfinance 10 秒未响应）")
+    except YFRateLimitError as e:
+        rate_limited = True
+        error_type = 'YFRateLimitError'
+        error_msg = str(e) or '雅虎触发限流'
+        note = '雅虎限流（YFRateLimitError）'
+        print(f"抓取 {stock_code} 美股分红被雅虎限流：{e}")
     except Exception as e:
-        print(f"抓取 {stock_code} 美股分红失败（yfinance）：{e.__class__.__name__} {e}")
-    return result
+        # 非限流类异常（网络错误、Ticker 找不到、解析失败、版本问题等）
+        yf_error = True
+        error_type = e.__class__.__name__
+        error_msg = str(e)
+        note = f'yfinance 异常（{error_type}）：{error_msg}'
+        print(f"抓取 {stock_code} 美股分红失败（yfinance）：{error_type} {error_msg}")
+    return result, {'source': 'yfinance', 'rate_limited': rate_limited,
+                    'yf_error': yf_error, 'error_type': error_type,
+                    'error_msg': error_msg, 'note': note}
+
+
+def _get_dividend_us_nasdaq(stock_code):
+    """第三兜底：Nasdaq 官方分红 API（仅 Nasdaq 上市股可用，免 key、国内可直连）。
+    用于绕开雅虎 yfinance 的 IP 级限流。NYSE/AMEX 等股票会返回
+    'Non-Nasdaq symbols is not available'，此时优雅返回空（不代表真无分红）。
+    返回 (result, meta)。
+    """
+    result = []
+    note = ''
+    try:
+        import json
+        import urllib.request
+        url = f"https://api.nasdaq.com/api/quote/{stock_code}/dividends?assetclass=stocks"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                          "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://www.nasdaq.com/",
+            "Origin": "https://www.nasdaq.com",
+        }
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.load(r)
+
+        # 顶层 message / status 可能携带非 Nasdaq 提示或错误码
+        top_msg = data.get("message") or ""
+        status = data.get("status") or {}
+        if isinstance(top_msg, str) and "Non-Nasdaq" in top_msg:
+            note = f"Nasdaq 不支持该股票（{top_msg}），跳过兜底"
+            return result, {'source': 'nasdaq', 'rate_limited': False, 'yf_error': False,
+                            'error_type': '', 'error_msg': '', 'note': note}
+        if status.get("rCode") not in (200, None):
+            note = f"Nasdaq 接口返回状态码 {status.get('rCode')}（{status.get('bCodeMessage') or ''}）"
+            return result, {'source': 'nasdaq', 'rate_limited': False, 'yf_error': True,
+                            'error_type': 'NasdaqStatusError', 'error_msg': note, 'note': note}
+
+        rows = (((data.get("data") or {}).get("dividends") or {}).get("rows")) or []
+        if not rows:
+            note = "Nasdaq 无分红记录或接口未返回数据"
+            return result, {'source': 'nasdaq', 'rate_limited': False, 'yf_error': False,
+                            'error_type': '', 'error_msg': '', 'note': note}
+
+        for d in rows:
+            ds = _parse_us_date(d.get("exOrEffDate"))
+            if not ds:
+                continue
+            try:
+                amt_raw = str(d.get("amount") or "0").replace("$", "").replace(",", "").strip()
+                amt = float(amt_raw)
+                plan = f"每股派 ${amt:.2f}"
+            except (TypeError, ValueError):
+                plan = ""
+            record = _parse_us_date(d.get("recordDate"))
+            payment = _parse_us_date(d.get("paymentDate")) or ds
+            result.append({
+                "reporting_period": ds[:4],
+                "dividend_plan": plan,
+                "announcement_date": "",
+                "registration_date": record or "",
+                "ex_right_date": ds,
+                "dividend_date": payment,
+            })
+    except Exception as e:
+        note = f'Nasdaq 兜底异常：{e.__class__.__name__} {e}'
+        print(f"抓取 {stock_code} 美股分红失败（nasdaq）：{e.__class__.__name__} {e}")
+        return result, {'source': 'nasdaq', 'rate_limited': False, 'yf_error': True,
+                        'error_type': e.__class__.__name__, 'error_msg': str(e), 'note': note}
+    return result, {'source': 'nasdaq', 'rate_limited': False, 'yf_error': False,
+                    'error_type': '', 'error_msg': '', 'note': note}
+
+
+def _parse_us_date(value):
+    """把 Nasdaq 返回的美式日期 MM/DD/YYYY 或已规范 YYYY-MM-DD 统一转成 YYYY-MM-DD。"""
+    s = str(value or "").strip()
+    if not s:
+        return ""
+    for fmt in ("%m/%d/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.datetime.strptime(s, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return ""
 
 
 def get_stock_dividend_history_2lines(stock_code):
@@ -1477,6 +1635,9 @@ def get_stock_dividend_history_2lines(stock_code):
 
 # 根据抓取到的分红数据计算最近一次分红日期
 def get_dividend_date(stock_dividend_dict):
+    # 兼容 get_stock_dividend_history 新返回的 dict 结构
+    if isinstance(stock_dividend_dict, dict):
+        stock_dividend_dict = stock_dividend_dict.get('data') or []
     # date_now = datetime.datetime.strptime(datetime.datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d')
     date_now = datetime.datetime.now().strftime('%Y-%m-%d')
     if len(stock_dividend_dict) == 0:

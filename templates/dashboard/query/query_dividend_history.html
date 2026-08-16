@@ -43,6 +43,7 @@
             </div>
             <hr class="sidebar-divider">
             {{ error_info }}
+            {% if searched and stock_dividend_dict %}
             <div class="h jumbotron bg-gray-100">
                 <div class="table-responsive">
                     <table class="table table-bordered table-condensed table-striped table-hover list_tab" style="margin-bottom:0px;">
@@ -58,26 +59,40 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!--#dividend_history_list即为视图函数list_dividend_history中render传入参数//-->
-                            {% for i in stock_dividend_dict %}
-                                <tr>
-                                    <td>{{ stock_name }}({{ stock_code }})</td>
-                                    <td>{{ i.reporting_period }}</td>
-                                    <td>{{ i.dividend_plan }}</td>
-                                    <td>{{ i.announcement_date }}</td>
-                                    <td>{{ i.registration_date }}</td>
-                                    <td>{{ i.ex_right_date }}</td>
-                                    <td>{{ i.dividend_date }}</td>
-                                </tr>
+                            {% for i in stock_dividend_dict.data %}
+                            <tr>
+                                <td>{{ stock_name }}({{ stock_code }})</td>
+                                <td>{{ i.reporting_period }}</td>
+                                <td>{{ i.dividend_plan }}</td>
+                                <td>{{ i.announcement_date|default:"" }}</td>
+                                <td>{{ i.registration_date|default:"" }}</td>
+                                <td>{{ i.ex_right_date|default:"" }}</td>
+                                <td>{{ i.dividend_date|default:"" }}</td>
+                            </tr>
                             {% empty %}
                                 <tr>
-                                    <td colspan="7">无相关记录！</td>
+                                    <td colspan="7">
+                                    {% if stock_dividend_dict.rate_limited %}
+                                        <span class="text-warning">⚠️ 雅虎(yfinance)被限流 / 暂不可用，未取到记录。不代表该股票无分红，请稍后重试。<br>（{{ stock_dividend_dict.error_type }}：{{ stock_dividend_dict.error_msg }}）</span>
+                                    {% elif stock_dividend_dict.yf_error %}
+                                        {% if stock_dividend_dict.source == 'nasdaq' %}
+                                        <span class="text-danger">❌ Nasdaq 接口异常（非限流问题）：{{ stock_dividend_dict.error_type }} —— {{ stock_dividend_dict.error_msg }}。</span>
+                                        {% else %}
+                                        <span class="text-danger">❌ yfinance 异常（非限流问题）：{{ stock_dividend_dict.error_type }} —— {{ stock_dividend_dict.error_msg }}。请检查网络 / ticker / yfinance 版本。</span>
+                                        {% endif %}
+                                    {% else %}
+                                        无相关记录！
+                                    {% endif %}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
+            {% else %}
+            <div class="text-muted small">选择股票后点击「查询」，即可查看历史分红数据。</div>
+            {% endif %}
         </div>
     </div>
 </div>

@@ -2121,7 +2121,9 @@ def query_dividend_date(request):
 # 分红历史查询
 def query_dividend_history(request):
     stock_list = Stock.objects.all().values('stock_name', 'stock_code').order_by('stock_code')
+    searched = False
     if request.method == 'POST':
+        searched = True
         stock_code = request.POST.get('stock_code')
         stock_dividend_dict = get_stock_dividend_history(stock_code)
         stock_name = Stock.objects.get(stock_code=stock_code).stock_name
@@ -3339,7 +3341,9 @@ def list_baseline(request):
 def capture_dividend_history(request):
     stock_list = Stock.objects.all().values('stock_code', 'stock_name').order_by('stock_code')
     holding_stock_list = Position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
+    searched = False
     if request.method == 'POST':
+        searched = True
         stock_code_list = []
         stock_code_POST = request.POST.get('stock_code')
         # print(tab_name, stock_code_POST)
@@ -3364,7 +3368,7 @@ def capture_dividend_history(request):
                 DividendHistory.objects.filter(stock_id=stock_id).delete()
 
                 # 在dividend_history表中增加相关记录
-                for i in stock_dividend_dict:
+                for i in stock_dividend_dict['data']:
                     # print(stock_code, i['dividend_plan'], i['dividend_date'])
                     # 若日期字段的值为‘’或‘None’，则将该字段的值赋为 None，以防止插入数据库时报错
                     if i['announcement_date'] == '' or i['announcement_date'] == 'None':
