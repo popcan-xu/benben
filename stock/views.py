@@ -446,6 +446,7 @@ def _calculate_position_data(currency_dict, amount_sum_CNY):
         portfolio_count=Count('portfolio', distinct=True)
     ).filter(portfolio_count=total_portfolio).order_by('-date')
 
+    # 取所有投资组合均有记录的最新日期，若无符合条件的日期则为None
     max_date_portfolio = valid_dates_portfolio.first()['date'] if valid_dates_portfolio.exists() else None
 
     max_date_market_value = get_max_valid_date_for_market_value()
@@ -3447,7 +3448,7 @@ task_status = {
 def update_historical_market_value(request):
     # 获取初始日期范围
     result = HistoricalPosition.objects.aggregate(max_date=Max('date'))
-    start_date = result['max_date'] - datetime.timedelta(days=7)
+    start_date = result['max_date'] - datetime.timedelta(days=30)
     end_date = datetime.date.today()
 
     steps = [
@@ -4184,6 +4185,8 @@ def get_historical_rate(start_date, end_date):
         df = ak.currency_boc_sina(symbol="美元", start_date=start_date_str, end_date=end_date_str)
         df['日期'] = pd.to_datetime(df['日期'])
         df_usd = df.loc[:, ['日期', '中行汇买价']]
+        # print(f"港元汇率：{df_hkd}")
+        # print(f"美元汇率：{df_usd}")
 
         # ak.currency_boc_safe()
         # df = ak.currency_boc_safe()
@@ -5425,7 +5428,7 @@ def test(request):
 
     try:
         # 获取数据
-        df = ak.currency_boc_sina(symbol="港币", start_date="20251201", end_date="20251206")
+        df = ak.currency_boc_sina(symbol="港币", start_date="20260701", end_date="20260806")
 
         print("=== 数据信息 ===")
         print(f"数据形状: {df.shape}")
