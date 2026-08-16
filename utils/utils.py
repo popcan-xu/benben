@@ -1170,12 +1170,14 @@ def getDateRate_usd(date):
 '''
 
 
-# 从https://stock.xueqiu.com/网站抓取股票历史分红数据
+# 抓取股票历史分红数据（A股/港股走 akshare，美股走 securitiesdb/yfinance，均免登录态）
 def get_stock_dividend_history(stock_code):
     """抓取股票历史分红数据。
 
-    A股/港股走 akshare（东财/巨潮数据源，免登录态，长期稳定）；
-    美股走雪球兜底（需有效 xq_a_token，失败则优雅返回空，不抛异常）。
+    A股走 akshare stock_dividend_cninfo（巨潮，免登录态）；
+    港股走 akshare stock_hk_dividend_payout_em（东财，免登录态）；
+    美股走 yfinance（雅虎数据源，免登录态）。
+    三者均长期稳定，且失败均优雅返回空（不抛异常、不 500）。
     返回 list[dict]，每个 dict 含 6 个键：
     reporting_period / dividend_plan / announcement_date /
     registration_date / ex_right_date / dividend_date（值为 'YYYY-MM-DD' 或 ''）。
@@ -1235,7 +1237,11 @@ def _get_dividend_cn(stock_code):
 
 
 def _get_dividend_hk(stock_code):
-    """港股分红：akshare stock_hk_dividend_payout_em（东财数据源，免登录态）。"""
+    """港股分红：akshare stock_hk_dividend_payout_em（东财数据源，免登录态）。
+
+    注意：该接口的'发放日'列经常为 NaT，因此 dividend_date 优先取'发放日'，
+    缺失时 fallback 到'除净日'，否则无法计算 last_dividend_date。
+    """
     result = []
     try:
         if not hasattr(ak, 'stock_hk_dividend_payout_em'):
@@ -1244,13 +1250,16 @@ def _get_dividend_hk(stock_code):
         if df is None or getattr(df, 'empty', True):
             return result
         for _, row in df.iterrows():
+            ex_right = _norm_date(row.get('除净日'))
+            pay_date = _norm_date(row.get('发放日'))
+            dividend_date = pay_date if pay_date else ex_right
             result.append({
                 'reporting_period': _norm_date(row.get('财政年度')),
                 'dividend_plan': str(row.get('分红方案') or ''),
                 'announcement_date': _norm_date(row.get('最新公告日期')),
                 'registration_date': '',
-                'ex_right_date': _norm_date(row.get('除净日')),
-                'dividend_date': _norm_date(row.get('发放日')),
+                'ex_right_date': ex_right,
+                'dividend_date': dividend_date,
             })
     except Exception as e:
         print(f'抓取 {stock_code} 港股分红失败（akshare）：{e.__class__.__name__} {e}')
@@ -1258,46 +1267,94 @@ def _get_dividend_hk(stock_code):
 
 
 def _get_dividend_us(stock_code):
-    """美股分红：雪球兜底（需有效 xq_a_token，失败则优雅返回空，不抛异常）。
+    """美股分红：优先 securitiesdb.com（免费、免 key、国内可直连、结构化、不限流），
+    yfinance 作兜底（securitiesdb 不可用或限流时）。两者均无需登录态。
 
-    说明：雪球 xq_a_token 是登录态 cookie，会过期；且雪球现加 WAF，
-    访问首页已无法自动获取 guest token，故无有效 token 时本函数返回空列表。
-    如需长期稳定抓取美股分红，建议后续接入 yfinance 等免登录数据源。
+    输入 stock_code 即雅虎 ticker（benben 美股代码形如 KO/PDD/DQ，securitiesdb
+    与 yfinance 共用同一 ticker 体系，无需转换）。
     """
+    result = _get_dividend_us_securitiesdb(stock_code)
+    if result:
+        return result
+    return _get_dividend_us_yfinance(stock_code)
+
+
+def _get_dividend_us_securitiesdb(stock_code):
+    """主源：securitiesdb.com 免费美股分红 API（结构化 JSON，含 date / amount_per_share）。"""
     result = []
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
-        }
-        session = requests.Session()
-        try:  # 先访问首页尝试自动获取 guest token（可能失败，忽略即可）
-            session.get(url="https://xueqiu.com", headers=headers, timeout=15)
-        except Exception:
-            pass
-
-        def _safe_ts(v):
-            if not v:
-                return ''
+        import json
+        import urllib.request
+        url = f"https://securitiesdb.com/api/v1/stocks/{stock_code}/dividends"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.load(r)
+        divs = data.get("data", {}).get("dividends", []) or []
+        for d in divs:
+            ds = str(d.get("date") or "")
+            if not ds:
+                continue
             try:
-                return timeStamp13_2_date(v)
-            except Exception:
-                return ''
-
-        url = 'https://stock.xueqiu.com/v5/stock/f10/us/bonus.json?symbol=' + stock_code + '&size=1000&page=1&extend=true'
-        resp = session.get(url=url, headers=headers, timeout=30)
-        resp.raise_for_status()
-        items = resp.json().get('data', {}).get('items', []) or []
-        for i in items:
+                amt = float(d.get("amount_per_share") or 0)
+                plan = f"每股派 ${amt:.2f}"
+            except (TypeError, ValueError):
+                plan = ""
             result.append({
-                'reporting_period': '',
-                'dividend_plan': str(i.get('explain') or ''),
-                'announcement_date': _safe_ts(i.get('announcement_date')),
-                'registration_date': '',
-                'ex_right_date': _safe_ts(i.get('exright_date')),
-                'dividend_date': _safe_ts(i.get('dividend_date')),
+                "reporting_period": ds[:4],
+                "dividend_plan": plan,
+                "announcement_date": "",
+                "registration_date": "",
+                "ex_right_date": ds,
+                "dividend_date": ds,
             })
     except Exception as e:
-        print(f'抓取 {stock_code} 美股分红失败（xueqiu）：{e.__class__.__name__} {e}')
+        print(f"抓取 {stock_code} 美股分红失败（securitiesdb）：{e.__class__.__name__} {e}")
+    return result
+
+
+def _get_dividend_us_yfinance(stock_code):
+    """兜底：yfinance（雅虎数据源）。雅虎可能临时限流，故用 ThreadPoolExecutor
+    强制单次 10 秒超时，避免卡住 Django 请求；限流/异常时优雅返回空，不抛异常。"""
+    result = []
+    try:
+        import yfinance as yf
+    except ImportError:
+        print(f"未安装 yfinance，无法兜底抓取美股分红（{stock_code}）")
+        return result
+
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+
+    def _fetch():
+        return yf.Ticker(stock_code).dividends
+
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_fetch)
+            div = future.result(timeout=10)
+        if div is None or (hasattr(div, "empty") and div.empty):
+            return result
+        for dt, amount in div.items():
+            ex_date = dt.date() if hasattr(dt, "date") else None
+            if ex_date is None:
+                continue
+            ds = ex_date.strftime("%Y-%m-%d")
+            try:
+                amt = float(amount)
+                plan = f"每股派 ${amt:.2f}"
+            except (TypeError, ValueError):
+                plan = ""
+            result.append({
+                "reporting_period": str(ex_date.year),
+                "dividend_plan": plan,
+                "announcement_date": "",
+                "registration_date": "",
+                "ex_right_date": ds,
+                "dividend_date": ds,
+            })
+    except FutureTimeoutError:
+        print(f"抓取 {stock_code} 美股分红超时（yfinance 10 秒未响应）")
+    except Exception as e:
+        print(f"抓取 {stock_code} 美股分红失败（yfinance）：{e.__class__.__name__} {e}")
     return result
 
 
@@ -1418,7 +1475,7 @@ def get_stock_dividend_history_2lines(stock_code):
     return stock_dividend_history_list
 
 
-# 从雪球网抓取股票分红日期
+# 根据抓取到的分红数据计算最近一次分红日期
 def get_dividend_date(stock_dividend_dict):
     # date_now = datetime.datetime.strptime(datetime.datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d')
     date_now = datetime.datetime.now().strftime('%Y-%m-%d')
