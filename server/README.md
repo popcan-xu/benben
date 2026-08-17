@@ -8,10 +8,10 @@
 |---|---|---|
 | `benben.service` | 基础 Django(Gunicorn) 服务单元 | 重建自现服务器，迁移前请 `cat /etc/systemd/system/benben.service` 核对 ExecStart/workers |
 | `benben.service.d/override.conf` | 注入 `/etc/benben/env` 环境变量 | 现服务器通过 drop-in 提供，基础 unit 已同时含 EnvironmentFile 以兼容解析 |
-| `benben-deploy.service` / `.timer` | 每日 03:30 自动 git pull + 重启 | 重建 |
+| `benben-deploy.service` / `.timer` | 每日 03:30 自动 git pull + 同步依赖 + 收集静态 + 按需重启 | 重建 |
 | `benben-backup.service` / `.timer` | 每日 03:00 本地数据库备份 | 重建（保留最近 14 份） |
 | `nginx-benben.conf` | Nginx 反代配置（80→127.0.0.1:8000） | 重建，HTTPS 前为 80 |
-| `deploy_benben.sh` | 部署逻辑（pull + 按需重启） | 重建自记忆，含 `timeout 60` 防 GitHub 出网阻塞 |
+| `deploy_benben.sh` | 部署逻辑（pull + pip 依赖同步 + collectstatic + 按需重启） | 重建自记忆，含 `timeout 60` 防 GitHub 出网阻塞 |
 | `backup_benben.sh` | 数据库备份逻辑 | 重建 |
 | `setup_https.sh` | Let's Encrypt HTTPS 申请（certbot） | ⚠️ **未从现服务器逐字核对**，迁移前请修正 |
 | `bootstrap.sh` | 一键引导：安装上述全部 unit/脚本/配置并启用定时器 | 新增 |
@@ -65,3 +65,9 @@
 - 现服务器若在 **2026-09-15** Lighthouse 到期前续费/换实例，直接按本指南重建即可，数据靠备份恢复，无丢失风险。
 - 重建的 unit / 脚本已按已知约定填写，但 **ExecStart、workers、HTTPS 细节** 可能与现服务器存在出入，`setup_https.sh` 更是未逐字核对——首次使用前请对照现服务器相关文件 `cat` 核对。
 - `/etc/benben/env` 真实密钥切勿提交；`.gitignore` 已排除 `server/env`、`server/.env`。
+- **线上部署脚本需手动同步一次**：`benben-deploy.timer` 每天跑的是 `/usr/local/bin/deploy_benben.sh`，而 git pull 只会更新仓库内的 `server/deploy_benben.sh`，**不会**自动覆盖 `/usr/local/bin/` 那份。本次新增的「pip 依赖同步 + collectstatic」逻辑要生效，需在本提交 push 且服务器 pull 之后，手动执行一次：
+  ```bash
+  sudo cp /var/www/benben/server/deploy_benben.sh /usr/local/bin/deploy_benben.sh
+  sudo chmod 755 /usr/local/bin/deploy_benben.sh
+  ```
+  新服务器（用 `bootstrap.sh` 安装）则无需此步，已直接装对版本。
