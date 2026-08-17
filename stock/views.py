@@ -3339,26 +3339,28 @@ def list_baseline(request):
 
 # 从网站中抓取数据导入数据库
 def capture_dividend_history(request):
-    stock_list = Stock.objects.all().values('stock_code', 'stock_name').order_by('stock_code')
-    holding_stock_list = Position.objects.values("stock").annotate(count=Count("stock")).values('stock__stock_code')
+    stock_list = Stock.objects.all().values(
+        'stock_code', 'stock_name', 'market__market_abbreviation').order_by('stock_code')
     searched = False
     if request.method == 'POST':
         searched = True
-        stock_code_list = []
         stock_code_POST = request.POST.get('stock_code')
-        # print(tab_name, stock_code_POST)
+        # 收集股票及其市场（用于区分 A股/港股 与 美股）
         if stock_code_POST == '全部':
-            for rs in stock_list:
-                stock_code_list.append(rs['stock_code'])
+            stocks = list(Stock.objects.values_list('stock_code', 'market__market_abbreviation'))
         elif stock_code_POST == '持仓股票':
-            for rs in holding_stock_list:
-                stock_code_list.append(rs['stock__stock_code'])
+            stocks = list(Position.objects.values('stock').annotate(c=Count('stock'))
+                          .values_list('stock__stock_code', 'stock__market__market_abbreviation'))
         else:
-            stock_code_list.append(stock_code_POST)
-        # print("stock_code_list=", stock_code_list)
+            try:
+                obj = Stock.objects.get(stock_code=stock_code_POST)
+                stocks = [(stock_code_POST, obj.market.market_abbreviation)]
+            except Stock.DoesNotExist:
+                stocks = []
+        # A股/港股并行抓取（网络 I/O 瓶颈），美股串行一只一只取
+        cn_hk_codes = [c for c, m in stocks if m in ('sh', 'sz', 'hk')]
+        us_codes = [c for c, m in stocks if m not in ('sh', 'sz', 'hk')]
 
-        # 并发抓取：网络 I/O 是瓶颈，单线程串行耗时随股票数线性增长。
-        # 用线程池并行取数，DB 写入仍串行（避免 SQLite 写锁冲突）。
         def _fetch_one(stock_code):
             try:
                 stock_dividend_dict = get_stock_dividend_history(stock_code)
@@ -3381,23 +3383,61 @@ def capture_dividend_history(request):
                 }
 
         fetch_results = []
-        if stock_code_list:
-            max_workers = min(5, len(stock_code_list))
+        # A股/港股：线程池并行取数（网络 I/O 瓶颈）
+        if cn_hk_codes:
+            max_workers = min(5, len(cn_hk_codes))
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                future_to_code = {executor.submit(_fetch_one, code): code for code in stock_code_list}
+                future_to_code = {executor.submit(_fetch_one, code): code for code in cn_hk_codes}
                 for future in as_completed(future_to_code):
                     fetch_results.append(future.result())
+        # 美股：串行一只一只取（按用户要求，避免并发消耗 AV 额度）
+        for code in us_codes:
+            fetch_results.append(_fetch_one(code))
 
+        capture_results = []
         for result in fetch_results:
             stock_code = result['stock_code']
             stock_dividend_dict = result['stock_dividend_dict']
             if stock_dividend_dict is None:
+                # 抓取阶段就抛异常（_fetch_one 已兜底，这里是双保险）
+                capture_results.append({
+                    'stock_code': stock_code,
+                    'stock_name': '',
+                    'status': '失败',
+                    'capture_time': '',
+                    'source_label': '—',
+                    'records': 0,
+                    'rate_limited': False,
+                    'yf_error': True,
+                    'error_type': type(result['error']).__name__ if result['error'] else '',
+                    'error_msg': str(result['error']) if result['error'] else '',
+                    'note': '抓取阶段抛出异常',
+                })
                 continue
+            meta = stock_dividend_dict
             stock_object = Stock.objects.get(stock_code=stock_code)
+            # 三源均失败（限流/异常/均未覆盖）：保留数据库旧数据，不删不写
+            if meta.get('unavailable'):
+                capture_results.append({
+                    'stock_code': stock_code,
+                    'stock_name': stock_object.stock_name,
+                    'status': '无法获取',
+                    'capture_time': '',
+                    'source_label': meta.get('source_label', '—'),
+                    'records': 0,
+                    'rate_limited': meta.get('rate_limited', False),
+                    'yf_error': meta.get('yf_error', False),
+                    'error_type': meta.get('error_type', ''),
+                    'error_msg': meta.get('error_msg', ''),
+                    'note': meta.get('note', ''),
+                })
+                continue
             stock_id = stock_object.id
             next_dividend_date = result['next_dividend_date']
             last_dividend_date = result['last_dividend_date']
             count = 0
+            capture_time = ''
+            write_ok = True
             try:
                 # 删除dividend_history表中的相关记录
                 # dividend_history_object = dividend_history.objects.get(stock_id = stock_id)
@@ -3405,7 +3445,7 @@ def capture_dividend_history(request):
 
                 # 在dividend_history表中增加相关记录（用 bulk_create 替代循环 create，减少 DB 往返）
                 dividend_history_objects = []
-                for i in stock_dividend_dict['data']:
+                for i in meta['data']:
                     # print(stock_code, i['dividend_plan'], i['dividend_date'])
                     # 若日期字段的值为‘’或‘None’，则将该字段的值赋为 None，以防止插入数据库时报错
                     if i['announcement_date'] == '' or i['announcement_date'] == 'None':
@@ -3434,11 +3474,47 @@ def capture_dividend_history(request):
                 stock_object.last_dividend_date = last_dividend_date
                 stock_object.dividend_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 stock_object.save()
+                capture_time = stock_object.dividend_time
 
             except Exception as e:
+                write_ok = False
                 print('插入第' + str(count) + '条记录失败！')
                 print('错误明细是', e.__class__.__name__, e)
             print('插入' + '股票（' + stock_code + '）的历史分红记录' + str(count) + '条！')
+
+            # 判定抓取状态（便于汇总表展示）
+            data_len = len(meta.get('data') or [])
+            if not write_ok:
+                status = '写入失败'
+            elif meta.get('unavailable'):
+                status = '无法获取'
+            elif meta.get('rate_limited'):
+                status = '限流'
+            elif meta.get('yf_error'):
+                status = '接口异常'
+            elif data_len == 0:
+                status = '无记录'
+            else:
+                status = '成功'
+
+            capture_results.append({
+                'stock_code': stock_code,
+                'stock_name': stock_object.stock_name,
+                'status': status,
+                'capture_time': capture_time,
+                'source_label': meta.get('source_label', '—'),
+                'records': count,
+                'rate_limited': meta.get('rate_limited', False),
+                'yf_error': meta.get('yf_error', False),
+                'error_type': meta.get('error_type', ''),
+                'error_msg': meta.get('error_msg', ''),
+                'note': meta.get('note', ''),
+            })
+
+        # 批量模式（持仓/全部）不显示单只明细，改用汇总表；单只保留原明细逻辑
+        is_batch = len(stocks) > 1
+        if is_batch:
+            stock_dividend_dict = None
 
     return render(request, templates_path + 'capture/capture_dividend_history.html', locals())
 

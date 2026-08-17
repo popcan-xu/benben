@@ -40,11 +40,74 @@
                 </form>
             </div>
             <hr class="sidebar-divider">
-            {{ error_info }}
-            {% if searched and stock_dividend_dict %}
+
+            {# 美股分红三层源（Alpha Vantage / securitiesdb / Nasdaq），无冷却设计 #}
+
+            {# ===== 批量抓取（持仓 / 全部）：每只股票汇总表，便于定位问题 ===== #}
+            {% if is_batch and capture_results %}
+            <div class="mb-2 small text-muted">
+                共抓取 <b>{{ capture_results|length }}</b> 只股票。下表汇总每只股票的抓取情况。
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered table-condensed table-striped table-hover" style="margin-bottom:0px;">
+                    <thead>
+                        <tr>
+                            <th>股票代码</th>
+                            <th>名称</th>
+                            <th>状态</th>
+                            <th>抓取时间</th>
+                            <th>数据源</th>
+                            <th>记录数</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in capture_results %}
+                        <tr>
+                            <td>{{ r.stock_code }}</td>
+                            <td>{{ r.stock_name }}</td>
+                            <td>
+                                {% if r.status == '成功' %}
+                                    <span class="text-success">✅ 成功</span>
+                                {% elif r.status == '无记录' %}
+                                    <span class="text-secondary">— 无记录</span>
+                                {% elif r.status == '限流' %}
+                                    <span class="text-warning">⚠️ 限流</span>
+                                {% elif r.status == '接口异常' %}
+                                    <span class="text-danger">❌ 接口异常</span>
+                                {% elif r.status == '无法获取' %}
+                                    <span class="text-danger">⛔ 无法获取</span>
+                                {% else %}
+                                    <span class="text-danger">❌ {{ r.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ r.capture_time|default:"" }}</td>
+                            <td>{{ r.source_label }}</td>
+                            <td>{{ r.records }}</td>
+                            <td class="small">
+                                {% if r.rate_limited %}
+                                    <span class="text-warning">{{ r.error_type }}：{{ r.error_msg }}</span>
+                                {% elif r.yf_error %}
+                                    <span class="text-danger">{{ r.error_type }}：{{ r.error_msg }}</span>
+                                {% elif r.error_msg %}
+                                    <span class="text-muted">{{ r.error_type }}：{{ r.error_msg }}</span>
+                                {% else %}
+                                    <span class="text-muted">{{ r.note }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {# ===== 单只股票：明细表（保持原有功能） ===== #}
+            {% elif searched and stock_dividend_dict %}
             <div class="mb-2 small text-muted">
                 数据源：{{ stock_dividend_dict.source_label }}
-                {% if stock_dividend_dict.rate_limited %}
+                {% if stock_dividend_dict.unavailable %}
+                <span class="text-danger">｜⛔ 无法获取</span>
+                {% elif stock_dividend_dict.rate_limited %}
                 <span class="text-warning">｜⚠️ 限流中</span>
                 {% elif stock_dividend_dict.yf_error %}
                 <span class="text-danger">｜❌ 接口异常</span>
@@ -76,12 +139,18 @@
                         {% empty %}
                             <tr>
                                 <td colspan="6">
-                                {% if stock_dividend_dict.rate_limited %}
+                                {% if stock_dividend_dict.unavailable %}
+                                    <span class="text-danger">⛔ 无法获取：Alpha Vantage / securitiesdb / Nasdaq 三层均未能取到数据（可能限流 / 网络异常 / 均不覆盖该股票）。数据库中的旧分红记录保持不变。</span>
+                                    {% if stock_dividend_dict.note %}<br><span class="text-muted small">（说明：{{ stock_dividend_dict.note }}）</span>{% endif %}
+                                {% elif stock_dividend_dict.rate_limited %}
                                     <span class="text-warning">⚠️ 美股分红抓取失败：{{ stock_dividend_dict.source_label }} 被限流 / 暂不可用，本次未取到任何记录。这并不代表该股票没有分红——请稍后重试，或确认限流恢复后再抓。<br>（{{ stock_dividend_dict.error_type }}：{{ stock_dividend_dict.error_msg }}）</span>
                                 {% elif stock_dividend_dict.yf_error %}
                                     <span class="text-danger">❌ {{ stock_dividend_dict.source_label }} 异常（非限流问题）：{{ stock_dividend_dict.error_type }} —— {{ stock_dividend_dict.error_msg }}。请检查网络 / ticker 是否正确 / API Key 是否有效。</span>
                                 {% else %}
                                     <span class="text-success">✅ 已正常抓取，但未获取到任何分红记录。该股票（或当前数据源）确实没有历史分红数据。</span>
+                                    {% if stock_dividend_dict.note %}
+                                    <br><span class="text-muted small">（说明：{{ stock_dividend_dict.note }}）</span>
+                                    {% endif %}
                                 {% endif %}
                                 </td>
                             </tr>
