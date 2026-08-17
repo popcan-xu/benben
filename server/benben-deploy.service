@@ -1,0 +1,10 @@
+[Unit]
+Description=benben 每日代码部署（git pull + 按需重启）
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/var/www/benben
+ExecStart=/bin/bash /usr/local/bin/deploy_benben.sh

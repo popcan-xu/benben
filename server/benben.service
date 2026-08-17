@@ -1,0 +1,16 @@
+[Unit]
+Description=benben Django app (Gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/benben
+# 环境变量（含 ALPHAVANTAGE_API_KEY）由 /etc/benben/env 提供
+EnvironmentFile=/etc/benben/env
+ExecStart=/var/www/benben/venv/bin/gunicorn benben.wsgi:application --bind 127.0.0.1:8000 --workers 3 --timeout 60
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

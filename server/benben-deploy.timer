@@ -1,0 +1,10 @@
+[Unit]
+Description=benben 每日 03:30 自动部署（GitHub main -> 服务器）
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

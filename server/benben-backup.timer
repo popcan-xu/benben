@@ -1,0 +1,10 @@
+[Unit]
+Description=benben 每日 03:00 数据库备份
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target
