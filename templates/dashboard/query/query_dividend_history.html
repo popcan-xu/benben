@@ -73,13 +73,11 @@
                                 <tr>
                                     <td colspan="7">
                                     {% if stock_dividend_dict.rate_limited %}
-                                        <span class="text-warning">⚠️ 雅虎(yfinance)被限流 / 暂不可用，未取到记录。不代表该股票无分红，请稍后重试。<br>（{{ stock_dividend_dict.error_type }}：{{ stock_dividend_dict.error_msg }}）</span>
+                                        <span class="text-warning">⚠️ {{ stock_dividend_dict.source_label }} 被限流 / 暂不可用，未取到记录。不代表该股票无分红，请稍后重试。<br>（{{ stock_dividend_dict.error_type }}：{{ stock_dividend_dict.error_msg }}）</span>
                                     {% elif stock_dividend_dict.yf_error %}
-                                        {% if stock_dividend_dict.source == 'nasdaq' %}
-                                        <span class="text-danger">❌ Nasdaq 接口异常（非限流问题）：{{ stock_dividend_dict.error_type }} —— {{ stock_dividend_dict.error_msg }}。</span>
-                                        {% else %}
-                                        <span class="text-danger">❌ yfinance 异常（非限流问题）：{{ stock_dividend_dict.error_type }} —— {{ stock_dividend_dict.error_msg }}。请检查网络 / ticker / yfinance 版本。</span>
-                                        {% endif %}
+                                        <span class="text-danger">❌ {{ stock_dividend_dict.source_label }} 异常（非限流问题）：{{ stock_dividend_dict.error_type }} —— {{ stock_dividend_dict.error_msg }}。请检查网络 / ticker / API Key。</span>
+                                    {% elif stock_dividend_dict.market == 'us' %}
+                                        <span class="text-success">✅ 已正常抓取，但该股票确实没有历史分红数据。</span>
                                     {% else %}
                                         无相关记录！
                                     {% endif %}

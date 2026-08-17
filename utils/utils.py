@@ -1197,6 +1197,15 @@ def get_stock_dividend_history(stock_code):
     # 统一按派息日降序，保证 index 0 为最新一条（兼容 get_dividend_date 的语义）
     data.sort(key=lambda d: d['dividend_date'] or '0000-00-00', reverse=True)
     meta['data'] = data
+    _DIVIDEND_SOURCE_LABELS = {
+        'cninfo': 'A股巨潮(cninfo)',
+        'em': '港股东财',
+        'securitiesdb': 'securitiesdb.com（主源）',
+        'alphavantage': 'Alpha Vantage（主源）',
+        'nasdaq': 'Nasdaq 官方 API（兜底）',
+        'yfinance': '雅虎 yfinance（兜底）',
+    }
+    meta['source_label'] = _DIVIDEND_SOURCE_LABELS.get(meta.get('source'), '未知')
     return meta
 
 
@@ -1271,44 +1280,92 @@ def _get_dividend_hk(stock_code):
     return result
 
 
+def _merge_dividend_err(prev, meta, into=None):
+    """把某一层的限流/异常信息累积进 prev（None 时以 meta 为新基线）。
+
+    into 非空时，把合并结果写回 into 对象并返回 into（用于最终把前面各层错误
+    合并进最后一个兜底源的 meta）。
+    """
+    if prev is None:
+        base = dict(meta)
+    else:
+        base = prev
+        base['note'] = (base.get('note', '') + '；' + (meta.get('note', '') or '')).strip('；')
+        base['rate_limited'] = base.get('rate_limited') or meta.get('rate_limited')
+        base['yf_error'] = base.get('yf_error') or meta.get('yf_error')
+        base['error_type'] = base.get('error_type') or meta.get('error_type')
+        base['error_msg'] = base.get('error_msg') or meta.get('error_msg')
+        base['source'] = base.get('source') or meta.get('source')
+    if into is not None:
+        into['note'] = (into.get('note', '') + '；' + (base.get('note', '') or '')).strip('；')
+        into['rate_limited'] = into.get('rate_limited') or base.get('rate_limited')
+        into['yf_error'] = into.get('yf_error') or base.get('yf_error')
+        into['error_type'] = into.get('error_type') or base.get('error_type')
+        into['error_msg'] = into.get('error_msg') or base.get('error_msg')
+        return into
+    return base
+
+
 def _get_dividend_us(stock_code):
-    """美股分红三层数据源（均免登录态）：
+    """美股分红四层数据源（均免登录态），按优先级：
 
-    1) securitiesdb.com 主源（免费/免 key/国内直连/结构化/秒回，覆盖有限）
-    2) yfinance 兜底（雅虎，覆盖最广；可能 IP 级限流，10s 超时防卡 Django）
-    3) Nasdaq 官方 API 兜底（仅 Nasdaq 上市股可用，免 key，绕开雅虎限流）
+    1) Alpha Vantage DIVIDENDS（免费 Key，覆盖全部美股 NYSE+NASDAQ，字段最完整：
+       含公告日/股权登记日/派息日，其它源仅给除息日+金额）——作为主力源优先使用
+    2) securitiesdb.com（免费/免 key/国内直连/结构化/秒回，无额度限制）
+    3) Nasdaq 官方 API（仅 Nasdaq 上市股可用，免 key，绕开雅虎限流）
+    4) yfinance（雅虎，覆盖最广；可能 IP 级限流，10s 超时防卡 Django）
 
-    输入 stock_code 即 ticker（benben 美股代码形如 KO/PDD/DQ/AGNC，三源共用同一
+    输入 stock_code 即 ticker（benben 美股代码形如 KO/PDD/DQ/AGNC，各源共用同一
     ticker 体系，无需转换）。
 
-    返回 (result, meta)；meta.rate_limited 仅当 yfinance 兜底被限流/不可用时为 True，
-    用于前端区分『雅虎限流』与『确实无分红记录』。
+    返回 (result, meta)；meta.rate_limited / yf_error / error_type / error_msg 用于
+    前端区分『限流』『接口异常』与『确实无分红记录』。
+
+    策略细节：
+    - Alpha Vantage 免费档限 25 次/天；一旦触发限流（Note/Information 字段），
+      本次进程内冷却 24 小时自动跳过该源，避免额度雪崩（冷却后回落到 securitiesdb）。
+    - 宽源（alphavantage / yfinance）返回空时先记录“无分红”结论，但继续走后续源
+      交叉验证（防止 Alpha Vantage 偶发缺数据漏抓）；最终若所有层皆空、且有过
+      宽源权威空结论，则返回该“无分红”结论。
     """
-    result, meta_sec = _get_dividend_us_securitiesdb(stock_code)
-    if result:
-        meta_sec['market'] = 'us'
-        return result, meta_sec
-    result, meta_yf = _get_dividend_us_yfinance(stock_code)
-    if result:
-        meta_yf['market'] = 'us'
-        return result, meta_yf
-    # yfinance 未取到（限流 / 异常 / 真无数据），再试 Nasdaq 兜底（仅 Nasdaq 上市股）
-    result, meta_nasdaq = _get_dividend_us_nasdaq(stock_code)
-    if result:
-        meta_nasdaq['market'] = 'us'
-        return result, meta_nasdaq
-    # 三个源都没数据：把 yfinance 的状态（限流 / 异常）透传，便于前端区分
-    if meta_yf.get('rate_limited'):
-        extra = meta_nasdaq.get('note') and ('；Nasdaq 兜底：' + meta_nasdaq['note']) or ''
-        meta_yf['note'] = (meta_yf.get('note', '') + extra).strip('；')
-        meta_yf['market'] = 'us'
-        return result, meta_yf
-    if meta_yf.get('yf_error'):
-        meta_yf['market'] = 'us'
-        return result, meta_yf
-    # yfinance 正常返回空（真无数据）→ 以 nasdaq 的空 meta 返回
-    meta_nasdaq['market'] = 'us'
-    return result, meta_nasdaq
+    # 逐层尝试：第一层 Alpha Vantage（数据最完整）优先；其后各层做补位与交叉验证。
+    # 窄源（securitiesdb / nasdaq）空结果视为“未覆盖”继续往后；宽源空结果先记录
+    # 权威“无分红”但继续往后交叉验证；各层限流/异常累积到 last_err 最终合并展示。
+    layers = [
+        _get_dividend_us_alphavantage,
+        _get_dividend_us_securitiesdb,
+        _get_dividend_us_nasdaq,
+        _get_dividend_us_yfinance,
+    ]
+    last_err = None
+    empty_meta = None  # 宽源权威“无分红”的 meta，用于最终兜底判定
+    for fn in layers:
+        result, meta = fn(stock_code)
+        meta['market'] = 'us'
+        if meta.get('skipped'):
+            # 该层不可用（缺 Key / 限流冷却中 / 非本交易所），跳过并累积错误
+            last_err = _merge_dividend_err(last_err, meta)
+            continue
+        if result:
+            return result, meta
+        if meta.get('authoritative_empty'):
+            # 宽源确认无分红：记录但不立即返回，继续走后续源交叉验证
+            if empty_meta is None:
+                empty_meta = meta
+            last_err = _merge_dividend_err(last_err, meta)
+            continue
+        # 该层可用但返回空（窄源未覆盖）或限流/异常 → 累积并继续
+        last_err = _merge_dividend_err(last_err, meta)
+    # 所有层都未取到数据 / 都出错
+    if empty_meta is not None:
+        empty_meta['market'] = 'us'
+        return [], empty_meta
+    if last_err is not None:
+        last_err['market'] = 'us'
+        return [], last_err
+    return [], {'source': '', 'market': 'us', 'rate_limited': False,
+                'yf_error': False, 'error_type': '', 'error_msg': '',
+                'note': '所有美股分红数据源均未返回数据', 'source_label': '无'}
 
 
 def _get_dividend_us_securitiesdb(stock_code):
@@ -1430,6 +1487,120 @@ def _get_dividend_us_yfinance(stock_code):
     return result, {'source': 'yfinance', 'rate_limited': rate_limited,
                     'yf_error': yf_error, 'error_type': error_type,
                     'error_msg': error_msg, 'note': note}
+
+
+# Alpha Vantage 免费档限 25 次/天；一旦触发限流，冷却 24 小时自动跳过本源，
+# 避免额度雪崩（冷却期间回落到 securitiesdb / nasdaq / yfinance 兜底）。
+_av_rate_limited_until = 0.0
+
+
+def _get_dividend_us_alphavantage(stock_code):
+    """第一主力源：Alpha Vantage DIVIDENDS 接口（免费 Key，覆盖全部美股 NYSE+NASDAQ，
+    字段最完整：含 ex_dividend_date / declaration_date / record_date / payment_date / amount）。
+
+    作为美股分红的主力源优先使用（数据最完整）。Key 从环境变量 ALPHAVANTAGE_API_KEY
+    读取；缺失则跳过本层（skipped=True，不报错），靠后续 securitiesdb / nasdaq / yfinance
+    兜底。国内沙箱实测可达。
+
+    返回 (result, meta)：
+      - meta.skipped=True       未配置 Key / 限流冷却中，跳过本层
+      - meta.authoritative_empty=True   Key 正常且接口确认无分红记录
+      - meta.rate_limited=True  命中 Alpha Vantage 限流（每日 25 次），并触发 24h 冷却
+      - meta.yf_error=True      其它异常（网络错误 / Key 无效 / 解析失败）
+    """
+    global _av_rate_limited_until
+    now = time.time()
+    if _av_rate_limited_until and now < _av_rate_limited_until:
+        note = 'Alpha Vantage 今日额度已耗尽，冷却中（自动跳过，避免浪费额度；请明日再试或改用其它源）'
+        return [], {'source': 'alphavantage', 'skipped': True,
+                    'authoritative_empty': False, 'rate_limited': False,
+                    'yf_error': False, 'error_type': '', 'error_msg': '', 'note': note}
+    result = []
+    rate_limited = False
+    yf_error = False
+    error_type = ''
+    error_msg = ''
+    note = ''
+    skipped = False
+    authoritative_empty = False
+    api_key = os.environ.get('ALPHAVANTAGE_API_KEY', '')
+    if not api_key:
+        skipped = True
+        note = '未配置 Alpha Vantage API Key（ALPHAVANTAGE_API_KEY），跳过该主力源'
+        return result, {'source': 'alphavantage', 'skipped': True,
+                        'authoritative_empty': False, 'rate_limited': False,
+                        'yf_error': False, 'error_type': '', 'error_msg': '', 'note': note}
+    try:
+        import json
+        import urllib.request
+        import urllib.parse
+        url = ("https://www.alphavantage.co/query?function=DIVIDENDS"
+               "&symbol=" + urllib.parse.quote(stock_code) +
+               "&apikey=" + urllib.parse.quote(api_key))
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.load(r)
+        # Alpha Vantage 限流/提示用顶层 Note / Information 字段表达
+        if "Note" in data or "Information" in data:
+            msg = str(data.get("Note") or data.get("Information") or "")
+            rate_limited = True
+            error_type = 'AVRateLimit'
+            error_msg = msg
+            note = f'Alpha Vantage 限流/提示：{msg}'
+            print(f"抓取 {stock_code} 美股分红 - Alpha Vantage 限流：{msg}")
+            _av_rate_limited_until = now + 24 * 3600  # 触顶后冷却 24 小时
+            return result, {'source': 'alphavantage', 'skipped': False,
+                            'authoritative_empty': False, 'rate_limited': True,
+                            'yf_error': False, 'error_type': error_type,
+                            'error_msg': error_msg, 'note': note}
+        if "Error Message" in data:
+            yf_error = True
+            error_type = 'AVError'
+            error_msg = str(data.get("Error Message"))
+            note = f'Alpha Vantage 错误：{error_msg}'
+            print(f"抓取 {stock_code} 美股分红 - Alpha Vantage 错误：{error_msg}")
+            return result, {'source': 'alphavantage', 'skipped': False,
+                            'authoritative_empty': False, 'rate_limited': False,
+                            'yf_error': True, 'error_type': error_type,
+                            'error_msg': error_msg, 'note': note}
+        rows = data.get("data") or []
+        if not rows:
+            authoritative_empty = True
+            note = 'Alpha Vantage 无分红记录（该股票确实未派息或接口无数据）'
+            return result, {'source': 'alphavantage', 'skipped': False,
+                            'authoritative_empty': True, 'rate_limited': False,
+                            'yf_error': False, 'error_type': '', 'error_msg': '',
+                            'note': note}
+        for d in rows:
+            ex = _parse_us_date(d.get("ex_dividend_date")) or _parse_us_date(d.get("payment_date"))
+            if not ex:
+                continue
+            try:
+                amt = float(str(d.get("amount") or 0))
+                plan = f"每股派 ${amt:.2f}"
+            except (TypeError, ValueError):
+                plan = ""
+            result.append({
+                "reporting_period": ex[:4],
+                "dividend_plan": plan,
+                "announcement_date": _parse_us_date(d.get("declaration_date")) or "",
+                "registration_date": _parse_us_date(d.get("record_date")) or "",
+                "ex_right_date": ex,
+                "dividend_date": _parse_us_date(d.get("payment_date")) or ex,
+            })
+    except Exception as e:
+        yf_error = True
+        error_type = e.__class__.__name__
+        error_msg = str(e)
+        note = f'Alpha Vantage 异常（{error_type}）：{error_msg}'
+        print(f"抓取 {stock_code} 美股分红失败（Alpha Vantage）：{error_type} {error_msg}")
+        return result, {'source': 'alphavantage', 'skipped': False,
+                        'authoritative_empty': False, 'rate_limited': False,
+                        'yf_error': True, 'error_type': error_type,
+                        'error_msg': error_msg, 'note': note}
+    return result, {'source': 'alphavantage', 'skipped': False,
+                    'authoritative_empty': False, 'rate_limited': False,
+                    'yf_error': False, 'error_type': '', 'error_msg': '', 'note': ''}
 
 
 def _get_dividend_us_nasdaq(stock_code):
