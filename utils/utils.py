@@ -1200,7 +1200,7 @@ def get_stock_dividend_history(stock_code):
     _DIVIDEND_SOURCE_LABELS = {
         'cninfo': 'A股巨潮(cninfo)',
         'em': '港股东财',
-        'securitiesdb': 'securitiesdb.com（主源）',
+        'securitiesdb': 'securitiesdb.com（兜底）',
         'alphavantage': 'Alpha Vantage（主源）',
         'nasdaq': 'Nasdaq 官方 API（兜底）',
         'yfinance': '雅虎 yfinance（兜底）',

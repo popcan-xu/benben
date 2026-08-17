@@ -3356,18 +3356,55 @@ def capture_dividend_history(request):
         else:
             stock_code_list.append(stock_code_POST)
         # print("stock_code_list=", stock_code_list)
-        for stock_code in stock_code_list:
+
+        # 并发抓取：网络 I/O 是瓶颈，单线程串行耗时随股票数线性增长。
+        # 用线程池并行取数，DB 写入仍串行（避免 SQLite 写锁冲突）。
+        def _fetch_one(stock_code):
+            try:
+                stock_dividend_dict = get_stock_dividend_history(stock_code)
+                next_dividend_date, last_dividend_date = get_dividend_date(stock_dividend_dict)
+                return {
+                    'stock_code': stock_code,
+                    'stock_dividend_dict': stock_dividend_dict,
+                    'next_dividend_date': next_dividend_date,
+                    'last_dividend_date': last_dividend_date,
+                    'error': None,
+                }
+            except Exception as e:
+                print('抓取股票（' + stock_code + '）历史分红失败：', e.__class__.__name__, e)
+                return {
+                    'stock_code': stock_code,
+                    'stock_dividend_dict': None,
+                    'next_dividend_date': None,
+                    'last_dividend_date': None,
+                    'error': e,
+                }
+
+        fetch_results = []
+        if stock_code_list:
+            max_workers = min(5, len(stock_code_list))
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_code = {executor.submit(_fetch_one, code): code for code in stock_code_list}
+                for future in as_completed(future_to_code):
+                    fetch_results.append(future.result())
+
+        for result in fetch_results:
+            stock_code = result['stock_code']
+            stock_dividend_dict = result['stock_dividend_dict']
+            if stock_dividend_dict is None:
+                continue
             stock_object = Stock.objects.get(stock_code=stock_code)
             stock_id = stock_object.id
-            stock_dividend_dict = get_stock_dividend_history(stock_code)
-            next_dividend_date, last_dividend_date = get_dividend_date(stock_dividend_dict)
+            next_dividend_date = result['next_dividend_date']
+            last_dividend_date = result['last_dividend_date']
             count = 0
             try:
                 # 删除dividend_history表中的相关记录
                 # dividend_history_object = dividend_history.objects.get(stock_id = stock_id)
                 DividendHistory.objects.filter(stock_id=stock_id).delete()
 
-                # 在dividend_history表中增加相关记录
+                # 在dividend_history表中增加相关记录（用 bulk_create 替代循环 create，减少 DB 往返）
+                dividend_history_objects = []
                 for i in stock_dividend_dict['data']:
                     # print(stock_code, i['dividend_plan'], i['dividend_date'])
                     # 若日期字段的值为‘’或‘None’，则将该字段的值赋为 None，以防止插入数据库时报错
@@ -3379,7 +3416,7 @@ def capture_dividend_history(request):
                         i['ex_right_date'] = None
                     if i['dividend_date'] == '' or i['dividend_date'] == 'None':
                         i['dividend_date'] = None
-                    p = DividendHistory.objects.create(
+                    dividend_history_objects.append(DividendHistory(
                         stock_id=stock_id,
                         reporting_period=i['reporting_period'],
                         dividend_plan=i['dividend_plan'],
@@ -3387,8 +3424,9 @@ def capture_dividend_history(request):
                         registration_date=i['registration_date'],
                         ex_right_date=i['ex_right_date'],
                         dividend_date=i['dividend_date']
-                    )
+                    ))
                     count += 1
+                DividendHistory.objects.bulk_create(dividend_history_objects)
 
                 # 更新stock表相关记录的next_dividend_date和last_dividend_date字段
                 # stock_object.update(next_dividend_date=next_dividend_date, last_dividend_date=last_dividend_date)
