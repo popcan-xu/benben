@@ -14,6 +14,16 @@ APP_DIR=/var/www/benben
 UNIT_DIR=/etc/systemd/system
 SRC_SVC=benben.service
 
+# 解析 benben 实际使用的 python：优先 venv，并验证能 import django
+resolve_python() {
+  for c in "$APP_DIR/venv/bin/python" "$APP_DIR/.venv/bin/python" "$(command -v python3)"; do
+    [ -x "$c" ] && "$c" -c 'import django' >/dev/null 2>&1 && { echo "$c"; return 0; }
+  done
+  echo "$(command -v python3)"
+}
+PY_BIN=$(resolve_python)
+echo ">>> 解析到 python: $PY_BIN"
+
 echo ">>> 读取现有 $SRC_SVC 的运行配置（自动继承，无需手填）..."
 USER_VAL=$(systemctl show "$SRC_SVC" -p User --value 2>/dev/null || true)
 [ -z "$USER_VAL" ] && USER_VAL=root
@@ -49,7 +59,7 @@ Type=oneshot
 User=$USER_VAL
 WorkingDirectory=$WORKDIR
 $ENV_DIRECTIVE
-ExecStart=/bin/bash -lc 'cd $APP_DIR && PY=$(command -v $APP_DIR/.venv/bin/python || command -v python3); exec "\$PY" manage.py capture_dividend'
+ExecStart=/bin/bash -lc 'cd $APP_DIR && exec "$PY_BIN" manage.py capture_dividend'
 EOF
 
 echo ">>> 生成 $UNIT_DIR/benben-capture.timer (每周日 04:00) ..."
@@ -80,7 +90,7 @@ systemctl list-timers benben-capture.timer --no-pager || true
 echo ""
 echo ">>> 立即手动跑一次验证（约几十秒，可观察美股是否走 AV 正常抓取）..."
 systemd-run --quiet --unit=benben-capture-test.service \
-  /bin/bash -lc "cd $WORKDIR && PY=\$(command -v $APP_DIR/.venv/bin/python || command -v python3); exec \"\$PY\" manage.py capture_dividend" \
+  /bin/bash -lc "cd $WORKDIR && exec \"$PY_BIN\" manage.py capture_dividend" \
   && echo "手动验证已触发，可用 'journalctl -u benben-capture-test.service -f' 查看进度" \
   || echo "（手动验证触发失败，可忽略；定时器已配置完成）"
 
