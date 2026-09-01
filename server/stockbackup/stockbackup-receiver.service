@@ -1,0 +1,19 @@
+[Unit]
+Description=Stock Tracker T2 Backup Receiver (standalone, decoupled from benben)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/backups/stock_tracker
+# token 由 /etc/stockbackup.env 注入；脚本不再兜底硬编码
+EnvironmentFile=/etc/stockbackup.env
+ExecStart=/usr/bin/python3 /var/backups/stock_tracker/receiver.py
+Restart=always
+RestartSec=3
+# 防止疯狂重启时刷日志
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target

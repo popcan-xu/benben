@@ -16,6 +16,10 @@
 | `setup_https.sh` | Let's Encrypt HTTPS 申请（certbot） | ⚠️ **未从现服务器逐字核对**，迁移前请修正 |
 | `bootstrap.sh` | 一键引导：安装上述全部 unit/脚本/配置并启用定时器 | 新增 |
 | `env.example` | `/etc/benben/env` 模板（仅键名，无密钥） | 新增 |
+| `stockbackup/receiver.py` | **T2 异地备份独立接收端**：接收 CloudBase 推送的备份清单并落盘 manifest.json | 新增（从 benben `stock/views.py` 的 `backup_webhook` 视图解耦而出） |
+| `stockbackup/stockbackup-receiver.service` | 接收端的 systemd 单元（独立托管，不依赖 benben） | 新增 |
+| `stockbackup/nginx-stockbackup.conf` | Nginx 反代片段（`/benben/backup_webhook/` → 127.0.0.1:8731） | 新增 |
+| `stockbackup/env.example` | 接收端环境变量模板（`BACKUP_WEBHOOK_TOKEN`，不进 git） | 新增 |
 
 > 说明：仓库根目录已有的 `setup_weekly_capture.sh` / `setup_daily_historical.sh`（每周分红 / 每日历史持仓定时器）不在本目录，由 `bootstrap.sh` 第 7 步直接调用。
 
@@ -71,3 +75,35 @@
   sudo chmod 755 /usr/local/bin/deploy_benben.sh
   ```
   新服务器（用 `bootstrap.sh` 安装）则无需此步，已直接装对版本。
+
+## 异地备份接收端（独立服务，与 benben 解耦）
+
+T2 异地备份的「接收推送」环节**曾经写在 benben 的 `stock/views.py`（`backup_webhook` 视图）里**——这是个耦合坏味道：project B（微信小程序云开发）的备份逻辑寄生在 project A（benben）的应用代码中，且当时只在服务器上改、没进 git。现已重构为 **Lighthouse 上的独立 HTTP 接收服务**，与 benben 完全无关：
+
+- `stockbackup/receiver.py`：纯标准库 HTTP 服务，复刻原视图逻辑（校验 `X-Backup-Token` → 解析 `{files,date}` → 原子写 `manifest.json`）。**token 只从 `/etc/stockbackup.env` 读取，绝不硬编码进仓库**。
+- `stockbackup/stockbackup-receiver.service`：独立 systemd 单元，监听 `127.0.0.1:8731`。
+- `stockbackup/nginx-stockbackup.conf`：Nginx 反代片段，把公网 `/benben/backup_webhook/`（沿用 CloudBase 函数既有推送 URL，零改动）反代到接收端，复用 benben 的 TLS。
+- 真正的下载 / sha256 校验 / 留存仍由 `/var/backups/stock_tracker/pull.py`（root crontab `0 8 * * *`）完成，未改动。
+
+**部署到现服务器**（手动步骤，未纳入 bootstrap.sh）：
+
+```bash
+# 1) 放脚本 + 单元
+install -d -m 755 /var/backups/stock_tracker
+cp server/stockbackup/receiver.py /var/backups/stock_tracker/receiver.py
+chmod 755 /var/backups/stock_tracker/receiver.py
+cp server/stockbackup/stockbackup-receiver.service /etc/systemd/system/
+# 2) 注入 token（值须与 CloudBase dbBackup 函数发送的 X-Backup-Token 一致）
+install -d -m 700 /etc/stockbackup
+cp server/stockbackup/env.example /etc/stockbackup/env
+vi /etc/stockbackup/env          # 填入真实 BACKUP_WEBHOOK_TOKEN
+chmod 600 /etc/stockbackup/env
+# 3) Nginx：把 nginx-stockbackup.conf 的 location 插入 benben_ssl.conf 的 server 块（Django location / 之前）
+systemctl daemon-reload
+systemctl enable --now stockbackup-receiver
+nginx -t && systemctl reload nginx
+# 4) 回收 benben 里残留的未提交 webhook（使服务器工作树回归 git HEAD，彻底解耦）
+cd /var/www/benben && git checkout -- stock/views.py stock/urls.py
+```
+
+> 接收端监听 `127.0.0.1`，公网不可直连；若 `BACKUP_WEBHOOK_TOKEN` 缺失，服务照常启动但所有推送返回 401（日志告警），不会静默吞错。
