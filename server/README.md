@@ -83,7 +83,7 @@ T2 异地备份的「接收推送」环节**曾经写在 benben 的 `stock/views
 - `stockbackup/receiver.py`：纯标准库 HTTP 服务，复刻原视图逻辑（校验 `X-Backup-Token` → 解析 `{files,date}` → 原子写 `manifest.json`）。**token 只从 `/etc/stockbackup.env` 读取，绝不硬编码进仓库**。
 - `stockbackup/stockbackup-receiver.service`：独立 systemd 单元，监听 `127.0.0.1:8731`。
 - `stockbackup/nginx-stockbackup.conf`：Nginx 反代片段，把公网 `/benben/backup_webhook/`（沿用 CloudBase 函数既有推送 URL，零改动）反代到接收端，复用 benben 的 TLS。
-- 真正的下载 / sha256 校验 / 留存仍由 `/var/backups/stock_tracker/pull.py`（root crontab `0 8 * * *`）完成，未改动。
+- 真正的下载 / sha256 校验 / 留存由 `/var/backups/stock_tracker/pull.py` 完成。**该拉取端已有 git 留存**：源文件位于 `stock_portfolio_tracker` 仓库的 `scripts/stockbackup_pull.py`（文件头含部署路径与 scp 同步命令），换机时从此处取最新版 scp 到 Lighthouse 即可。cron 已从 `0 8 * * *` 改为 **`*/2 * * * * flock -xn /tmp/pull_backup.lock -c "/var/www/benben/venv/bin/python3 /var/backups/stock_tracker/pull.py >> /var/backups/stock_tracker/pull.log 2>&1"`**（每 2 分钟事件驱动：仅当 manifest 出现新版本或上次未拉完才干活，否则静默退出，规避 CloudBase 签名 URL 固定 10 分钟 TTL 的限制）。
 
 **部署到现服务器**（手动步骤，未纳入 bootstrap.sh）：
 
